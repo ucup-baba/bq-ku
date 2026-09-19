@@ -14,6 +14,7 @@ import {
   FolderOpen
 } from '@phosphor-icons/react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { DemoRoleSwitcher } from '@/components/auth/DemoRoleSwitcher';
 import { DoodleSparkle } from '@/components/ui/DoodleStickers';
 
 export function DesktopSidebar() {
@@ -73,8 +74,15 @@ export function DesktopSidebar() {
         </nav>
       </div>
 
-      {/* Footer Area: Theme Toggle & Admin Badge */}
+      {/* Footer Area: Role Switcher & Theme Toggle */}
       <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Peran Akun:
+          </span>
+          <DemoRoleSwitcher />
+        </div>
+
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
             Mode Tampilan:
