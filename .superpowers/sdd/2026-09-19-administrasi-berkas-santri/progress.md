@@ -10,3 +10,7 @@
 | Task 6 & Task 7 | Directory & Detail Poster Page | IDs and model types identical | Proceed |
 
 Scan clean. All interfaces compatible with spec.
+
+## Task Progress
+- Task 1: complete (commits 0156d41..cc7de5c, review clean)
+
