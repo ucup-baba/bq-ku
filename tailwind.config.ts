@@ -14,7 +14,7 @@ const config: Config = {
         'emerald-teal': '#2C8F87',
         'soft-sage': '#E5EFC1',
         'warm-cream': '#F6F8F3',
-        'lime-citron': '#84CC16',
+        'citron-lime': '#84CC16',
         'dusty-coral': '#FB7185',
       },
       fontFamily: {

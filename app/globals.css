@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #14302C; /* deep-forest */
+  }
+
+  .dark {
+    --background: #14302C;
+    --foreground: #F6F8F3; /* warm-cream */
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
