@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Caveat } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { AppShell } from "@/components/layout/AppShell";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -14,8 +15,8 @@ const caveat = Caveat({
 });
 
 export const metadata: Metadata = {
-  title: "BQ Administrasi Berkas Santri",
-  description: "Baitul Qowwam Digital CV Profiler",
+  title: "Administrasi Berkas & Profil Santri - Baitul Qowwam",
+  description: "Sistem Administrasi Berkas Santri & Digital CV Profiler",
 };
 
 export default function RootLayout({
@@ -29,7 +30,9 @@ export default function RootLayout({
         className={`${plusJakartaSans.variable} ${caveat.variable} font-sans antialiased bg-background text-foreground`}
       >
         <ThemeProvider>
-          {children}
+          <AppShell>
+            {children}
+          </AppShell>
         </ThemeProvider>
       </body>
     </html>
