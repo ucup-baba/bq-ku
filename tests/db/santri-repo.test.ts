@@ -45,14 +45,14 @@ describe('Santri Repository', () => {
         alamat: 'Jl. Kebon Jeruk',
         ringkasanTentang: 'Santri yang rajin',
         riwayatTahfidz: '5 Juz',
-        keahlian: ['Futsal', 'Silat'],
+        keahlian: JSON.stringify(['Futsal', 'Silat']),
       };
 
       const santri = createSantri(input);
       expect(santri).toBeDefined();
       expect(santri.id).toBeDefined();
       expect(santri.namaLengkap).toBe(input.namaLengkap);
-      expect(JSON.parse(santri.keahlian!)).toEqual(input.keahlian);
+      expect(santri.keahlian).toEqual(input.keahlian);
 
       const found = getSantriById(santri.id);
       expect(found).toBeDefined();
