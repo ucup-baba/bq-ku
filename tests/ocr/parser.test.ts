@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cleanOcrDigits, parseIndonesianDate, parseOcrText } from '../../lib/ocr/parser';
+import { cleanOcrDigits, parseIndonesianDate, parseOcrText, extractBirthDateFromNik } from '../../lib/ocr/parser';
 
 describe('OCR Parser Utilities', () => {
   describe('cleanOcrDigits', () => {
@@ -29,6 +29,26 @@ describe('OCR Parser Utilities', () => {
 
     it('handles invalid dates gracefully', () => {
       expect(parseIndonesianDate('not a date')).toBeNull();
+    });
+  });
+
+  describe('extractBirthDateFromNik', () => {
+    it('extracts male birth date correctly (Hanif: 23 Jan 2007)', () => {
+      expect(extractBirthDateFromNik('3401052301070001')).toBe('2007-01-23');
+    });
+
+    it('extracts female birth date correctly by subtracting 40 (Suratmi: 25 Jan 1974)', () => {
+      // Digit 7-8: 65 -> 65 - 40 = 25
+      expect(extractBirthDateFromNik('3401056501740001')).toBe('1974-01-25');
+    });
+
+    it('handles parent born in 1970 (Arifin: 15 Aug 1970)', () => {
+      expect(extractBirthDateFromNik('3401051508700002')).toBe('1970-08-15');
+    });
+
+    it('returns null for invalid NIK', () => {
+      expect(extractBirthDateFromNik('')).toBeNull();
+      expect(extractBirthDateFromNik('12345')).toBeNull();
     });
   });
 });
@@ -87,6 +107,33 @@ describe('parseOcrText', () => {
       expect(result.namaAyah).toBe('ABDULLAH');
       expect(result.namaIbu).toBe('SITI AMINAH');
       expect(result.alamat).toContain('JL. MERDEKA NO 12');
+    });
+
+    it('extracts real scanned KK with family members table and splits', () => {
+      const rawText = `
+        KARTU KELUARGA
+        Oni of) 2209100001
+        Waka No 3401057 . SIDOREJO
+        Kecamatan : LENDAH
+        Nama Kepala Keluarga : ARIFIN, S.PD
+        Alamat : GENTAN 2
+        RT/RW : 007/-
+        Kode Pos : 55663
+        | 1 | ARIFIN, SPD  sa010s1508700002 | LAKI-LAKI | WIRASWASTA
+        | 2 | SURATMI, SPD | 3401056501240001 | PEREMPUAN
+        | 3 | MUHAMMAD HAMID AMIRUDIN 3401053004000002 | LAKI-LAKI
+      `;
+
+      const result = parseOcrText(rawText, 'KARTU_KELUARGA');
+      expect(result.kategori).toBe('KARTU_KELUARGA');
+      expect(result.noKk).toBe('3401052209100001');
+      expect(result.namaAyah).toBe('ARIFIN, S.PD');
+      expect(result.namaIbu).toBe('SURATMI, SPD');
+      expect(result.namaLengkap).toBe('MUHAMMAD HAMID AMIRUDIN');
+      expect(result.nik).toBe('3401053004000002');
+      expect(result.jenisKelamin).toBe('IKHWAN');
+      expect(result.pekerjaanOrtu).toBe('WIRASWASTA');
+      expect(result.alamat).toContain('GENTAN 2');
     });
   });
 

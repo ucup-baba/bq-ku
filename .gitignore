@@ -24,3 +24,14 @@ yarn-error.log*
 
 # local env files
 .env*.local
+
+# ocr data cache
+*.traineddata
+
+# database & runtime data
+data/*.db
+data/*.db-*
+
+# uploads
+/public/uploads/*
+!/public/uploads/.gitkeep

@@ -15,12 +15,14 @@ import {
   Users,
   Plus,
   X,
-  Buildings
+  Buildings,
+  CheckCircle
 } from '@phosphor-icons/react';
 import { DocumentUploadBox } from './DocumentUploadBox';
-import { ExtractedDocumentData } from '@/lib/ocr/parser';
+import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
 import { useTheme } from '@/components/theme/ThemeProvider';
+import { toTitleCase } from '@/lib/utils/formatters';
 
 export interface SantriFormProps {
   initialData?: any;
@@ -64,6 +66,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showOcrBox, setShowOcrBox] = useState(true);
+  const [ocrAutoFilledNotice, setOcrAutoFilledNotice] = useState<string | null>(null);
 
   // Handle OCR extracted data injection
   const handleOcrDataExtracted = (extracted: ExtractedDocumentData, fileUrl: string, kategori: string) => {
@@ -71,7 +74,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     const newOcrTags: Record<string, boolean> = { ...ocrFilledFields };
 
     if (extracted.namaLengkap) {
-      updated.namaLengkap = extracted.namaLengkap;
+      updated.namaLengkap = toTitleCase(extracted.namaLengkap);
       newOcrTags.namaLengkap = true;
     }
     if (extracted.nik) {
@@ -90,21 +93,26 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       updated.tempatLahir = extracted.tempatLahir;
       newOcrTags.tempatLahir = true;
     }
-    if (extracted.tanggalLahir) {
-      updated.tanggalLahir = extracted.tanggalLahir;
+    const rawTgl = extracted.tanggalLahir || (extracted.nik ? extractBirthDateFromNik(extracted.nik) : null);
+    if (rawTgl) {
+      const normalizedTgl = parseIndonesianDate(rawTgl) || rawTgl;
+      updated.tanggalLahir = normalizedTgl;
       newOcrTags.tanggalLahir = true;
     }
     if (extracted.jenisKelamin) {
-      updated.jenisKelamin = extracted.jenisKelamin;
-      setGenderTheme(extracted.jenisKelamin);
+      let g = extracted.jenisKelamin;
+      if (/LAKI|IKHWAN|PRIA/i.test(g)) g = 'IKHWAN';
+      else if (/PEREMPUAN|AKHWAT|WANITA/i.test(g)) g = 'AKHWAT';
+      updated.jenisKelamin = g;
+      setGenderTheme(g);
       newOcrTags.jenisKelamin = true;
     }
     if (extracted.namaAyah) {
-      updated.namaAyah = extracted.namaAyah;
+      updated.namaAyah = toTitleCase(extracted.namaAyah);
       newOcrTags.namaAyah = true;
     }
     if (extracted.namaIbu) {
-      updated.namaIbu = extracted.namaIbu;
+      updated.namaIbu = toTitleCase(extracted.namaIbu);
       newOcrTags.namaIbu = true;
     }
     if (extracted.alamat) {
@@ -122,6 +130,16 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
 
     setFormData(updated);
     setOcrFilledFields(newOcrTags);
+
+    const categoryName = kategori.replace(/_/g, ' ');
+    setOcrAutoFilledNotice(`Formulir berhasil terisi otomatis dari berkas ${categoryName}! Kolom yang terisi ditandai badge "✨ Diisi dari OCR".`);
+
+    setTimeout(() => {
+      const section = document.getElementById('santri-form-section');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'fotoFormalUrl' | 'fotoProfilUrl') => {
@@ -221,13 +239,128 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         </div>
       </div>
 
-      {/* OCR Scanner Component */}
+      {/* Step 1: Input Nama Santri (Paling Utama) */}
+      <div className="bg-white dark:bg-slate-900 border-2 border-teal-500/30 rounded-3xl p-6 shadow-sm space-y-4 relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
+              1
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                Identitas Utama Santri (Nama)
+                {ocrFilledFields.namaLengkap && (
+                  <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400 bg-lime-100 dark:bg-lime-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    ✨ Cocok dengan KK
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Tulis nama santri di sini. Huruf besar / kecil bebas, otomatis rapi & menjadi kunci pencocokan otomatis Kartu Keluarga.
+              </p>
+            </div>
+          </div>
+          {formData.namaLengkap && (
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 rounded-full text-xs font-semibold text-teal-700 dark:text-teal-300">
+              <Sparkle size={14} weight="duotone" className="text-teal-500" />
+              <span>Target Pencocokan: {toTitleCase(formData.namaLengkap)}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+          <div className="sm:col-span-2">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+              <span>Nama Lengkap Calon Santri *</span>
+              <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
+                (Otomatis Title Case saat selesai mengetik)
+              </span>
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.namaLengkap}
+              onChange={(e) => setFormData({ ...formData, namaLengkap: e.target.value })}
+              onBlur={() => {
+                if (formData.namaLengkap) {
+                  setFormData((prev) => ({ ...prev, namaLengkap: toTitleCase(prev.namaLengkap) }));
+                }
+              }}
+              placeholder="Contoh: muhammad hanif"
+              className="w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none transition-all shadow-inner"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+              Nama Panggilan
+            </label>
+            <input
+              type="text"
+              value={formData.namaPanggilan}
+              onChange={(e) => setFormData({ ...formData, namaPanggilan: e.target.value })}
+              onBlur={() => {
+                if (formData.namaPanggilan) {
+                  setFormData((prev) => ({ ...prev, namaPanggilan: toTitleCase(prev.namaPanggilan) }));
+                }
+              }}
+              placeholder="Contoh: hanif"
+              className="w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none transition-all"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Step 2: Pindai Dokumen Kependudukan (OCR) */}
       {showOcrBox && (
-        <DocumentUploadBox onDataExtracted={handleOcrDataExtracted} />
+        <div className="space-y-3">
+          <div className="flex items-center justify-between px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-lg bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center font-bold text-xs">
+                2
+              </div>
+              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                Pindai Dokumen / Kartu Keluarga (Otomatis Cocokkan Data Sesuai Nama Santri)
+              </span>
+            </div>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Opsional</span>
+          </div>
+
+          <DocumentUploadBox 
+            onDataExtracted={handleOcrDataExtracted} 
+            targetNamaSantri={formData.namaLengkap} 
+          />
+        </div>
+      )}
+
+      {/* Auto-filled Notification Banner */}
+      {ocrAutoFilledNotice && (
+        <div className="p-4 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-transparent border-2 border-emerald-500 rounded-3xl flex items-center justify-between shadow-sm animate-pulse-once">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow">
+              <CheckCircle size={20} weight="bold" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                {ocrAutoFilledNotice}
+              </h4>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                Data di bawah sudah otomatis terisi. Anda dapat mengedit, menambah foto, atau menyimpannya langsung.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setOcrAutoFilledNotice(null)}
+            className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline px-3 py-1"
+          >
+            Tutup
+          </button>
+        </div>
       )}
 
       {/* Dual Photo Section */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+      <div id="santri-form-section" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm scroll-mt-6">
         <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 mb-1 flex items-center gap-2">
           <Camera size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
           Sistem Dua Foto Santri (Formal & Profil Kreatif)
@@ -283,45 +416,21 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         </div>
       </div>
 
-      {/* Bagian Identitas Santri */}
+      {/* Bagian Identitas Kependudukan Santri */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
-        <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <IdentificationCard size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
-          Data Identitas Santri
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+          <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <IdentificationCard size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
+            Data Kependudukan & Kelahiran
+          </h3>
+          {formData.namaLengkap && (
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Calon Santri: <strong className="text-teal-700 dark:text-teal-300">{formData.namaLengkap}</strong>
+            </span>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-              <span>Nama Lengkap *</span>
-              {ocrFilledFields.namaLengkap && (
-                <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400 flex items-center gap-1">
-                  ✨ Diisi dari OCR
-                </span>
-              )}
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.namaLengkap}
-              onChange={e => setFormData({ ...formData, namaLengkap: e.target.value })}
-              placeholder="Contoh: Muhammad Haidar Ali"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Nama Panggilan
-            </label>
-            <input
-              type="text"
-              value={formData.namaPanggilan}
-              onChange={e => setFormData({ ...formData, namaPanggilan: e.target.value })}
-              placeholder="Contoh: Haidar"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
-            />
-          </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
