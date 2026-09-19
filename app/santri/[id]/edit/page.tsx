@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation';
 import { getSantriById } from '@/lib/db/santri-repo';
 import { SantriForm } from '@/components/forms/SantriForm';
 
-export default async function SantriEditPage({ params }: { params: { id: string } }) {
-  const santri = getSantriById(params.id);
+export default async function SantriEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const santri = getSantriById(id);
 
   if (!santri) {
     notFound();

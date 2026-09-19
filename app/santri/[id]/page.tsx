@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation';
 import { getSantriById } from '@/lib/db/santri-repo';
 import { SantriPosterCv } from '@/components/profile/SantriPosterCv';
 
-export default async function SantriDetailPage({ params }: { params: { id: string } }) {
-  const santri = getSantriById(params.id);
+export default async function SantriDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const santri = getSantriById(id);
 
   if (!santri) {
     notFound();

@@ -29,8 +29,26 @@ if (fs.existsSync(schemaPath)) {
   db.exec(schema);
 }
 
+export function getDb() {
+  return db;
+}
+
+// Auto seed initial data if running in non-test and table is empty
+if (dbPath !== ':memory:' && process.env.NODE_ENV !== 'test') {
+  try {
+    const row = db.prepare('SELECT COUNT(*) as count FROM santri').get() as { count: number };
+    if (row.count === 0) {
+      // Lazy load seed to avoid circular dependency
+      import('./seed').then(m => m.runSeed()).catch(e => console.error('Seed trigger error:', e));
+    }
+  } catch (err) {
+    // Ignore if table not yet initialized
+  }
+}
+
 // Handle cleanup
 process.on('exit', () => db.close());
 process.on('SIGHUP', () => process.exit(128 + 1));
 process.on('SIGINT', () => process.exit(128 + 2));
 process.on('SIGTERM', () => process.exit(128 + 15));
+

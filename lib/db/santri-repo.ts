@@ -48,14 +48,17 @@ export type SantriDocument = {
 export type DocumentInput = {
   santriId: string;
   kategori: string;
-  nomorDokumen?: string;
+  nomorDokumen?: string | null;
   fileUrl: string;
-  rawOcrText?: string;
+  rawOcrText?: string | null;
   extractedFields?: any;
+  statusVerifikasi?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
+  catatanVerifikasi?: string | null;
 };
 
 export type SantriFilter = {
   query?: string;
+  q?: string;
   jenisKelamin?: 'IKHWAN' | 'AKHWAT';
   jenjang?: 'SMP' | 'SMA' | 'SMK' | 'ALUMNI';
 };
@@ -123,9 +126,10 @@ export function listSantri(filter?: SantriFilter): Santri[] {
   let query = 'SELECT * FROM santri WHERE 1=1';
   const params: any[] = [];
 
-  if (filter?.query) {
+  const searchQuery = filter?.query || filter?.q;
+  if (searchQuery) {
     query += ' AND (namaLengkap LIKE ? OR nik LIKE ?)';
-    params.push(`%${filter.query}%`, `%${filter.query}%`);
+    params.push(`%${searchQuery}%`, `%${searchQuery}%`);
   }
   if (filter?.jenisKelamin) {
     query += ' AND jenisKelamin = ?';
@@ -136,35 +140,26 @@ export function listSantri(filter?: SantriFilter): Santri[] {
     params.push(filter.jenjang);
   }
 
+  query += ' ORDER BY createdAt DESC';
   return db.prepare(query).all(...params) as Santri[];
 }
 
 export function updateSantri(id: string, input: Partial<SantriInput>): Santri {
-  const existing = db.prepare('SELECT * FROM santri WHERE id = ?').get(id) as Santri;
-  if (!existing) throw new Error('Santri not found');
+  const current = db.prepare('SELECT * FROM santri WHERE id = ?').get(id) as Santri | undefined;
+  if (!current) throw new Error('Santri not found');
 
-  const updatedAt = now();
-  let keahlianStr = existing.keahlian;
-  if (input.keahlian !== undefined) {
-    keahlianStr = Array.isArray(input.keahlian) ? JSON.stringify(input.keahlian) : input.keahlian;
-  }
-
-  const updated = {
-    ...existing,
+  const updated: Santri = {
+    ...current,
     ...input,
-    keahlian: keahlianStr,
-    updatedAt,
+    keahlian: Array.isArray(input.keahlian) ? JSON.stringify(input.keahlian) : (input.keahlian !== undefined ? input.keahlian : current.keahlian),
+    updatedAt: now(),
   };
 
-  const updateFields = Object.keys(updated)
-    .filter(k => k !== 'id')
-    .map(k => `${k} = @${k}`)
-    .join(', ');
+  const fields = Object.keys(updated).filter(k => k !== 'id');
+  const setClause = fields.map(f => `${f} = @${f}`).join(', ');
 
-  const stmt = db.prepare(`UPDATE santri SET ${updateFields} WHERE id = @id`);
-  stmt.run(updated);
-
-  return updated as Santri;
+  db.prepare(`UPDATE santri SET ${setClause} WHERE id = @id`).run(updated);
+  return updated;
 }
 
 export function deleteSantri(id: string): boolean {
@@ -175,7 +170,8 @@ export function deleteSantri(id: string): boolean {
 export function saveDocument(input: DocumentInput): SantriDocument {
   const id = generateId();
   const createdAt = now();
-  const statusVerifikasi = 'PENDING';
+  const statusVerifikasi = input.statusVerifikasi || 'PENDING';
+  const catatanVerifikasi = input.catatanVerifikasi ?? null;
 
   const extractedStr = typeof input.extractedFields === 'object' && input.extractedFields !== null
     ? JSON.stringify(input.extractedFields)
@@ -190,7 +186,7 @@ export function saveDocument(input: DocumentInput): SantriDocument {
     rawOcrText: input.rawOcrText ?? null,
     extractedFields: extractedStr ?? null,
     statusVerifikasi,
-    catatanVerifikasi: null,
+    catatanVerifikasi,
     createdAt
   };
 
