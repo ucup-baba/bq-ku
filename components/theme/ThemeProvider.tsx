@@ -18,12 +18,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function getGenderThemeColors(genderTheme: GenderTheme, isDark: boolean): string {
   if (genderTheme === 'IKHWAN') {
     return isDark 
-      ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-emerald-100' 
-      : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white';
+      ? 'bg-gradient-to-r from-teal-600 to-lime-500 text-white' 
+      : 'bg-gradient-to-r from-emerald-600 to-lime-500 text-white';
   } else {
     return isDark 
-      ? 'bg-gradient-to-r from-rose-500 to-pink-700 text-rose-100' 
-      : 'bg-gradient-to-r from-rose-400 to-pink-500 text-white';
+      ? 'bg-gradient-to-r from-teal-500 to-rose-400 text-white' 
+      : 'bg-gradient-to-r from-teal-500 to-rose-400 text-white';
   }
 }
 

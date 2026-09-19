@@ -11,3 +11,8 @@
 ## Test Results
 - ✅ All unit tests pass, including new ui/theme tests and existing db/ocr tests (`npm test`).
 - ✅ Build completes cleanly with no TypeScript/linting errors (`npm run build`).
+
+## Fix Round 1
+- Corrected brand colors for IKHWAN (Emerald Teal/Citron Lime) and AKHWAT (Mint Teal/Dusty Coral).
+- Fixed hydration mismatch by removing hardcoded dark class and adding suppressHydrationWarning.
+- Refactored DoodleBadgeTape and DoodleSpeechBubble into true inline SVG components.

@@ -43,36 +43,44 @@ export function DoodleSparkle({ className, size = 24, ...props }: DoodleProps & 
   );
 }
 
-export function DoodleBadgeTape({ className, text, ...props }: React.HTMLAttributes<HTMLDivElement> & { text: string }) {
+export function DoodleBadgeTape({ className, text, ...props }: DoodleProps & { text: string }) {
   return (
-    <div 
-      className={twMerge(
-        'inline-flex items-center justify-center px-4 py-1.5 transform -rotate-2',
-        'bg-yellow-200/90 text-yellow-900 font-medium text-sm shadow-sm',
-        'border border-yellow-300/50 backdrop-blur-sm',
-        className
-      )}
-      style={{
-        clipPath: 'polygon(2% 0, 98% 2%, 100% 98%, 0 100%)',
-        borderRadius: '2px 8px 3px 6px'
-      }}
+    <svg 
+      className={twMerge('w-48 h-12 text-yellow-200 drop-shadow-sm transform -rotate-2', className)} 
+      viewBox="0 0 200 50" 
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
-      <span className="font-writing transform rotate-1">{text}</span>
-    </div>
+      <path d="M5,5 L195,2 L198,48 L2,45 Z" fill="currentColor" opacity="0.9" />
+      <path d="M5,5 L0,15 L10,25 L0,35 L5,45" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M195,2 L200,12 L190,22 L198,32 L195,48" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+      <text x="100" y="28" textAnchor="middle" dominantBaseline="middle" fill="#713f12" className="font-writing text-xl font-medium">
+        {text}
+      </text>
+    </svg>
   );
 }
 
-export function DoodleSpeechBubble({ className, text, ...props }: React.HTMLAttributes<HTMLDivElement> & { text: string }) {
+export function DoodleSpeechBubble({ className, text, ...props }: DoodleProps & { text: string }) {
   return (
-    <div className={twMerge('relative inline-block', className)} {...props}>
-      <svg className="absolute -bottom-2 -left-2 w-6 h-6 text-emerald-100 dark:text-emerald-900/50" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M24 0 L0 24 L24 24 Z" />
-      </svg>
-      <div className="relative bg-emerald-100 dark:bg-emerald-900/50 text-emerald-900 dark:text-emerald-100 px-4 py-2 rounded-2xl rounded-bl-none shadow-sm border border-emerald-200 dark:border-emerald-800/50 font-writing text-lg">
+    <svg 
+      className={twMerge('w-48 h-20 text-emerald-100 dark:text-emerald-900/80 drop-shadow-sm', className)} 
+      viewBox="0 0 200 80"
+      preserveAspectRatio="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path 
+        d="M20,10 C20,5 25,0 30,0 L170,0 C175,0 180,5 180,10 L180,50 C180,55 175,60 170,60 L40,60 L15,80 L20,55 C15,55 10,50 10,45 L10,20 C10,15 15,10 20,10 Z" 
+        fill="currentColor" 
+        stroke="currentColor" 
+        strokeWidth="2" 
+      />
+      <text x="95" y="35" textAnchor="middle" dominantBaseline="middle" className="fill-emerald-900 dark:fill-emerald-100 font-writing text-xl">
         {text}
-      </div>
-    </div>
+      </text>
+    </svg>
   );
 }
 
