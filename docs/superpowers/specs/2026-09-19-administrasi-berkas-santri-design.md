@@ -20,9 +20,10 @@ Aplikasi ini menyederhanakan proses penerimaan dan administrasi data santri pada
 * **Storage Berkas:** Local upload storage dengan API serving statis yang aman (`/api/uploads` / `public/uploads`).
 * **Mesin OCR:** 
   - Engine Client/Server: Tesseract.js (didukung regex parser Bahasa Indonesia untuk dokumen Dukcapil & Ijazah Kemdikbud/Kemenag) dan opsional fallback Gemini Flash API untuk akurasi tinggi saat scan buram.
-* **Tipografi:** 
+* **Tipografi & Ikonografi:** 
   - Font Utama: *Plus Jakarta Sans* (Elegan, modern, keterbacaan tinggi).
   - Font Aksen Handwriting: *Caveat* / *Architects Daughter* (untuk stiker, status, dan kutipan santri).
+  - Ikon: **Phosphor Icons** (`@phosphor-icons/react` dengan style *duotone* & *bold*) dipadukan dengan **SVG Stiker Doodle** (hand-drawn arrows, starburst, badge tape).
 
 ---
 
