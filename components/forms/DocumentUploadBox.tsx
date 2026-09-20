@@ -28,6 +28,13 @@ export interface DocumentUploadBoxProps {
   tahunMasuk?: number | string;
   jenisKelamin?: string;
   className?: string;
+  uploadedDocuments?: Array<{
+    kategori: string;
+    fileUrl: string;
+    nomorDokumen?: string;
+    statusVerifikasi?: string;
+  }>;
+  onRemoveDocument?: (kategori: string) => void;
 }
 
 export const DOCUMENT_CATEGORIES = [
@@ -41,7 +48,15 @@ export const DOCUMENT_CATEGORIES = [
   { id: 'SERTIFIKAT_PRESTASI', label: 'Sertifikat Prestasi/Tahfidz', wajib: false, icon: Certificate, desc: 'Piagam lomba atau syahadah' },
 ];
 
-export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasuk, jenisKelamin, className = '' }: DocumentUploadBoxProps) {
+export function DocumentUploadBox({ 
+  onDataExtracted, 
+  targetNamaSantri, 
+  tahunMasuk, 
+  jenisKelamin, 
+  className = '',
+  uploadedDocuments = [],
+  onRemoveDocument
+}: DocumentUploadBoxProps) {
   const [selectedKategori, setSelectedKategori] = useState('KARTU_KELUARGA');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -50,12 +65,25 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [enhanceDocument, setEnhanceDocument] = useState<boolean>(true);
-  const [isModalPreviewOpen, setIsModalPreviewOpen] = useState<boolean>(false);
+  const [modalPreview, setModalPreview] = useState<{
+    isOpen: boolean;
+    title: string;
+    fileUrl: string;
+    fileType?: string;
+    badge?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    fileUrl: '',
+    fileType: undefined,
+    badge: undefined,
+  });
   const [compressionStats, setCompressionStats] = useState<{
     originalSize: number;
     compressedSize: number;
     savingsPercent: number;
   } | null>(null);
+
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -200,10 +228,14 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
     setUploadedUrl(null);
     setErrorMessage(null);
     setCompressionStats(null);
-    setIsModalPreviewOpen(false);
+    setModalPreview(prev => ({ ...prev, isOpen: false }));
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const mandatoryCategories = DOCUMENT_CATEGORIES.filter(c => c.wajib);
+  const uploadedMandatoryCount = mandatoryCategories.filter(c => uploadedDocuments.some(d => d.kategori === c.id)).length;
+  const mandatoryPercent = Math.round((uploadedMandatoryCount / mandatoryCategories.length) * 100);
+  const currentExistingDoc = uploadedDocuments.find(d => d.kategori === selectedKategori);
 
   return (
     <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm ${className}`}>
@@ -228,71 +260,206 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
         <DoodleSparkle className="text-lime-500" size={28} />
       </div>
 
+      {/* Upload Progress Bar */}
+      <div className="mb-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex-1 w-full">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+              <CheckCircle size={16} weight="fill" className="text-emerald-500" />
+              Kelengkapan Berkas Wajib:
+              <span className="text-emerald-600 dark:text-emerald-400 font-extrabold ml-1">
+                {uploadedMandatoryCount} dari {mandatoryCategories.length} Selesai ({mandatoryPercent}%)
+              </span>
+            </span>
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              Total Berkas: {uploadedDocuments.length}
+            </span>
+          </div>
+          {/* Progress bar */}
+          <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-500 rounded-full ${
+                mandatoryPercent === 100 
+                  ? 'bg-emerald-500' 
+                  : mandatoryPercent > 0 
+                  ? 'bg-teal-500' 
+                  : 'bg-slate-300 dark:bg-slate-600'
+              }`}
+              style={{ width: `${mandatoryPercent}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Kategori Berkas Selector */}
       <div className="mb-4">
         <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">
           Pilih Kategori Dokumen (atau biarkan otomatis dideteksi):
         </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {DOCUMENT_CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             const isSelected = selectedKategori === cat.id;
+            const isUploaded = uploadedDocuments.some(d => d.kategori === cat.id);
             return (
               <button
                 key={cat.id}
                 type="button"
-                onClick={() => setSelectedKategori(cat.id)}
-                className={`flex flex-col items-start p-2.5 rounded-2xl border text-left transition-all ${
+                onClick={() => {
+                  setSelectedKategori(cat.id);
+                  if (selectedFile) {
+                    handleReset();
+                  }
+                }}
+                className={`relative flex flex-col items-start p-3 rounded-2xl border text-left transition-all ${
                   isSelected
-                    ? 'bg-teal-50/80 dark:bg-teal-950/50 border-teal-500 text-teal-900 dark:text-teal-200 shadow-sm'
+                    ? isUploaded
+                      ? 'bg-emerald-50/90 dark:bg-emerald-950/60 border-emerald-500 text-emerald-950 dark:text-emerald-100 shadow-sm ring-2 ring-emerald-500/20'
+                      : 'bg-teal-50/80 dark:bg-teal-950/50 border-teal-500 text-teal-900 dark:text-teal-200 shadow-sm ring-2 ring-teal-500/20'
+                    : isUploaded
+                    ? 'bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60 text-slate-700 dark:text-slate-200 hover:border-emerald-400'
                     : 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
                 }`}
               >
-                <div className="flex items-center justify-between w-full mb-1">
-                  <Icon size={18} weight={isSelected ? 'duotone' : 'regular'} className={isSelected ? 'text-teal-600 dark:text-teal-400' : 'text-slate-400'} />
-                  {cat.wajib && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400">
+                <div className="flex items-center justify-between w-full mb-1.5">
+                  <div className={`p-1 rounded-lg ${isUploaded ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400' : isSelected ? 'bg-teal-100 dark:bg-teal-900/60 text-teal-600 dark:text-teal-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                    <Icon size={18} weight={isSelected || isUploaded ? 'duotone' : 'regular'} />
+                  </div>
+                  
+                  {isUploaded ? (
+                    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-700">
+                      <CheckCircle size={11} weight="fill" /> Terunggah
+                    </span>
+                  ) : cat.wajib ? (
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
                       Wajib
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                      Opsional
                     </span>
                   )}
                 </div>
                 <span className="text-xs font-bold line-clamp-1">{cat.label}</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1">{cat.desc}</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{cat.desc}</span>
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Dropzone Area */}
+      {/* Dropzone Area or Existing Document Card */}
       {!selectedFile ? (
-        <div 
-          onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 rounded-3xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50/40 dark:bg-slate-800/20"
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          <div className="w-14 h-14 rounded-2xl bg-teal-100/60 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center mb-3">
-            <UploadSimple size={28} weight="duotone" />
+        currentExistingDoc ? (
+          /* Card: Document already attached for selected category */
+          <div className="p-5 rounded-3xl bg-emerald-50/50 dark:bg-emerald-950/20 border-2 border-emerald-500/40 dark:border-emerald-700/50 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div className="flex items-center gap-3.5 w-full sm:w-auto">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-300/50 dark:border-emerald-700/50">
+                <CheckCircle size={28} weight="duotone" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full border border-emerald-300/60 dark:border-emerald-700">
+                    ✓ Berkas Sudah Terlampir
+                  </span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    Kategori: {DOCUMENT_CATEGORIES.find(c => c.id === selectedKategori)?.label}
+                  </span>
+                </div>
+                <p className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate mt-1">
+                  {currentExistingDoc.fileUrl.split('/').pop() || 'Dokumen Terunggah'}
+                </p>
+                {currentExistingDoc.nomorDokumen && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    No Dokumen: <span className="font-semibold text-slate-700 dark:text-slate-300">{currentExistingDoc.nomorDokumen}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+              <button
+                type="button"
+                onClick={() => {
+                  const catLabel = DOCUMENT_CATEGORIES.find(c => c.id === selectedKategori)?.label || selectedKategori;
+                  setModalPreview({
+                    isOpen: true,
+                    title: `Berkas: ${catLabel}`,
+                    fileUrl: currentExistingDoc.fileUrl,
+                    fileType: currentExistingDoc.fileUrl.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image',
+                    badge: 'Sudah Terunggah',
+                  });
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
+              >
+                <Eye size={15} weight="bold" />
+                Pratinjau Pop-up
+              </button>
+
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:border-teal-500 text-xs font-semibold rounded-xl transition-colors shadow-sm cursor-pointer"
+              >
+                <UploadSimple size={15} weight="bold" />
+                Ganti File Baru
+              </button>
+
+              {onRemoveDocument && (
+                <button
+                  type="button"
+                  onClick={() => onRemoveDocument(selectedKategori)}
+                  className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition-colors cursor-pointer"
+                  title="Hapus berkas ini"
+                >
+                  <Trash size={16} />
+                </button>
+              )}
+            </div>
           </div>
-          <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">
-            Klik atau Tarik file foto berkas ke sini
-          </p>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
-            Mendukung file JPG, PNG, atau scan PDF. Dokumen langsung dibaca dan otomatis mengisi data santri.
-          </p>
-        </div>
+        ) : (
+          /* Empty Dropzone */
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 rounded-3xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50/40 dark:bg-slate-800/20"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <div className="w-14 h-14 rounded-2xl bg-teal-100/60 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center mb-3">
+              <UploadSimple size={28} weight="duotone" />
+            </div>
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">
+              Klik atau Tarik file foto berkas ke sini
+            </p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+              Mendukung file JPG, PNG, atau scan PDF. Dokumen langsung dibaca dan otomatis mengisi data santri.
+            </p>
+          </div>
+        )
       ) : (
         <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             {filePreview && (
               <div 
-                onClick={() => setIsModalPreviewOpen(true)}
+                onClick={() => setModalPreview({
+                  isOpen: true,
+                  title: selectedFile.name,
+                  fileUrl: uploadedUrl || filePreview || '',
+                  fileType: selectedFile.type || (selectedFile.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image'),
+                  badge: uploadedUrl ? 'Tersimpan di Cloud' : 'Draft Berkas',
+                })}
                 className="relative w-28 h-28 rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 flex-shrink-0 bg-slate-200 dark:bg-slate-800 cursor-pointer group shadow-sm hover:border-teal-500 transition-all"
                 title="Klik untuk melihat pratinjau Pop-up"
               >
@@ -347,7 +514,13 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalPreviewOpen(true)}
+                  onClick={() => setModalPreview({
+                    isOpen: true,
+                    title: selectedFile.name,
+                    fileUrl: uploadedUrl || filePreview || '',
+                    fileType: selectedFile.type || (selectedFile.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image'),
+                    badge: uploadedUrl ? 'Tersimpan di Cloud' : 'Draft Berkas',
+                  })}
                   className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                 >
                   <Eye size={15} weight="bold" className="text-teal-500" />
@@ -359,7 +532,7 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
                     type="button"
                     disabled={isScanning}
                     onClick={handleStartOcr}
-                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all disabled:opacity-50 cursor-pointer"
                   >
                     <Scan size={16} weight="bold" className={isScanning ? 'animate-spin' : ''} />
                     {isScanning ? 'Membaca Tulisan Dokumen (OCR)...' : 'Scan & Isi Otomatis'}
@@ -368,7 +541,7 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
                   <button
                     type="button"
                     onClick={handleApplyToForm}
-                    className="flex items-center gap-2 px-4 py-2 bg-lime-600 hover:bg-lime-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+                    className="flex items-center gap-2 px-4 py-2 bg-lime-600 hover:bg-lime-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer"
                   >
                     <CheckCircle size={16} weight="bold" />
                     Terapkan Ulang ke Formulir
@@ -378,12 +551,11 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors cursor-pointer"
                 >
                   <Trash size={14} />
                   Ganti File
                 </button>
-
               </div>
             </div>
           </div>
@@ -467,17 +639,85 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
         </div>
       )}
 
-      {/* Pop-up Document Preview Modal */}
-      {selectedFile && (
-        <DocumentPreviewModal
-          isOpen={isModalPreviewOpen}
-          onClose={() => setIsModalPreviewOpen(false)}
-          title={`${selectedFile.name} (${selectedKategori})`}
-          fileUrl={uploadedUrl || filePreview || ''}
-          fileType={selectedFile.type || (selectedFile.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image')}
-          badge={uploadedUrl ? 'Tersimpan di Cloud' : 'Draft Berkas'}
-        />
+      {/* Attached Documents List */}
+      {uploadedDocuments.length > 0 && (
+        <div className="mt-6 pt-5 border-t border-slate-200 dark:border-slate-800">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+              <CheckCircle size={15} weight="fill" className="text-emerald-500" />
+              Daftar Berkas Terlampir ({uploadedDocuments.length})
+            </h4>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+              Klik &apos;Lihat&apos; untuk membuka pratinjau pop-up
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {uploadedDocuments.map((doc, idx) => {
+              const catMeta = DOCUMENT_CATEGORIES.find(c => c.id === doc.kategori);
+              const Icon = catMeta?.icon || FileText;
+              return (
+                <div 
+                  key={`${doc.kategori}-${idx}`}
+                  className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 hover:border-teal-400 transition-colors"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1 mr-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                      <Icon size={16} weight="duotone" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {catMeta?.label || doc.kategori}
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                        {doc.nomorDokumen ? `No: ${doc.nomorDokumen}` : 'Siap disimpan'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setModalPreview({
+                        isOpen: true,
+                        title: catMeta?.label || doc.kategori,
+                        fileUrl: doc.fileUrl,
+                        fileType: doc.fileUrl.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image',
+                        badge: 'Berkas Terlampir',
+                      })}
+                      className="px-2.5 py-1 text-xs font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 rounded-lg flex items-center gap-1 border border-teal-200 dark:border-teal-800/80 transition-colors cursor-pointer"
+                    >
+                      <Eye size={12} weight="bold" />
+                      Lihat
+                    </button>
+
+                    {onRemoveDocument && (
+                      <button
+                        type="button"
+                        onClick={() => onRemoveDocument(doc.kategori)}
+                        className="p-1 text-slate-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+                        title="Hapus dokumen ini"
+                      >
+                        <Trash size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
+
+      {/* Pop-up Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={modalPreview.isOpen}
+        onClose={() => setModalPreview(prev => ({ ...prev, isOpen: false }))}
+        title={modalPreview.title}
+        fileUrl={modalPreview.fileUrl}
+        fileType={modalPreview.fileType}
+        badge={modalPreview.badge}
+      />
     </div>
   );
 }

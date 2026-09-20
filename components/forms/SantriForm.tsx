@@ -76,7 +76,18 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     rawOcrText?: string;
     extractedFields?: any;
     statusVerifikasi?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
-  }>>([]);
+  }>>(() => {
+    if (initialData?.documents && Array.isArray(initialData.documents)) {
+      return initialData.documents.map((d: any) => ({
+        kategori: d.kategori,
+        fileUrl: d.fileUrl,
+        nomorDokumen: d.nomorDokumen || undefined,
+        statusVerifikasi: (d.statusVerifikasi as any) || 'VERIFIED',
+      }));
+    }
+    return [];
+  });
+
 
   // Handle OCR extracted data injection
   const handleOcrDataExtracted = (extracted: ExtractedDocumentData, fileUrl: string, kategori: string) => {
@@ -407,9 +418,14 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
             targetNamaSantri={formData.namaLengkap} 
             tahunMasuk={formData.tahunMasuk}
             jenisKelamin={formData.jenisKelamin}
+            uploadedDocuments={pendingDocuments}
+            onRemoveDocument={(kategori) => {
+              setPendingDocuments(prev => prev.filter(d => d.kategori !== kategori));
+            }}
           />
         </div>
       )}
+
 
       {/* Auto-filled Notification Banner */}
       {ocrAutoFilledNotice && (
