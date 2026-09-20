@@ -14,6 +14,7 @@ export async function processGeminiVisionOcr(
     let mimeType = 'image/png';
     if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
     else if (ext === '.webp') mimeType = 'image/webp';
+    else if (ext === '.pdf') mimeType = 'application/pdf';
 
     const base64Data = fs.readFileSync(imagePath).toString('base64');
 

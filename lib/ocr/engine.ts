@@ -27,8 +27,27 @@ export async function processOcrImage(
       tempFilesToCleanup.push(tempPath);
       imagePathToRecognize = tempPath;
     } else if (typeof imageBufferOrUrl === 'string') {
-      // Check if it's mock raw text (e.g. from tests)
-      if (
+      if (imageBufferOrUrl.startsWith('http://') || imageBufferOrUrl.startsWith('https://')) {
+        try {
+          const resp = await fetch(imageBufferOrUrl);
+          if (resp.ok) {
+            const arrBuf = await resp.arrayBuffer();
+            const buf = Buffer.from(arrBuf);
+            const urlPath = new URL(imageBufferOrUrl).pathname;
+            const ext = path.extname(urlPath).toLowerCase() || '.jpg';
+            const tempDir = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'public', 'uploads');
+            if (!fs.existsSync(tempDir)) {
+              try { fs.mkdirSync(tempDir, { recursive: true }); } catch (e) {}
+            }
+            const tempPath = path.join(tempDir, `remote_ocr_${Date.now()}${ext}`);
+            fs.writeFileSync(tempPath, buf);
+            tempFilesToCleanup.push(tempPath);
+            imagePathToRecognize = tempPath;
+          }
+        } catch (fetchErr) {
+          console.error('Failed to download remote file for OCR:', fetchErr);
+        }
+      } else if (
         imageBufferOrUrl.includes('\n') || 
         imageBufferOrUrl.startsWith('KARTU') || 
         imageBufferOrUrl.startsWith('NIK') || 
@@ -38,7 +57,7 @@ export async function processOcrImage(
       ) {
         rawText = imageBufferOrUrl;
       } else {
-        // Resolve file path
+        // Resolve local file path
         let resolvedPath = imageBufferOrUrl;
         if (resolvedPath.startsWith('/uploads/')) {
           resolvedPath = path.join(process.cwd(), 'public', resolvedPath);
@@ -49,57 +68,14 @@ export async function processOcrImage(
         }
 
         if (fs.existsSync(resolvedPath)) {
-          const ext = path.extname(resolvedPath).toLowerCase();
-          if (ext === '.pdf') {
-            const outputDir = path.join(process.cwd(), 'public', 'uploads');
-            // Try pdftotext first (for searchable / digital PDFs)
-            try {
-              const { stdout: directText } = await execFileAsync('pdftotext', [resolvedPath, '-']);
-              if (directText && directText.trim().length > 50) {
-                rawText = directText;
-              }
-            } catch (e) {
-              // ignore
-            }
-
-            // If not digital PDF or no text found, render with pdftoppm
-            if (!rawText) {
-              try {
-                const prefix = path.join(outputDir, `extracted_pdf_${Date.now()}`);
-                await execFileAsync('pdftoppm', ['-png', '-r', '300', '-f', '1', '-l', '1', resolvedPath, prefix]);
-                const imgPath = `${prefix}-1.png`;
-                if (fs.existsSync(imgPath)) {
-                  imagePathToRecognize = imgPath;
-                  tempFilesToCleanup.push(imgPath);
-                }
-              } catch (ppmErr) {
-                console.error('pdftoppm extraction failed, falling back to python3:', ppmErr);
-                const scriptPath = path.join(process.cwd(), 'lib', 'ocr', 'extract_pdf.py');
-                try {
-                  const { stdout } = await execFileAsync('python3', [scriptPath, resolvedPath, outputDir]);
-                  const res = JSON.parse(stdout.trim());
-                  if (res.type === 'text' && res.text) {
-                    rawText = res.text;
-                  } else if (res.type === 'images' && res.images && res.images.length > 0) {
-                    imagePathToRecognize = res.images[0];
-                    tempFilesToCleanup.push(res.images[0]);
-                  }
-                } catch (pyErr) {
-                  console.error('PDF extraction failed completely:', pyErr);
-                }
-              }
-            }
-          } else {
-            imagePathToRecognize = resolvedPath;
-          }
+          imagePathToRecognize = resolvedPath;
         } else {
-          // If file not found, use string as-is
           rawText = imageBufferOrUrl;
         }
       }
     }
 
-    // 1. Try Gemini AI Vision OCR first for high-accuracy Indonesian document extraction
+    // 1. Try Gemini AI Vision OCR first for high-accuracy Indonesian document extraction (supports Images & PDF)
     if (imagePathToRecognize && fs.existsSync(imagePathToRecognize)) {
       try {
         const geminiResult = await processGeminiVisionOcr(imagePathToRecognize, kategori);
@@ -107,11 +83,54 @@ export async function processOcrImage(
           return geminiResult;
         }
       } catch (geminiErr) {
-        console.warn('Gemini OCR failed, falling back to local Tesseract:', geminiErr);
+        console.warn('Gemini OCR failed, falling back to local OCR:', geminiErr);
       }
     }
 
-    // 2. Fallback to Tesseract OCR via standalone runner
+    // 2. Fallback for PDF if Gemini didn't return data: pdftotext or render with pdftoppm
+    if (imagePathToRecognize && fs.existsSync(imagePathToRecognize)) {
+      const ext = path.extname(imagePathToRecognize).toLowerCase();
+      if (ext === '.pdf') {
+        const outputDir = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'public', 'uploads');
+        try {
+          const { stdout: directText } = await execFileAsync('pdftotext', [imagePathToRecognize, '-']);
+          if (directText && directText.trim().length > 50) {
+            rawText = directText;
+          }
+        } catch (e) {
+          // ignore
+        }
+
+        if (!rawText) {
+          try {
+            const prefix = path.join(outputDir, `extracted_pdf_${Date.now()}`);
+            await execFileAsync('pdftoppm', ['-png', '-r', '300', '-f', '1', '-l', '1', imagePathToRecognize, prefix]);
+            const imgPath = `${prefix}-1.png`;
+            if (fs.existsSync(imgPath)) {
+              imagePathToRecognize = imgPath;
+              tempFilesToCleanup.push(imgPath);
+            }
+          } catch (ppmErr) {
+            console.error('pdftoppm extraction failed, falling back to python3:', ppmErr);
+            const scriptPath = path.join(process.cwd(), 'lib', 'ocr', 'extract_pdf.py');
+            try {
+              const { stdout } = await execFileAsync('python3', [scriptPath, imagePathToRecognize, outputDir]);
+              const res = JSON.parse(stdout.trim());
+              if (res.type === 'text' && res.text) {
+                rawText = res.text;
+              } else if (res.type === 'images' && res.images && res.images.length > 0) {
+                imagePathToRecognize = res.images[0];
+                tempFilesToCleanup.push(res.images[0]);
+              }
+            } catch (pyErr) {
+              console.error('PDF extraction failed completely:', pyErr);
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Fallback to Tesseract OCR via standalone runner
     if (!rawText && imagePathToRecognize && fs.existsSync(imagePathToRecognize)) {
       const runnerScript = path.join(process.cwd(), 'lib', 'ocr', 'run_ocr.js');
       try {
