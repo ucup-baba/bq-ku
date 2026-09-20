@@ -17,12 +17,24 @@ export async function processOcrImage(
 
   try {
     if (Buffer.isBuffer(imageBufferOrUrl)) {
-      // Write buffer to temporary file for Tesseract/Python processing
-      const tempUploadDir = path.join(process.cwd(), 'public', 'uploads');
-      if (!fs.existsSync(tempUploadDir)) {
-        fs.mkdirSync(tempUploadDir, { recursive: true });
+      let ext = '.png';
+      if (imageBufferOrUrl.length >= 4) {
+        if (imageBufferOrUrl.subarray(0, 4).toString() === '%PDF') {
+          ext = '.pdf';
+        } else if (imageBufferOrUrl[0] === 0xff && imageBufferOrUrl[1] === 0xd8) {
+          ext = '.jpg';
+        } else if (imageBufferOrUrl.subarray(0, 4).toString('ascii') === '\x89PNG') {
+          ext = '.png';
+        } else if (imageBufferOrUrl.length >= 12 && imageBufferOrUrl.subarray(8, 12).toString('ascii') === 'WEBP') {
+          ext = '.webp';
+        }
       }
-      const tempPath = path.join(tempUploadDir, `ocr_temp_${Date.now()}.png`);
+
+      const tempUploadDir = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'public', 'uploads');
+      if (!fs.existsSync(tempUploadDir)) {
+        try { fs.mkdirSync(tempUploadDir, { recursive: true }); } catch (e) {}
+      }
+      const tempPath = path.join(tempUploadDir, `ocr_temp_${Date.now()}${ext}`);
       fs.writeFileSync(tempPath, imageBufferOrUrl);
       tempFilesToCleanup.push(tempPath);
       imagePathToRecognize = tempPath;

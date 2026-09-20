@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { 
   User, 
@@ -18,9 +18,13 @@ import {
   Phone,
   ArrowLeft,
   IdentificationCard,
-  DownloadSimple
+  DownloadSimple,
+  Eye,
+  ArrowSquareOut
 } from '@phosphor-icons/react';
 import { DoodleArrow, DoodleBadgeTape, DoodleSparkle, DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
+import { DocumentPreviewModal } from '@/components/ui/DocumentPreviewModal';
+
 
 export interface SantriPosterCvProps {
   santri: {
@@ -61,6 +65,19 @@ export interface SantriPosterCvProps {
 export function SantriPosterCv({ santri }: SantriPosterCvProps) {
   const posterRef = useRef<HTMLDivElement>(null);
   const isIkhwan = santri.jenisKelamin === 'IKHWAN';
+
+  const [activePreview, setActivePreview] = useState<{
+    isOpen: boolean;
+    title: string;
+    fileUrl: string;
+    badge?: string;
+  }>({
+    isOpen: false,
+    title: '',
+    fileUrl: '',
+    badge: '',
+  });
+
 
   const skillsList = santri.keahlian 
     ? (typeof santri.keahlian === 'string' ? JSON.parse(santri.keahlian) : santri.keahlian)
@@ -358,9 +375,19 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
               return (
                 <div
                   key={reqCat.key}
-                  className={`p-3 rounded-2xl border text-xs flex flex-col justify-between ${
+                  onClick={() => {
+                    if (uploadedDoc?.fileUrl) {
+                      setActivePreview({
+                        isOpen: true,
+                        title: `${reqCat.label} - ${santri.namaLengkap}`,
+                        fileUrl: uploadedDoc.fileUrl,
+                        badge: 'Terverifikasi'
+                      });
+                    }
+                  }}
+                  className={`p-3 rounded-2xl border text-xs flex flex-col justify-between transition-all ${
                     isUploaded 
-                      ? 'bg-teal-950/40 border-teal-500/50 text-teal-200' 
+                      ? 'bg-teal-950/40 border-teal-500/50 text-teal-200 cursor-pointer hover:border-teal-400 hover:bg-teal-900/30 hover:shadow-lg shadow-teal-950/50' 
                       : 'bg-white/5 border-white/10 text-slate-400'
                   }`}
                 >
@@ -376,14 +403,33 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
                     {isUploaded ? 'Terverifikasi' : 'Belum Ada'}
                   </span>
                   {uploadedDoc?.fileUrl && (
-                    <a
-                      href={uploadedDoc.fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-2 text-[10px] text-teal-300 underline flex items-center gap-1 hover:text-white"
-                    >
-                      <DownloadSimple size={12} /> Buka Berkas
-                    </a>
+                    <div className="mt-2.5 pt-2 border-t border-teal-500/20 flex items-center justify-between gap-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActivePreview({
+                            isOpen: true,
+                            title: `${reqCat.label} - ${santri.namaLengkap}`,
+                            fileUrl: uploadedDoc.fileUrl,
+                            badge: 'Terverifikasi'
+                          });
+                        }}
+                        className="text-[11px] font-semibold text-teal-300 hover:text-white flex items-center gap-1.5 py-1 px-2.5 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 transition-colors cursor-pointer"
+                      >
+                        <Eye size={13} weight="bold" /> Pratinjau
+                      </button>
+                      <a
+                        href={uploadedDoc.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Buka Dokumen di Tab Baru"
+                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                      >
+                        <ArrowSquareOut size={14} />
+                      </a>
+                    </div>
                   )}
                 </div>
               );
@@ -397,6 +443,16 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
           <span className="font-mono">NIK: {santri.nik} • ID: {santri.id}</span>
         </div>
       </div>
+
+      {/* Pop-up Document Preview Modal */}
+      <DocumentPreviewModal
+        isOpen={activePreview.isOpen}
+        onClose={() => setActivePreview((prev) => ({ ...prev, isOpen: false }))}
+        title={activePreview.title}
+        fileUrl={activePreview.fileUrl}
+        badge={activePreview.badge}
+      />
     </div>
   );
 }
+

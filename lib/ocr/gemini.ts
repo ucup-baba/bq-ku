@@ -50,11 +50,12 @@ Tugas Anda:
 }
 Catatan Khusus Kartu Keluarga (KK):
 - "noKk" adalah 16 digit nomor KK di bagian atas dokumen.
-- "namaAyah" adalah Kepala Keluarga pada dokumen KK tersebut.
-- "namaIbu" adalah Istri / Ibu Kandung pada dokumen KK tersebut (wajib terisi).
+- "namaAyah": Perhatikan kolom 'Nama Orang Tua (Ayah / Ibu)' di tabel bawah untuk calon santri. Tulis nama AYAH KANDUNG calon santri (BUKAN otomatis nama Kepala Keluarga jika kepala keluarganya wanita/Ibu). Jika ayah sudah meninggal (misal status perkawinan ibu CERAI MATI atau ada keterangan almarhum), tulis namanya (contoh: 'Dwi Sriyana (Alm.)') dan set "statusSosial": "YATIM".
+- "namaIbu": Tulis nama IBU KANDUNG calon santri (lihat kolom 'Nama Ibu', contoh: 'Siti Komariyah'). JANGAN PERNAH mengisi namaAyah sama dengan namaIbu jika kepala keluarganya adalah seorang Ibu.
+- "statusSosial": "REGULER" | "YATIM" | "PIATU" | "YATIM_PIATU" | "DHUAFA".
 - Daftarkan SELURUH anggota keluarga pada tabel KK ke dalam array "anggotaKeluarga" secara lengkap dengan NIK, TTL, gender, dan status hubungan.
 - "tanggalLahir" SEMUA anggota keluarga wajib berformat YYYY-MM-DD agar dapat dibaca oleh input date browser.
-- "namaLengkap" dan "nik" di root default-kan ke salah satu anak usia sekolah.`;
+- "namaLengkap" dan "nik" di root default-kan ke calon santri (anak usia sekolah, contoh: Rahmat Kurniawan).`;
 
     const candidateModels = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-flash-latest'];
     let candidate: string | null = null;
@@ -129,6 +130,39 @@ Catatan Khusus Kartu Keluarga (KK):
     const finalTanggalLahir = normalizeDate(parsed.tanggalLahir, parsed.nik);
     const finalGender = normalizeGender(parsed.jenisKelamin);
 
+    let finalNamaAyah = parsed.namaAyah;
+    let finalNamaIbu = parsed.namaIbu;
+
+    if (!finalNamaAyah && kepala && kepala.gender === 'IKHWAN') {
+      finalNamaAyah = kepala.nama;
+    }
+
+    if (!finalNamaIbu) {
+      if (istri) {
+        finalNamaIbu = istri.nama;
+      } else if (kepala && kepala.gender === 'AKHWAT') {
+        finalNamaIbu = kepala.nama;
+      }
+    }
+
+    // Hindari namaAyah sama dengan namaIbu
+    if (finalNamaAyah && finalNamaIbu && finalNamaAyah.trim().toLowerCase() === finalNamaIbu.trim().toLowerCase()) {
+      if (kepala && kepala.gender === 'AKHWAT') {
+        finalNamaAyah = undefined;
+      }
+    }
+
+    // Deteksi status yatim jika ayah almarhum atau cerai mati
+    let finalStatusSosial = parsed.statusSosial;
+    if (finalNamaAyah && (finalNamaAyah.includes('(Alm') || candidate.includes('CERAI MATI'))) {
+      finalStatusSosial = 'YATIM';
+      if (!finalNamaAyah.includes('(Alm.)') && !finalNamaAyah.includes('(Alm)')) {
+        finalNamaAyah = `${finalNamaAyah} (Alm.)`;
+      }
+    } else if (!finalNamaAyah && candidate.includes('CERAI MATI')) {
+      finalStatusSosial = 'YATIM';
+    }
+
     const data: ExtractedDocumentData = {
       kategori: parsed.kategori || kategoriHint,
       noKk: parsed.noKk || undefined,
@@ -138,8 +172,9 @@ Catatan Khusus Kartu Keluarga (KK):
       tempatLahir: parsed.tempatLahir || undefined,
       tanggalLahir: finalTanggalLahir,
       jenisKelamin: finalGender,
-      namaAyah: kepala?.nama || parsed.namaAyah || undefined,
-      namaIbu: istri?.nama || parsed.namaIbu || undefined,
+      namaAyah: finalNamaAyah || undefined,
+      namaIbu: finalNamaIbu || undefined,
+      statusSosial: finalStatusSosial || undefined,
       pekerjaanOrtu: parsed.pekerjaanOrtu || undefined,
       alamat: parsed.alamat || undefined,
       asalSekolahSebelumnya: parsed.asalSekolahSebelumnya || undefined,

@@ -12,11 +12,15 @@ import {
   Trash,
   IdentificationCard,
   GraduationCap,
-  Certificate
+  Certificate,
+  Eye,
+  FilePdf
 } from '@phosphor-icons/react';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleBadgeTape, DoodleSparkle } from '@/components/ui/DoodleStickers';
 import { matchBestFamilyMember } from '@/lib/utils/formatters';
+import { DocumentPreviewModal } from '@/components/ui/DocumentPreviewModal';
+
 
 export interface DocumentUploadBoxProps {
   onDataExtracted?: (data: ExtractedDocumentData, fileUrl: string, kategori: string) => void;
@@ -46,6 +50,7 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [enhanceDocument, setEnhanceDocument] = useState<boolean>(true);
+  const [isModalPreviewOpen, setIsModalPreviewOpen] = useState<boolean>(false);
   const [compressionStats, setCompressionStats] = useState<{
     originalSize: number;
     compressedSize: number;
@@ -62,17 +67,21 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
     setErrorMessage(null);
     setExtractedResult(null);
 
-    // Create preview for images
+    // Create preview for images or PDF
     if (file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = () => {
         setFilePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+      const blobUrl = URL.createObjectURL(file);
+      setFilePreview(blobUrl);
     } else {
       setFilePreview(null);
     }
   };
+
 
   const handleStartOcr = async () => {
     if (!selectedFile) {
@@ -191,8 +200,10 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
     setUploadedUrl(null);
     setErrorMessage(null);
     setCompressionStats(null);
+    setIsModalPreviewOpen(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
 
   return (
     <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm ${className}`}>
@@ -280,8 +291,22 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
         <div className="bg-slate-50 dark:bg-slate-800/40 rounded-3xl p-4 border border-slate-200 dark:border-slate-700">
           <div className="flex flex-col sm:flex-row gap-4 items-center">
             {filePreview && (
-              <div className="relative w-28 h-28 rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 flex-shrink-0 bg-slate-200 dark:bg-slate-800">
-                <img src={filePreview} alt="Preview" className="w-full h-full object-cover" />
+              <div 
+                onClick={() => setIsModalPreviewOpen(true)}
+                className="relative w-28 h-28 rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 flex-shrink-0 bg-slate-200 dark:bg-slate-800 cursor-pointer group shadow-sm hover:border-teal-500 transition-all"
+                title="Klik untuk melihat pratinjau Pop-up"
+              >
+                {selectedFile.type.startsWith('image/') ? (
+                  <img src={filePreview} alt="Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 text-slate-700 dark:text-slate-300">
+                    <FilePdf size={36} weight="fill" className="text-red-500 mb-1" />
+                    <span className="text-[10px] font-bold text-center uppercase tracking-wider">Preview PDF</span>
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[11px] font-bold gap-1 transition-opacity">
+                  <Eye size={16} weight="bold" /> Pop-up
+                </div>
                 {isScanning && (
                   <div className="absolute inset-0 bg-teal-500/20 flex items-center justify-center">
                     <div className="w-full h-1 bg-teal-400 animate-pulse shadow-lg" />
@@ -320,6 +345,15 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
               </div>
 
               <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModalPreviewOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <Eye size={15} weight="bold" className="text-teal-500" />
+                  Pratinjau Pop-up
+                </button>
+
                 {!extractedResult ? (
                   <button
                     type="button"
@@ -349,6 +383,7 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
                   <Trash size={14} />
                   Ganti File
                 </button>
+
               </div>
             </div>
           </div>
@@ -431,6 +466,19 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasu
           )}
         </div>
       )}
+
+      {/* Pop-up Document Preview Modal */}
+      {selectedFile && (
+        <DocumentPreviewModal
+          isOpen={isModalPreviewOpen}
+          onClose={() => setIsModalPreviewOpen(false)}
+          title={`${selectedFile.name} (${selectedKategori})`}
+          fileUrl={uploadedUrl || filePreview || ''}
+          fileType={selectedFile.type || (selectedFile.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image')}
+          badge={uploadedUrl ? 'Tersimpan di Cloud' : 'Draft Berkas'}
+        />
+      )}
     </div>
   );
 }
+

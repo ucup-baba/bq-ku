@@ -69,11 +69,36 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showOcrBox, setShowOcrBox] = useState(true);
   const [ocrAutoFilledNotice, setOcrAutoFilledNotice] = useState<string | null>(null);
+  const [pendingDocuments, setPendingDocuments] = useState<Array<{
+    kategori: string;
+    fileUrl: string;
+    nomorDokumen?: string;
+    rawOcrText?: string;
+    extractedFields?: any;
+    statusVerifikasi?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
+  }>>([]);
 
   // Handle OCR extracted data injection
   const handleOcrDataExtracted = (extracted: ExtractedDocumentData, fileUrl: string, kategori: string) => {
     const updated = { ...formData };
     const newOcrTags: Record<string, boolean> = { ...ocrFilledFields };
+
+    if (fileUrl) {
+      setPendingDocuments(prev => {
+        const filtered = prev.filter(d => d.kategori !== kategori);
+        return [
+          ...filtered,
+          {
+            kategori,
+            fileUrl,
+            nomorDokumen: extracted.nomorDokumen || (kategori === 'KARTU_KELUARGA' ? extracted.noKk : extracted.nik),
+            rawOcrText: extracted.rawText,
+            extractedFields: extracted,
+            statusVerifikasi: 'VERIFIED',
+          },
+        ];
+      });
+    }
 
     if (extracted.namaLengkap) {
       updated.namaLengkap = toTitleCase(extracted.namaLengkap);
@@ -211,10 +236,27 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         throw new Error(data.error || 'Gagal menyimpan data santri');
       }
 
+      const santriId = isEditing ? initialData.id : data.data.id;
+
+      // Simpan semua dokumen berkas yang diunggah selama proses form
+      if (pendingDocuments.length > 0) {
+        for (const doc of pendingDocuments) {
+          try {
+            await fetch(`/api/santri/${santriId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(doc),
+            });
+          } catch (docErr) {
+            console.error('Failed to attach document to santri:', docErr);
+          }
+        }
+      }
+
       if (onSuccess) {
         onSuccess(data.data);
       } else {
-        router.push(`/santri/${data.data.id}`);
+        router.push(`/santri/${santriId}`);
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Terjadi kesalahan sistem.');
