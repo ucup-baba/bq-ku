@@ -135,6 +135,42 @@ describe('parseOcrText', () => {
       expect(result.pekerjaanOrtu).toBe('WIRASWASTA');
       expect(result.alamat).toContain('GENTAN 2');
     });
+
+    it('detects YATIM status and appends (Alm.) when CERAI MATI is present', () => {
+      const rawText = `
+        KARTU KELUARGA
+        No. 3304121234567890
+        Nama Kepala Keluarga : SITI KOMARIYAH
+        Status Perkawinan : CERAI MATI
+        Nama Ayah : DWI SRIYANA
+        Nama Ibu : SITI KOMARIYAH
+        | 1 | SITI KOMARIYAH | 3404110000000001 | KEPALA KELUARGA
+        | 2 | RAHMAT KURNIAWAN | 3404111108060001 | ANAK
+      `;
+
+      const result = parseOcrText(rawText, 'KARTU_KELUARGA');
+      expect(result.statusSosial).toBe('YATIM');
+      expect(result.namaAyah).toBe('DWI SRIYANA (Alm.)');
+    });
+
+    it('detects YATIM status when mother is Kepala Keluarga and father is only on children', () => {
+      const rawText = `
+        KARTU KELUARGA
+        No. 3404110407160001
+        Nama Kepala Keluarga : SITI KOMARIYAH
+        Desa/Kelurahan : WEDOMARTANI
+        Kecamatan : NGEMPLAK
+        Kabupaten/Kota : SLEMAN
+        | 1 | SITI KOMARIYAH | 3404114405650001 | PEREMPUAN
+        | 2 | RAHMAT KURNIAWAN | 3404111108060001 | LAKI-LAKI
+        Nama Orang Tua:
+        DWI SRIYANA | SITI KOMARIYAH
+      `;
+
+      const result = parseOcrText(rawText, 'KARTU_KELUARGA');
+      expect(result.statusSosial).toBe('YATIM');
+      expect(result.namaAyah).toBe('DWI SRIYANA (Alm.)');
+    });
   });
 
   describe('AKTA_KELAHIRAN', () => {

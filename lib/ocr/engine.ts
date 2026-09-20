@@ -51,19 +51,43 @@ export async function processOcrImage(
         if (fs.existsSync(resolvedPath)) {
           const ext = path.extname(resolvedPath).toLowerCase();
           if (ext === '.pdf') {
-            // Extract from PDF using python helper
-            const scriptPath = path.join(process.cwd(), 'lib', 'ocr', 'extract_pdf.py');
             const outputDir = path.join(process.cwd(), 'public', 'uploads');
+            // Try pdftotext first (for searchable / digital PDFs)
             try {
-              const { stdout } = await execFileAsync('python', [scriptPath, resolvedPath, outputDir]);
-              const res = JSON.parse(stdout.trim());
-              if (res.type === 'text' && res.text) {
-                rawText = res.text;
-              } else if (res.type === 'images' && res.images && res.images.length > 0) {
-                imagePathToRecognize = res.images[0];
+              const { stdout: directText } = await execFileAsync('pdftotext', [resolvedPath, '-']);
+              if (directText && directText.trim().length > 50) {
+                rawText = directText;
               }
-            } catch (pyErr) {
-              console.error('Python PDF extraction failed:', pyErr);
+            } catch (e) {
+              // ignore
+            }
+
+            // If not digital PDF or no text found, render with pdftoppm
+            if (!rawText) {
+              try {
+                const prefix = path.join(outputDir, `extracted_pdf_${Date.now()}`);
+                await execFileAsync('pdftoppm', ['-png', '-r', '300', '-f', '1', '-l', '1', resolvedPath, prefix]);
+                const imgPath = `${prefix}-1.png`;
+                if (fs.existsSync(imgPath)) {
+                  imagePathToRecognize = imgPath;
+                  tempFilesToCleanup.push(imgPath);
+                }
+              } catch (ppmErr) {
+                console.error('pdftoppm extraction failed, falling back to python3:', ppmErr);
+                const scriptPath = path.join(process.cwd(), 'lib', 'ocr', 'extract_pdf.py');
+                try {
+                  const { stdout } = await execFileAsync('python3', [scriptPath, resolvedPath, outputDir]);
+                  const res = JSON.parse(stdout.trim());
+                  if (res.type === 'text' && res.text) {
+                    rawText = res.text;
+                  } else if (res.type === 'images' && res.images && res.images.length > 0) {
+                    imagePathToRecognize = res.images[0];
+                    tempFilesToCleanup.push(res.images[0]);
+                  }
+                } catch (pyErr) {
+                  console.error('PDF extraction failed completely:', pyErr);
+                }
+              }
             }
           } else {
             imagePathToRecognize = resolvedPath;
@@ -91,7 +115,7 @@ export async function processOcrImage(
     if (!rawText && imagePathToRecognize && fs.existsSync(imagePathToRecognize)) {
       const runnerScript = path.join(process.cwd(), 'lib', 'ocr', 'run_ocr.js');
       try {
-        const { stdout } = await execFileAsync('node', [runnerScript, imagePathToRecognize]);
+        const { stdout } = await execFileAsync(process.execPath, [runnerScript, imagePathToRecognize, kategori]);
         const parsed = JSON.parse(stdout.trim());
         if (parsed.success && parsed.text) {
           rawText = parsed.text;

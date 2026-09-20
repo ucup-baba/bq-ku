@@ -5,7 +5,7 @@ import { SantriDirectory } from '@/components/directory/SantriDirectory';
 export const revalidate = 0;
 
 export default async function SantriPage() {
-  const santriList = listSantri();
+  const santriList = await listSantri();
 
   return (
     <div className="py-2">

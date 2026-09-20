@@ -18,7 +18,7 @@ import { DoodleSparkle, DoodleSpeechBubble, DoodleUnderline } from '@/components
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const santriList = listSantri();
+  const santriList = await listSantri();
 
   const total = santriList.length;
   const ikhwanCount = santriList.filter(s => s.jenisKelamin === 'IKHWAN').length;

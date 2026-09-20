@@ -12,18 +12,17 @@ import {
   Trash,
   IdentificationCard,
   GraduationCap,
-  Certificate,
-  MagnifyingGlass,
-  UserCheck,
-  UsersThree
+  Certificate
 } from '@phosphor-icons/react';
-import { ExtractedDocumentData, FamilyMemberCandidate, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
+import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleBadgeTape, DoodleSparkle } from '@/components/ui/DoodleStickers';
 import { matchBestFamilyMember } from '@/lib/utils/formatters';
 
 export interface DocumentUploadBoxProps {
   onDataExtracted?: (data: ExtractedDocumentData, fileUrl: string, kategori: string) => void;
   targetNamaSantri?: string;
+  tahunMasuk?: number | string;
+  jenisKelamin?: string;
   className?: string;
 }
 
@@ -38,7 +37,7 @@ export const DOCUMENT_CATEGORIES = [
   { id: 'SERTIFIKAT_PRESTASI', label: 'Sertifikat Prestasi/Tahfidz', wajib: false, icon: Certificate, desc: 'Piagam lomba atau syahadah' },
 ];
 
-export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, className = '' }: DocumentUploadBoxProps) {
+export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, tahunMasuk, jenisKelamin, className = '' }: DocumentUploadBoxProps) {
   const [selectedKategori, setSelectedKategori] = useState('KARTU_KELUARGA');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -46,9 +45,12 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, className
   const [extractedResult, setExtractedResult] = useState<ExtractedDocumentData | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [memberSearchQuery, setMemberSearchQuery] = useState('');
-  const [memberFilterType, setMemberFilterType] = useState<'ANAK' | 'ALL' | 'ORTU'>('ANAK');
-  const [autoMatchMessage, setAutoMatchMessage] = useState<string | null>(null);
+  const [enhanceDocument, setEnhanceDocument] = useState<boolean>(true);
+  const [compressionStats, setCompressionStats] = useState<{
+    originalSize: number;
+    compressedSize: number;
+    savingsPercent: number;
+  } | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -85,6 +87,11 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, className
       // 1. Upload file
       const uploadFormData = new FormData();
       uploadFormData.append('file', selectedFile);
+      uploadFormData.append('kategori', selectedKategori);
+      if (tahunMasuk) uploadFormData.append('tahunMasuk', String(tahunMasuk));
+      if (jenisKelamin) uploadFormData.append('jenisKelamin', jenisKelamin);
+      if (targetNamaSantri) uploadFormData.append('namaSantri', targetNamaSantri);
+      if (enhanceDocument) uploadFormData.append('enhance', 'true');
 
       const uploadRes = await fetch('/api/upload', {
         method: 'POST',
@@ -94,6 +101,14 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, className
       const uploadJson = await uploadRes.json();
       if (!uploadRes.ok || !uploadJson.success) {
         throw new Error(uploadJson.error || 'Gagal mengunggah file.');
+      }
+
+      if (uploadJson.savingsPercent !== undefined) {
+        setCompressionStats({
+          originalSize: uploadJson.originalSize,
+          compressedSize: uploadJson.compressedSize,
+          savingsPercent: uploadJson.savingsPercent,
+        });
       }
 
       const fileUrl = uploadJson.fileUrl;
@@ -146,7 +161,6 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, className
             namaAyah: ocrJson.extracted.namaAyah,
             namaIbu: ocrJson.extracted.namaIbu,
           };
-          setAutoMatchMessage(`Data KK berhasil dicocokkan otomatis untuk santri: ${matchedMember.nama} (NIK: ${matchedMember.nik || '-'})`);
         }
       }
 
@@ -170,41 +184,13 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, className
     }
   };
 
-  const handleSelectMember = (member: FamilyMemberCandidate) => {
-    if (!extractedResult || !uploadedUrl || !onDataExtracted) return;
-    let bDate = member.tanggalLahir || extractedResult.tanggalLahir;
-    if (bDate) {
-      bDate = parseIndonesianDate(bDate) || bDate;
-    } else if (member.nik) {
-      bDate = extractBirthDateFromNik(member.nik) || undefined;
-    }
-
-    let gender = member.gender || extractedResult.jenisKelamin;
-    if (/LAKI|IKHWAN|PRIA/i.test(gender || '')) gender = 'IKHWAN';
-    else if (/PEREMPUAN|AKHWAT|WANITA/i.test(gender || '')) gender = 'AKHWAT';
-
-    const updated: ExtractedDocumentData = {
-      ...extractedResult,
-      namaLengkap: member.nama,
-      nik: member.nik || extractedResult.nik,
-      tempatLahir: member.tempatLahir || extractedResult.tempatLahir,
-      tanggalLahir: bDate,
-      jenisKelamin: gender,
-      namaAyah: extractedResult.namaAyah,
-      namaIbu: extractedResult.namaIbu,
-    };
-    setExtractedResult(updated);
-    setAutoMatchMessage(`Santri dialihkan ke: ${member.nama} (NIK: ${member.nik || '-'})`);
-    onDataExtracted(updated, uploadedUrl, updated.kategori || selectedKategori);
-  };
-
   const handleReset = () => {
     setSelectedFile(null);
     setFilePreview(null);
     setExtractedResult(null);
     setUploadedUrl(null);
     setErrorMessage(null);
-    setAutoMatchMessage(null);
+    setCompressionStats(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -310,9 +296,28 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, className
                   {selectedFile.name}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                Ukuran: {(selectedFile.size / 1024).toFixed(1)} KB • Tipe: {selectedKategori}
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                Ukuran Asli: {(selectedFile.size / 1024).toFixed(1)} KB • Tipe: {selectedKategori}
               </p>
+
+              {/* Enhance & Compression Badge */}
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <label className="inline-flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-sm hover:border-teal-400 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={enhanceDocument}
+                    onChange={(e) => setEnhanceDocument(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300 dark:border-slate-600"
+                  />
+                  <span>✨ Enhance Dokumen (Kontras HD)</span>
+                </label>
+
+                {compressionStats && compressionStats.savingsPercent > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800">
+                    ⚡ Terkompresi: {(compressionStats.compressedSize / 1024).toFixed(0)} KB (Hemat {compressionStats.savingsPercent}%)
+                  </span>
+                )}
+              </div>
 
               <div className="flex flex-wrap gap-2">
                 {!extractedResult ? (
@@ -351,170 +356,28 @@ export function DocumentUploadBox({ onDataExtracted, targetNamaSantri, className
           {/* Auto-filled status announcement */}
           {extractedResult && (
             <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl mb-3 flex items-start gap-2.5">
-                <CheckCircle size={20} weight="fill" className="text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                    Selesai! Data berhasil diekstrak dan langsung terisi otomatis ke formulir di bawah.
-                  </p>
-                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
-                    Anda tetap bisa mengubah, menambah, atau menghapus setiap kolom sesuai kebutuhan.
-                  </p>
+              {Boolean(extractedResult.nik || extractedResult.noKk || extractedResult.namaLengkap || extractedResult.tempatLahir || (extractedResult.anggotaKeluarga && extractedResult.anggotaKeluarga.length > 0)) ? (
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl mb-3 flex items-start gap-2.5">
+                  <CheckCircle size={20} weight="fill" className="text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                      Selesai! Data berhasil diekstrak dan langsung terisi otomatis ke formulir di bawah.
+                    </p>
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                      Anda tetap bisa mengubah, menambah, atau menghapus setiap kolom sesuai kebutuhan.
+                    </p>
+                  </div>
                 </div>
-              </div>
-
-              {/* Family members filter & interactive selector for Kartu Keluarga */}
-              {extractedResult.anggotaKeluarga && extractedResult.anggotaKeluarga.length > 0 && (
-                <div className="mb-4 p-4 bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 rounded-3xl">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                        <UserCheck size={18} weight="duotone" className="text-teal-600 dark:text-teal-400" />
-                        Pilih Anggota Keluarga / Calon Santri:
-                        <span className="text-[10px] bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 font-bold px-2 py-0.5 rounded-full">
-                          {extractedResult.anggotaKeluarga.length} Ditemukan
-                        </span>
-                      </h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Klik nama anak yang didaftarkan agar NIK, TTL, dan jenis kelamin terisi sesuai orangnya.
-                      </p>
-                    </div>
-
-                    {/* Filter Mode: Anak / Semua / Ortu */}
-                    <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-900 p-1 rounded-xl border border-slate-200/80 dark:border-slate-700 text-[11px] font-semibold">
-                      <button
-                        type="button"
-                        onClick={() => setMemberFilterType('ANAK')}
-                        className={`px-2.5 py-1 rounded-lg transition-all ${
-                          memberFilterType === 'ANAK'
-                            ? 'bg-teal-600 text-white shadow-sm font-bold'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                        }`}
-                      >
-                        Hanya Anak / Santri
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setMemberFilterType('ALL')}
-                        className={`px-2.5 py-1 rounded-lg transition-all ${
-                          memberFilterType === 'ALL'
-                            ? 'bg-teal-600 text-white shadow-sm font-bold'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                        }`}
-                      >
-                        Semua
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setMemberFilterType('ORTU')}
-                        className={`px-2.5 py-1 rounded-lg transition-all ${
-                          memberFilterType === 'ORTU'
-                            ? 'bg-teal-600 text-white shadow-sm font-bold'
-                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
-                        }`}
-                      >
-                        Orang Tua
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Filter Pencarian Nama / NIK */}
-                  <div className="relative mb-3">
-                    <MagnifyingGlass size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      value={memberSearchQuery}
-                      onChange={(e) => setMemberSearchQuery(e.target.value)}
-                      placeholder="Ketik nama untuk memfilter... (misal: Hanif, Hamid, Rizqi, dsb.)"
-                      className="w-full pl-9 pr-8 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:border-teal-500 text-slate-800 dark:text-slate-100 placeholder-slate-400 shadow-sm"
-                    />
-                    {memberSearchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setMemberSearchQuery('')}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Member Cards Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
-                    {extractedResult.anggotaKeluarga
-                      .filter((member) => {
-                        const q = memberSearchQuery.trim().toLowerCase();
-                        const matchesQuery = !q || member.nama.toLowerCase().includes(q) || (member.nik && member.nik.includes(q));
-                        if (!matchesQuery) return false;
-
-                        const isParent = member.hubungan && (member.hubungan.includes('KEPALA') || member.hubungan.includes('ISTRI'));
-                        if (memberFilterType === 'ANAK') return !isParent;
-                        if (memberFilterType === 'ORTU') return isParent;
-                        return true;
-                      })
-                      .map((member, idx) => {
-                        const isChosen = extractedResult.namaLengkap?.toLowerCase() === member.nama?.toLowerCase();
-                        const isChild = !member.hubungan || member.hubungan === 'ANAK' || (!member.hubungan.includes('KEPALA') && !member.hubungan.includes('ISTRI'));
-
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => handleSelectMember(member)}
-                            className={`p-3 rounded-2xl border text-left transition-all flex flex-col justify-between ${
-                              isChosen
-                                ? 'bg-teal-50/90 dark:bg-teal-950/70 border-teal-500 shadow-sm ring-2 ring-teal-500/30'
-                                : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-teal-400 dark:hover:border-teal-600'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <div>
-                                <div className="flex items-center gap-1.5 flex-wrap">
-                                  <span className="text-xs font-bold text-slate-900 dark:text-slate-50">
-                                    {member.nama}
-                                  </span>
-                                  {member.gender && (
-                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                      member.gender === 'IKHWAN'
-                                        ? 'bg-teal-100 dark:bg-teal-950/70 text-teal-700 dark:text-teal-300'
-                                        : 'bg-rose-100 dark:bg-rose-950/70 text-rose-700 dark:text-rose-300'
-                                    }`}>
-                                      {member.gender}
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400 block">
-                                  NIK: {member.nik || '-'}
-                                </span>
-                              </div>
-
-                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                                isChild
-                                  ? 'bg-lime-100 dark:bg-lime-950/70 text-lime-800 dark:text-lime-300'
-                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                              }`}>
-                                {member.hubungan || (isChild ? 'ANAK' : 'KELUARGA')}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-1.5 border-t border-slate-100 dark:border-slate-800">
-                              <span>
-                                {member.tempatLahir ? `${member.tempatLahir}, ` : ''}{member.tanggalLahir || '-'}
-                              </span>
-                              {isChosen ? (
-                                <span className="text-xs font-bold text-teal-600 dark:text-teal-400 flex items-center gap-1">
-                                  <CheckCircle size={14} weight="fill" />
-                                  Dipilih di Form
-                                </span>
-                              ) : (
-                                <span className="text-slate-400 group-hover:text-teal-600 font-medium">
-                                  Klik untuk pilih
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
+              ) : (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-2xl mb-3 flex items-start gap-2.5">
+                  <WarningCircle size={20} weight="fill" className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                      Dokumen berhasil diunggah, namun sistem belum dapat membaca data teks dari berkas ini.
+                    </p>
+                    <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                      Silakan isi formulir secara manual atau coba unggah berkas/scan dengan resolusi lebih tinggi.
+                    </p>
                   </div>
                 </div>
               )}

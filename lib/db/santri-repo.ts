@@ -1,4 +1,5 @@
 import { db } from './index';
+import { getSupabaseServerClient } from '@/lib/supabase/server';
 
 export type Santri = {
   id: string;
@@ -10,12 +11,14 @@ export type Santri = {
   tempatLahir: string;
   tanggalLahir: string;
   jenisKelamin: 'IKHWAN' | 'AKHWAT';
+  tahunMasuk?: number | null;
   jenjang: 'SMP' | 'SMA' | 'SMK' | 'ALUMNI';
   kelas: string;
   sekolahSekarang: string;
   asalSekolahSebelumnya?: string | null;
   namaAyah?: string | null;
   namaIbu?: string | null;
+  statusSosial?: 'REGULER' | 'YATIM' | 'PIATU' | 'YATIM_PIATU' | 'DHUAFA' | null;
   kontakWali?: string | null;
   pekerjaanOrtu?: string | null;
   alamat?: string | null;
@@ -66,7 +69,7 @@ export type SantriFilter = {
 const generateId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
-export function createSantri(input: SantriInput): Santri {
+export async function createSantri(input: SantriInput): Promise<Santri> {
   const id = generateId();
   const createdAt = now();
   const updatedAt = createdAt;
@@ -75,21 +78,7 @@ export function createSantri(input: SantriInput): Santri {
     ? JSON.stringify(input.keahlian) 
     : (input.keahlian || null);
 
-  const stmt = db.prepare(`
-    INSERT INTO santri (
-      id, namaLengkap, namaPanggilan, nik, noKk, nisn, tempatLahir, tanggalLahir,
-      jenisKelamin, jenjang, kelas, sekolahSekarang, asalSekolahSebelumnya,
-      namaAyah, namaIbu, kontakWali, pekerjaanOrtu, alamat, ringkasanTentang,
-      riwayatTahfidz, keahlian, fotoFormalUrl, fotoProfilUrl, createdAt, updatedAt
-    ) VALUES (
-      @id, @namaLengkap, @namaPanggilan, @nik, @noKk, @nisn, @tempatLahir, @tanggalLahir,
-      @jenisKelamin, @jenjang, @kelas, @sekolahSekarang, @asalSekolahSebelumnya,
-      @namaAyah, @namaIbu, @kontakWali, @pekerjaanOrtu, @alamat, @ringkasanTentang,
-      @riwayatTahfidz, @keahlian, @fotoFormalUrl, @fotoProfilUrl, @createdAt, @updatedAt
-    )
-  `);
-
-  const santriData = {
+  const santriData: Santri = {
     ...input,
     id,
     keahlian: keahlianStr,
@@ -101,6 +90,8 @@ export function createSantri(input: SantriInput): Santri {
     asalSekolahSebelumnya: input.asalSekolahSebelumnya ?? null,
     namaAyah: input.namaAyah ?? null,
     namaIbu: input.namaIbu ?? null,
+    statusSosial: input.statusSosial ?? 'REGULER',
+    tahunMasuk: input.tahunMasuk ?? new Date().getFullYear(),
     kontakWali: input.kontakWali ?? null,
     pekerjaanOrtu: input.pekerjaanOrtu ?? null,
     alamat: input.alamat ?? null,
@@ -110,19 +101,72 @@ export function createSantri(input: SantriInput): Santri {
     fotoProfilUrl: input.fotoProfilUrl ?? null,
   };
 
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { data, error } = await supabase.from('santri').insert(santriData).select().single();
+    if (error) throw new Error(`Gagal menyimpan santri ke Supabase: ${error.message}`);
+    return (data || santriData) as Santri;
+  }
+
+  // SQLite Fallback
+  const stmt = db.prepare(`
+    INSERT INTO santri (
+      id, namaLengkap, namaPanggilan, nik, noKk, nisn, tempatLahir, tanggalLahir,
+      jenisKelamin, tahunMasuk, jenjang, kelas, sekolahSekarang, asalSekolahSebelumnya,
+      namaAyah, namaIbu, statusSosial, kontakWali, pekerjaanOrtu, alamat, ringkasanTentang,
+      riwayatTahfidz, keahlian, fotoFormalUrl, fotoProfilUrl, createdAt, updatedAt
+    ) VALUES (
+      @id, @namaLengkap, @namaPanggilan, @nik, @noKk, @nisn, @tempatLahir, @tanggalLahir,
+      @jenisKelamin, @tahunMasuk, @jenjang, @kelas, @sekolahSekarang, @asalSekolahSebelumnya,
+      @namaAyah, @namaIbu, @statusSosial, @kontakWali, @pekerjaanOrtu, @alamat, @ringkasanTentang,
+      @riwayatTahfidz, @keahlian, @fotoFormalUrl, @fotoProfilUrl, @createdAt, @updatedAt
+    )
+  `);
+
   stmt.run(santriData);
   return santriData as Santri;
 }
 
-export function getSantriById(id: string): (Santri & { documents: SantriDocument[] }) | null {
+export async function getSantriById(id: string): Promise<(Santri & { documents: SantriDocument[] }) | null> {
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { data: santri, error } = await supabase.from('santri').select('*').eq('id', id).maybeSingle();
+    if (error || !santri) return null;
+    const { data: docs } = await supabase.from('documents').select('*').eq('santriId', id);
+    return { ...santri, documents: docs || [] } as (Santri & { documents: SantriDocument[] });
+  }
+
+  // SQLite Fallback
   const santri = db.prepare('SELECT * FROM santri WHERE id = ?').get(id) as Santri | undefined;
   if (!santri) return null;
 
-  const documents = listDocumentsBySantri(id);
+  const documents = (await listDocumentsBySantri(id)) || [];
   return { ...santri, documents };
 }
 
-export function listSantri(filter?: SantriFilter): Santri[] {
+export async function listSantri(filter?: SantriFilter): Promise<Santri[]> {
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    let q = supabase.from('santri').select('*');
+    const searchQuery = filter?.query || filter?.q;
+    if (searchQuery) {
+      q = q.or(`namaLengkap.ilike.%${searchQuery}%,nik.ilike.%${searchQuery}%`);
+    }
+    if (filter?.jenisKelamin) {
+      q = q.eq('jenisKelamin', filter.jenisKelamin);
+    }
+    if (filter?.jenjang) {
+      q = q.eq('jenjang', filter.jenjang);
+    }
+    const { data, error } = await q.order('createdAt', { ascending: false });
+    if (error) {
+      console.error('Supabase listSantri error:', error);
+      return [];
+    }
+    return (data || []) as Santri[];
+  }
+
+  // SQLite Fallback
   let query = 'SELECT * FROM santri WHERE 1=1';
   const params: any[] = [];
 
@@ -144,7 +188,22 @@ export function listSantri(filter?: SantriFilter): Santri[] {
   return db.prepare(query).all(...params) as Santri[];
 }
 
-export function updateSantri(id: string, input: Partial<SantriInput>): Santri {
+export async function updateSantri(id: string, input: Partial<SantriInput>): Promise<Santri> {
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const updatedPayload: any = {
+      ...input,
+      updatedAt: now(),
+    };
+    if (input.keahlian !== undefined) {
+      updatedPayload.keahlian = Array.isArray(input.keahlian) ? JSON.stringify(input.keahlian) : input.keahlian;
+    }
+    const { data, error } = await supabase.from('santri').update(updatedPayload).eq('id', id).select().single();
+    if (error) throw new Error(`Gagal memperbarui santri di Supabase: ${error.message}`);
+    return data as Santri;
+  }
+
+  // SQLite Fallback
   const current = db.prepare('SELECT * FROM santri WHERE id = ?').get(id) as Santri | undefined;
   if (!current) throw new Error('Santri not found');
 
@@ -162,12 +221,19 @@ export function updateSantri(id: string, input: Partial<SantriInput>): Santri {
   return updated;
 }
 
-export function deleteSantri(id: string): boolean {
+export async function deleteSantri(id: string): Promise<boolean> {
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { error } = await supabase.from('santri').delete().eq('id', id);
+    return !error;
+  }
+
+  // SQLite Fallback
   const info = db.prepare('DELETE FROM santri WHERE id = ?').run(id);
   return info.changes > 0;
 }
 
-export function saveDocument(input: DocumentInput): SantriDocument {
+export async function saveDocument(input: DocumentInput): Promise<SantriDocument> {
   const id = generateId();
   const createdAt = now();
   const statusVerifikasi = input.statusVerifikasi || 'PENDING';
@@ -177,7 +243,7 @@ export function saveDocument(input: DocumentInput): SantriDocument {
     ? JSON.stringify(input.extractedFields)
     : input.extractedFields;
 
-  const doc = {
+  const doc: SantriDocument = {
     id,
     santriId: input.santriId,
     kategori: input.kategori,
@@ -190,6 +256,14 @@ export function saveDocument(input: DocumentInput): SantriDocument {
     createdAt
   };
 
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { data, error } = await supabase.from('documents').insert(doc).select().single();
+    if (error) throw new Error(`Gagal menyimpan dokumen ke Supabase: ${error.message}`);
+    return (data || doc) as SantriDocument;
+  }
+
+  // SQLite Fallback
   const stmt = db.prepare(`
     INSERT INTO documents (
       id, santriId, kategori, nomorDokumen, fileUrl, rawOcrText, extractedFields, statusVerifikasi, catatanVerifikasi, createdAt
@@ -202,17 +276,42 @@ export function saveDocument(input: DocumentInput): SantriDocument {
   return doc as SantriDocument;
 }
 
-export function listDocumentsBySantri(santriId: string): SantriDocument[] {
+export async function listDocumentsBySantri(santriId: string): Promise<SantriDocument[]> {
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { data, error } = await supabase.from('documents').select('*').eq('santriId', santriId);
+    if (error) return [];
+    return (data || []) as SantriDocument[];
+  }
+
+  // SQLite Fallback
   return db.prepare('SELECT * FROM documents WHERE santriId = ?').all(santriId) as SantriDocument[];
 }
 
-export function updateDocumentStatus(id: string, status: string, catatan?: string): boolean {
+export async function updateDocumentStatus(id: string, status: string, catatan?: string): Promise<boolean> {
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { error } = await supabase.from('documents').update({
+      statusVerifikasi: status,
+      catatanVerifikasi: catatan ?? null
+    }).eq('id', id);
+    return !error;
+  }
+
+  // SQLite Fallback
   const stmt = db.prepare('UPDATE documents SET statusVerifikasi = ?, catatanVerifikasi = ? WHERE id = ?');
   const info = stmt.run(status, catatan ?? null, id);
   return info.changes > 0;
 }
 
-export function deleteDocument(id: string): boolean {
+export async function deleteDocument(id: string): Promise<boolean> {
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { error } = await supabase.from('documents').delete().eq('id', id);
+    return !error;
+  }
+
+  // SQLite Fallback
   const info = db.prepare('DELETE FROM documents WHERE id = ?').run(id);
   return info.changes > 0;
 }

@@ -1,7 +1,7 @@
 import { getDb } from './index';
 import { createSantri, saveDocument } from './santri-repo';
 
-export function runSeed() {
+export async function runSeed() {
   const db = getDb();
 
   // Check if data already exists
@@ -14,7 +14,7 @@ export function runSeed() {
   console.log('Seeding initial realistic santri data...');
 
   // Santri 1: Ikhwan SMP (Lengkap)
-  const s1 = createSantri({
+  const s1 = await createSantri({
     namaLengkap: 'Muhammad Haidar Ali',
     namaPanggilan: 'Haidar',
     nik: '3304122506080001',
@@ -39,7 +39,7 @@ export function runSeed() {
     fotoProfilUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&auto=format&fit=crop&q=80',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s1.id,
     kategori: 'KARTU_KELUARGA',
     nomorDokumen: '3304120101150002',
@@ -48,7 +48,7 @@ export function runSeed() {
     catatanVerifikasi: 'Data KK cocok dengan Dukcapil',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s1.id,
     kategori: 'KTP_ORTU',
     nomorDokumen: '3304122506080001',
@@ -57,7 +57,7 @@ export function runSeed() {
     catatanVerifikasi: 'KTP Ayah terverifikasi',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s1.id,
     kategori: 'AKTA_KELAHIRAN',
     nomorDokumen: 'AKTA-2008-0625',
@@ -65,7 +65,7 @@ export function runSeed() {
     statusVerifikasi: 'VERIFIED',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s1.id,
     kategori: 'SKL_IJAZAH',
     nomorDokumen: 'SKL-SD-2022-098',
@@ -74,7 +74,7 @@ export function runSeed() {
   });
 
   // Santri 2: Akhwat SMA (Penerima KIP)
-  const s2 = createSantri({
+  const s2 = await createSantri({
     namaLengkap: 'Fatimah Az-Zahra',
     namaPanggilan: 'Zahra',
     nik: '3304126008060002',
@@ -99,35 +99,35 @@ export function runSeed() {
     fotoProfilUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s2.id,
     kategori: 'KARTU_KELUARGA',
     fileUrl: '/uploads/sample_kk2.jpg',
     statusVerifikasi: 'VERIFIED',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s2.id,
     kategori: 'KTP_ORTU',
     fileUrl: '/uploads/sample_ktp2.jpg',
     statusVerifikasi: 'VERIFIED',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s2.id,
     kategori: 'AKTA_KELAHIRAN',
     fileUrl: '/uploads/sample_akta2.jpg',
     statusVerifikasi: 'VERIFIED',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s2.id,
     kategori: 'SKL_IJAZAH',
     fileUrl: '/uploads/sample_skl2.jpg',
     statusVerifikasi: 'VERIFIED',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s2.id,
     kategori: 'KIP_PIP',
     nomorDokumen: 'KIP-2022-887192',
@@ -137,7 +137,7 @@ export function runSeed() {
   });
 
   // Santri 3: Ikhwan SMK (Hafidz 30 Juz)
-  const s3 = createSantri({
+  const s3 = await createSantri({
     namaLengkap: 'Zaid bin Tsabit Al-Farisi',
     namaPanggilan: 'Zaid',
     nik: '3304121010070003',
@@ -162,19 +162,19 @@ export function runSeed() {
     fotoProfilUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&auto=format&fit=crop&q=80',
   });
 
-  saveDocument({
+  await saveDocument({
     santriId: s3.id,
     kategori: 'KARTU_KELUARGA',
     fileUrl: '/uploads/sample_kk3.jpg',
     statusVerifikasi: 'VERIFIED',
   });
-  saveDocument({
+  await saveDocument({
     santriId: s3.id,
     kategori: 'AKTA_KELAHIRAN',
     fileUrl: '/uploads/sample_akta3.jpg',
     statusVerifikasi: 'VERIFIED',
   });
-  saveDocument({
+  await saveDocument({
     santriId: s3.id,
     kategori: 'SERTIFIKAT_PRESTASI',
     nomorDokumen: 'SYAHADAH-30JUZ-2023',
@@ -184,7 +184,7 @@ export function runSeed() {
   });
 
   // Santri 4: Akhwat Alumni
-  createSantri({
+  await createSantri({
     namaLengkap: 'Aisyah Humaira Putri',
     namaPanggilan: 'Aisyah',
     nik: '3304125505050004',
@@ -214,9 +214,7 @@ export function runSeed() {
 
 // Auto run if called directly
 if (process.env.NODE_ENV !== 'production' || process.env.RUN_SEED === 'true') {
-  try {
-    runSeed();
-  } catch (err) {
+  runSeed().catch(err => {
     console.error('Seed execution note:', err);
-  }
+  });
 }

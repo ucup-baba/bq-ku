@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     if (jenisKelamin) filter.jenisKelamin = jenisKelamin;
     if (jenjang) filter.jenjang = jenjang;
 
-    const santriList = listSantri(filter);
+    const santriList = await listSantri(filter);
     return NextResponse.json({ success: true, data: santriList });
   } catch (error: any) {
     console.error('List santri error:', error);
@@ -41,12 +41,14 @@ export async function POST(req: NextRequest) {
       tempatLahir: body.tempatLahir,
       tanggalLahir: body.tanggalLahir,
       jenisKelamin: body.jenisKelamin,
+      tahunMasuk: body.tahunMasuk ? Number(body.tahunMasuk) : new Date().getFullYear(),
       jenjang: body.jenjang,
       kelas: body.kelas,
       sekolahSekarang: body.sekolahSekarang,
       asalSekolahSebelumnya: body.asalSekolahSebelumnya || null,
       namaAyah: body.namaAyah || null,
       namaIbu: body.namaIbu || null,
+      statusSosial: body.statusSosial || 'REGULER',
       kontakWali: body.kontakWali || null,
       pekerjaanOrtu: body.pekerjaanOrtu || null,
       alamat: body.alamat || null,
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
       fotoProfilUrl: body.fotoProfilUrl || null,
     };
 
-    const newSantri = createSantri(input);
+    const newSantri = await createSantri(input);
     return NextResponse.json({ success: true, data: newSantri }, { status: 201 });
   } catch (error: any) {
     console.error('Create santri error:', error);

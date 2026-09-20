@@ -4,7 +4,7 @@ import { getSantriById, updateSantri, deleteSantri, saveDocument } from '@/lib/d
 export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const santri = getSantriById(id);
+    const santri = await getSantriById(id);
     if (!santri) {
       return NextResponse.json({ error: 'Santri tidak ditemukan' }, { status: 404 });
     }
@@ -18,7 +18,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
   try {
     const { id } = await context.params;
     const body = await req.json();
-    const updated = updateSantri(id, body);
+    const updated = await updateSantri(id, body);
     return NextResponse.json({ success: true, data: updated });
   } catch (error: any) {
     return NextResponse.json({ error: 'Gagal memperbarui data: ' + error.message }, { status: 500 });
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const success = deleteSantri(id);
+    const success = await deleteSantri(id);
     if (!success) {
       return NextResponse.json({ error: 'Santri tidak ditemukan' }, { status: 404 });
     }
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ id: st
   try {
     const { id } = await context.params;
     const body = await req.json();
-    const doc = saveDocument({
+    const doc = await saveDocument({
       santriId: id,
       kategori: body.kategori,
       nomorDokumen: body.nomorDokumen,

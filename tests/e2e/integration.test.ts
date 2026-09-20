@@ -4,7 +4,7 @@ import { parseOcrText } from '@/lib/ocr/parser';
 import { canDeleteSantri, canEditSantri } from '@/lib/auth/roles';
 
 describe('End-to-End User Journey Integration Test', () => {
-  it('should complete the entire flow: OCR Extraction -> DB Persistence -> Directory -> Role Checking', () => {
+  it('should complete the entire flow: OCR Extraction -> DB Persistence -> Directory -> Role Checking', async () => {
     // 1. Simulate OCR extraction from an Indonesian Family Card (KK)
     const mockKkOcrText = `
       KARTU KELUARGA
@@ -23,7 +23,7 @@ describe('End-to-End User Journey Integration Test', () => {
     expect(extractedKk.namaAyah).toBe('BUDI SANTOSO');
 
     // 2. Persist Santri with auto-filled fields and custom fields
-    const created = createSantri({
+    const created = await createSantri({
       namaLengkap: 'Raihan Pratama',
       namaPanggilan: 'Raihan',
       nik: '3304122002080009',
@@ -46,7 +46,7 @@ describe('End-to-End User Journey Integration Test', () => {
     expect(created.kelas).toBe('7B');
 
     // 3. Attach Document to Santri
-    const doc = saveDocument({
+    const doc = await saveDocument({
       santriId: created.id,
       kategori: 'KARTU_KELUARGA',
       nomorDokumen: extractedKk.noKk,
@@ -58,13 +58,13 @@ describe('End-to-End User Journey Integration Test', () => {
     expect(doc.santriId).toBe(created.id);
 
     // 4. Retrieve Santri with documents
-    const detail = getSantriById(created.id);
+    const detail = await getSantriById(created.id);
     expect(detail).not.toBeNull();
     expect(detail?.documents.length).toBe(1);
     expect(detail?.documents[0].kategori).toBe('KARTU_KELUARGA');
 
     // 5. Query from Directory with Gender & Search filter
-    const searchResult = listSantri({ q: 'Raihan', jenisKelamin: 'IKHWAN' });
+    const searchResult = await listSantri({ q: 'Raihan', jenisKelamin: 'IKHWAN' });
     expect(searchResult.some(s => s.id === created.id)).toBe(true);
 
     // 6. Verify role permissions

@@ -44,12 +44,14 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     tempatLahir: initialData?.tempatLahir || '',
     tanggalLahir: initialData?.tanggalLahir || '',
     jenisKelamin: initialData?.jenisKelamin || 'IKHWAN',
+    tahunMasuk: initialData?.tahunMasuk || new Date().getFullYear(),
     jenjang: initialData?.jenjang || 'SMP',
     kelas: initialData?.kelas || '',
     sekolahSekarang: initialData?.sekolahSekarang || 'SMP IT Baitul Qowwam',
     asalSekolahSebelumnya: initialData?.asalSekolahSebelumnya || '',
     namaAyah: initialData?.namaAyah || '',
     namaIbu: initialData?.namaIbu || '',
+    statusSosial: initialData?.statusSosial || 'REGULER',
     kontakWali: initialData?.kontakWali || '',
     pekerjaanOrtu: initialData?.pekerjaanOrtu || '',
     alamat: initialData?.alamat || '',
@@ -108,12 +110,16 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       newOcrTags.jenisKelamin = true;
     }
     if (extracted.namaAyah) {
-      updated.namaAyah = toTitleCase(extracted.namaAyah);
+      updated.namaAyah = extracted.namaAyah.includes('(Alm') ? extracted.namaAyah : toTitleCase(extracted.namaAyah);
       newOcrTags.namaAyah = true;
     }
     if (extracted.namaIbu) {
-      updated.namaIbu = toTitleCase(extracted.namaIbu);
+      updated.namaIbu = extracted.namaIbu.includes('(Almh') ? extracted.namaIbu : toTitleCase(extracted.namaIbu);
       newOcrTags.namaIbu = true;
+    }
+    if (extracted.statusSosial) {
+      updated.statusSosial = extracted.statusSosial;
+      newOcrTags.statusSosial = true;
     }
     if (extracted.alamat) {
       updated.alamat = extracted.alamat;
@@ -131,8 +137,13 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     setFormData(updated);
     setOcrFilledFields(newOcrTags);
 
-    const categoryName = kategori.replace(/_/g, ' ');
-    setOcrAutoFilledNotice(`Formulir berhasil terisi otomatis dari berkas ${categoryName}! Kolom yang terisi ditandai badge "✨ Diisi dari OCR".`);
+    const filledCount = Object.keys(newOcrTags).length;
+    if (filledCount > 0) {
+      const categoryName = kategori.replace(/_/g, ' ');
+      setOcrAutoFilledNotice(`Formulir berhasil terisi otomatis dari berkas ${categoryName}! (${filledCount} kolom terisi, ditandai badge "✨ Diisi dari OCR")`);
+    } else {
+      setOcrAutoFilledNotice(null);
+    }
 
     setTimeout(() => {
       const section = document.getElementById('santri-form-section');
@@ -149,6 +160,11 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     try {
       const uploadData = new FormData();
       uploadData.append('file', file);
+      uploadData.append('kategori', targetField === 'fotoFormalUrl' ? 'FOTO_FORMAL' : 'FOTO_PROFIL');
+      uploadData.append('tahunMasuk', String(formData.tahunMasuk || new Date().getFullYear()));
+      uploadData.append('jenisKelamin', formData.jenisKelamin);
+      if (formData.namaLengkap) uploadData.append('namaSantri', formData.namaLengkap);
+      uploadData.append('enhance', 'true');
 
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -268,12 +284,12 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-1">
+          <div className="sm:col-span-6">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Nama Lengkap Calon Santri *</span>
               <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
-                (Otomatis Title Case saat selesai mengetik)
+                (Otomatis Title Case)
               </span>
             </label>
             <input
@@ -286,12 +302,31 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
                   setFormData((prev) => ({ ...prev, namaLengkap: toTitleCase(prev.namaLengkap) }));
                 }
               }}
-              placeholder="Contoh: muhammad hanif"
+              placeholder="Contoh: Muhammad Hanif"
               className="w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none transition-all shadow-inner"
             />
           </div>
 
-          <div>
+          <div className="sm:col-span-3">
+            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+              <span>Tahun Masuk *</span>
+              <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 px-2 py-0.5 rounded-full">
+                Format Berkas
+              </span>
+            </label>
+            <input
+              type="number"
+              min={2000}
+              max={2099}
+              required
+              value={formData.tahunMasuk}
+              onChange={(e) => setFormData({ ...formData, tahunMasuk: parseInt(e.target.value, 10) || new Date().getFullYear() })}
+              placeholder="2026"
+              className="w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none transition-all shadow-inner"
+            />
+          </div>
+
+          <div className="sm:col-span-3">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
               Nama Panggilan
             </label>
@@ -304,7 +339,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
                   setFormData((prev) => ({ ...prev, namaPanggilan: toTitleCase(prev.namaPanggilan) }));
                 }
               }}
-              placeholder="Contoh: hanif"
+              placeholder="Contoh: Hanif"
               className="w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none transition-all"
             />
           </div>
@@ -313,14 +348,13 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
 
       {/* Step 2: Pindai Dokumen Kependudukan (OCR) */}
       {showOcrBox && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center font-bold text-xs">
-                2
-              </div>
-              <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
-                Pindai Dokumen / Kartu Keluarga (Otomatis Cocokkan Data Sesuai Nama Santri)
+        <div className="bg-gradient-to-br from-teal-500/5 via-emerald-500/5 to-cyan-500/5 border border-teal-200 dark:border-teal-900/60 rounded-3xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-teal-800 dark:text-teal-300 font-bold text-base">
+              <Sparkle size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
+              <span>Opsi 1: Pindai Otomatis dari Dokumen (OCR Presisi Tinggi)</span>
+              <span className="text-[10px] bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded-full font-bold">
+                Rekomendasi
               </span>
             </div>
             <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Opsional</span>
@@ -329,6 +363,8 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <DocumentUploadBox 
             onDataExtracted={handleOcrDataExtracted} 
             targetNamaSantri={formData.namaLengkap} 
+            tahunMasuk={formData.tahunMasuk}
+            jenisKelamin={formData.jenisKelamin}
           />
         </div>
       )}
@@ -619,6 +655,65 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="sm:col-span-3">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 font-bold">
+                Status Santri (Kondisi Sosial / Keluarga)
+              </span>
+              {ocrFilledFields.statusSosial && (
+                <span className="text-[10px] font-bold text-lime-700 dark:text-lime-400 bg-lime-100 dark:bg-lime-950/60 px-2 py-0.5 rounded-full flex items-center gap-1 border border-lime-300 dark:border-lime-800">
+                  ✨ Terdeteksi dari KK: Cerai Mati (Yatim)
+                </span>
+              )}
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {[
+                { id: 'REGULER', label: 'Reguler', desc: 'Orang tua lengkap' },
+                { id: 'YATIM', label: 'Yatim', desc: 'Ayah telah wafat' },
+                { id: 'PIATU', label: 'Piatu', desc: 'Ibu telah wafat' },
+                { id: 'YATIM_PIATU', label: 'Yatim Piatu', desc: 'Ayah & Ibu wafat' },
+                { id: 'DHUAFA', label: 'Dhuafa', desc: 'Keluarga prasejahtera' },
+              ].map((st) => (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => {
+                    const updatedStatus = st.id as any;
+                    let newAyah = formData.namaAyah;
+                    let newIbu = formData.namaIbu;
+                    if (updatedStatus === 'YATIM' && newAyah && !newAyah.includes('(Alm')) {
+                      newAyah = `${newAyah} (Alm.)`;
+                    }
+                    if (updatedStatus === 'PIATU' && newIbu && !newIbu.includes('(Almh')) {
+                      newIbu = `${newIbu} (Almh.)`;
+                    }
+                    setFormData({
+                      ...formData,
+                      statusSosial: updatedStatus,
+                      namaAyah: newAyah,
+                      namaIbu: newIbu,
+                    });
+                  }}
+                  className={`p-2.5 rounded-xl border text-left transition-all ${
+                    formData.statusSosial === st.id
+                      ? st.id === 'YATIM'
+                        ? 'bg-emerald-100 dark:bg-emerald-950/80 border-emerald-500 text-emerald-900 dark:text-emerald-200 font-bold ring-2 ring-emerald-500/20'
+                        : 'bg-teal-600 text-white border-teal-600 font-bold shadow-sm'
+                      : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-teal-400'
+                  }`}
+                >
+                  <div className="text-xs font-bold">{st.label}</div>
+                  <div className="text-[10px] opacity-75 font-normal leading-tight mt-0.5">{st.desc}</div>
+                </button>
+              ))}
+            </div>
+            {formData.statusSosial === 'YATIM' && (
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1.5 flex items-center gap-1 font-medium">
+                ✓ Calon santri terdata sebagai <strong>Yatim</strong> (Ayah wafat/Almarhum). Prioritas beasiswa pendidikan & santunan yayasan.
+              </p>
+            )}
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Nama Ayah</span>

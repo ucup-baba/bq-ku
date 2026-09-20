@@ -5,7 +5,7 @@ import { SantriPosterCv } from '@/components/profile/SantriPosterCv';
 
 export default async function SantriDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const santri = getSantriById(id);
+  const santri = await getSantriById(id);
 
   if (!santri) {
     notFound();
