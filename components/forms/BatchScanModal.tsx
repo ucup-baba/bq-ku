@@ -106,11 +106,6 @@ export function BatchScanModal({
   const isNameEmpty = !targetNamaSantri || !targetNamaSantri.trim();
 
   const handleStartBatchOcr = async () => {
-    if (isNameEmpty) {
-      setErrorBanner('Silakan tulis Nama Lengkap Calon Santri pada formulir Langkah 1 terlebih dahulu.');
-      return;
-    }
-
     if (selectedFiles.length === 0) {
       setErrorBanner('Silakan pilih minimal 1 berkas.');
       return;
@@ -212,7 +207,7 @@ export function BatchScanModal({
 
       // First check if there's a KK in the results to establish master name
       const kkResult = resultsData.find((r: any) => r.kategori === 'KARTU_KELUARGA' && r.extracted?.namaLengkap);
-      const masterName = targetNamaSantri || (kkResult?.extracted?.namaLengkap);
+      const masterName = targetNamaSantri || (kkResult?.extracted?.namaLengkap) || (resultsData.find((r: any) => r.extracted?.namaLengkap)?.extracted?.namaLengkap);
 
       // Validate name match for each result
       const processedResults: BatchItemResult[] = resultsData.map((r: any) => {
@@ -255,7 +250,7 @@ export function BatchScanModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[100] flex flex-col justify-end sm:justify-center sm:items-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
       <div className="relative w-full sm:max-w-2xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col mt-auto sm:my-6">
         {/* Mobile Pull Indicator */}
         <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
@@ -448,6 +443,22 @@ export function BatchScanModal({
                       );
                     })}
                   </div>
+
+                  {/* Immediate Action CTA right below file list */}
+                  <div className="pt-3">
+                    <button
+                      type="button"
+                      onClick={handleStartBatchOcr}
+                      disabled={isProcessing}
+                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white font-extrabold text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Sparkle size={18} weight="fill" />
+                      <span>{isProcessing ? 'Memproses Berkas...' : `Mulai Pindai ${selectedFiles.length} Berkas Sekarang`}</span>
+                    </button>
+                    <p className="text-[11px] text-center text-slate-500 dark:text-slate-400 mt-1.5">
+                      Gemini AI akan membaca dan mengekstrak data santri secara otomatis
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -588,16 +599,11 @@ export function BatchScanModal({
             <button
               type="button"
               onClick={handleStartBatchOcr}
-              disabled={selectedFiles.length === 0 || isProcessing || isNameEmpty}
-              className={`inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all ${
-                isNameEmpty
-                  ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed shadow-none'
-                  : 'bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white disabled:opacity-50'
-              }`}
-              title={isNameEmpty ? 'Isi nama santri pada formulir terlebih dahulu' : undefined}
+              disabled={selectedFiles.length === 0 || isProcessing}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white disabled:opacity-50 cursor-pointer active:scale-95"
             >
-              {isNameEmpty ? <LockKey size={16} weight="fill" /> : <Sparkle size={16} weight="fill" />}
-              <span>{isNameEmpty ? 'Nama Santri Wajib Diisi' : `Mulai Pindai ${selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}`}</span>
+              <Sparkle size={16} weight="fill" />
+              <span>{isProcessing ? 'Memproses...' : `Mulai Pindai ${selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}`}</span>
             </button>
           ) : (
             <button
