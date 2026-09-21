@@ -135,22 +135,48 @@ export function SantriCard({ santri }: SantriCardProps) {
 
         {/* Document Checklist Pill */}
         <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 mb-4">
-          <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
             <span className="flex items-center gap-1">
               <FileText size={14} className="text-teal-600" />
               Berkas Wajib:
             </span>
-            <span className="font-bold text-teal-700 dark:text-teal-300">
+            <span className={`font-bold ${uploadedRequired.length === 4 ? 'text-emerald-600 dark:text-emerald-400' : 'text-teal-700 dark:text-teal-300'}`}>
               {uploadedRequired.length}/4
             </span>
           </div>
-          <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+          <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mb-2">
             <div 
               className={`h-full transition-all ${
                 uploadedRequired.length === 4 ? 'bg-emerald-500' : 'bg-teal-500'
               }`}
               style={{ width: `${(uploadedRequired.length / 4) * 100}%` }}
             />
+          </div>
+
+          {/* Mini Indikator Status Tiap Berkas Wajib */}
+          <div className="grid grid-cols-4 gap-1 text-[9px] font-semibold text-center pt-1 border-t border-slate-200/60 dark:border-slate-800/60">
+            {[
+              { id: 'KARTU_KELUARGA', label: 'KK' },
+              { id: 'AKTA_KELAHIRAN', label: 'Akta' },
+              { id: 'KTP_ORTU', label: 'KTP' },
+              { id: 'SKL_IJAZAH', label: 'SKL' },
+            ].map(item => {
+              const done = docs.some(d => d.kategori === item.id);
+              return (
+                <span
+                  key={item.id}
+                  className={`py-0.5 rounded px-1 flex items-center justify-center gap-0.5 ${
+                    done
+                      ? 'bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold'
+                      : 'bg-slate-100 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500'
+                  }`}
+                  title={`${item.label}: ${done ? 'Sudah Terunggah' : 'Belum Ada'}`}
+                >
+                  {done && <CheckCircle size={10} weight="fill" className="text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                  {item.label}
+                </span>
+              );
+            })}
           </div>
         </div>
       </div>

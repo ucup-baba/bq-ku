@@ -1,6 +1,19 @@
 import { db } from './index';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 
+export type SantriDocument = {
+  id: string;
+  santriId: string;
+  kategori: string;
+  nomorDokumen?: string | null;
+  fileUrl: string;
+  rawOcrText?: string | null;
+  extractedFields?: string | null; // JSON string
+  statusVerifikasi: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
+  catatanVerifikasi?: string | null;
+  createdAt?: string | null;
+};
+
 export type Santri = {
   id: string;
   namaLengkap: string;
@@ -29,23 +42,11 @@ export type Santri = {
   fotoProfilUrl?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
+  documents?: SantriDocument[];
 };
 
-export type SantriInput = Omit<Santri, 'id' | 'createdAt' | 'updatedAt'> & {
+export type SantriInput = Omit<Santri, 'id' | 'createdAt' | 'updatedAt' | 'documents'> & {
   keahlian?: string[] | string | null;
-};
-
-export type SantriDocument = {
-  id: string;
-  santriId: string;
-  kategori: string;
-  nomorDokumen?: string | null;
-  fileUrl: string;
-  rawOcrText?: string | null;
-  extractedFields?: string | null; // JSON string
-  statusVerifikasi: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
-  catatanVerifikasi?: string | null;
-  createdAt?: string | null;
 };
 
 export type DocumentInput = {
@@ -147,7 +148,7 @@ export async function getSantriById(id: string): Promise<(Santri & { documents: 
 export async function listSantri(filter?: SantriFilter): Promise<Santri[]> {
   const supabase = getSupabaseServerClient();
   if (supabase) {
-    let q = supabase.from('santri').select('*');
+    let q = supabase.from('santri').select('*, documents(*)');
     const searchQuery = filter?.query || filter?.q;
     if (searchQuery) {
       q = q.or(`namaLengkap.ilike.%${searchQuery}%,nik.ilike.%${searchQuery}%`);
@@ -185,7 +186,11 @@ export async function listSantri(filter?: SantriFilter): Promise<Santri[]> {
   }
 
   query += ' ORDER BY createdAt DESC';
-  return db.prepare(query).all(...params) as Santri[];
+  const santriList = db.prepare(query).all(...params) as Santri[];
+  return santriList.map(s => ({
+    ...s,
+    documents: (db.prepare('SELECT * FROM documents WHERE santriId = ?').all(s.id) as SantriDocument[]) || [],
+  }));
 }
 
 export async function updateSantri(id: string, input: Partial<SantriInput>): Promise<Santri> {
@@ -258,12 +263,59 @@ export async function saveDocument(input: DocumentInput): Promise<SantriDocument
 
   const supabase = getSupabaseServerClient();
   if (supabase) {
+    const { data: existing } = await supabase
+      .from('documents')
+      .select('id')
+      .eq('santriId', input.santriId)
+      .eq('kategori', input.kategori)
+      .maybeSingle();
+
+    if (existing) {
+      const { data, error } = await supabase
+        .from('documents')
+        .update({
+          fileUrl: input.fileUrl,
+          nomorDokumen: input.nomorDokumen ?? null,
+          rawOcrText: input.rawOcrText ?? null,
+          extractedFields: extractedStr ?? null,
+          statusVerifikasi,
+          catatanVerifikasi,
+        })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      if (!error && data) return data as SantriDocument;
+    }
+
     const { data, error } = await supabase.from('documents').insert(doc).select().single();
     if (error) throw new Error(`Gagal menyimpan dokumen ke Supabase: ${error.message}`);
     return (data || doc) as SantriDocument;
   }
 
   // SQLite Fallback
+  const existingSqlite = db.prepare('SELECT id FROM documents WHERE santriId = ? AND kategori = ?').get(input.santriId, input.kategori) as { id: string } | undefined;
+  if (existingSqlite) {
+    db.prepare(`
+      UPDATE documents SET
+        fileUrl = @fileUrl,
+        nomorDokumen = @nomorDokumen,
+        rawOcrText = @rawOcrText,
+        extractedFields = @extractedFields,
+        statusVerifikasi = @statusVerifikasi,
+        catatanVerifikasi = @catatanVerifikasi
+      WHERE id = @id
+    `).run({
+      id: existingSqlite.id,
+      fileUrl: input.fileUrl,
+      nomorDokumen: input.nomorDokumen ?? null,
+      rawOcrText: input.rawOcrText ?? null,
+      extractedFields: extractedStr ?? null,
+      statusVerifikasi,
+      catatanVerifikasi,
+    });
+    return { ...doc, id: existingSqlite.id };
+  }
+
   const stmt = db.prepare(`
     INSERT INTO documents (
       id, santriId, kategori, nomorDokumen, fileUrl, rawOcrText, extractedFields, statusVerifikasi, catatanVerifikasi, createdAt
