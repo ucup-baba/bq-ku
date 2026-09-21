@@ -36,6 +36,8 @@ Tugas Anda:
   "pekerjaanOrtu": "Pekerjaan orang tua",
   "alamat": "Alamat lengkap termasuk Dusun/Jalan, RT/RW, Desa/Kelurahan, Kecamatan, Kab/Kota, Provinsi, dan Kode Pos",
   "asalSekolahSebelumnya": "Nama sekolah asal jika tercantum di SKL/ijazah/KIP",
+  "jenjangTerdeteksi": "SMP" | "SMA" | "SMK" | "ALUMNI",
+  "tahunLulus": "Tahun kelulusan 4 digit (contoh: 2024)",
   "nomorDokumen": "Nomor surat/nomor akta/nomor KIP jika ada",
   "anggotaKeluarga": [
     {
@@ -48,6 +50,17 @@ Tugas Anda:
     }
   ]
 }
+Catatan Khusus SKL / Ijazah:
+- Jika berkas adalah SKL / Ijazah tingkat SMA / SMK / MA:
+  - Wajib set "jenjangTerdeteksi": "ALUMNI" (di Baitul Qowwam, lulusan SMA/SMK adalah santri purna / alumni BQ).
+  - Tulis nama SMA/SMK tersebut di "asalSekolahSebelumnya".
+  - Ambil tahun kelulusan ke "tahunLulus" (misal: "2024").
+- Jika berkas adalah SKL / Ijazah tingkat SMP / MTs:
+  - Set "jenjangTerdeteksi": "SMA" (santri baru masuk jenjang SMA).
+  - Tulis nama SMP/MTs tersebut di "asalSekolahSebelumnya".
+- Jika berkas adalah SKL / Ijazah tingkat SD / MI:
+  - Set "jenjangTerdeteksi": "SMP" (santri baru masuk jenjang SMP).
+  - Tulis nama SD/MI tersebut di "asalSekolahSebelumnya".
 Catatan Khusus Kartu Keluarga (KK):
 - "noKk" adalah 16 digit nomor KK di bagian atas dokumen.
 - "namaAyah": Perhatikan kolom 'Nama Orang Tua (Ayah / Ibu)' di tabel bawah untuk calon santri. Tulis nama AYAH KANDUNG calon santri (BUKAN otomatis nama Kepala Keluarga jika kepala keluarganya wanita/Ibu). Jika ayah sudah meninggal (misal status perkawinan ibu CERAI MATI atau ada keterangan almarhum), tulis namanya (contoh: 'Dwi Sriyana (Alm.)') dan set "statusSosial": "YATIM".
@@ -178,6 +191,8 @@ Catatan Khusus Kartu Keluarga (KK):
       pekerjaanOrtu: parsed.pekerjaanOrtu || undefined,
       alamat: parsed.alamat || undefined,
       asalSekolahSebelumnya: parsed.asalSekolahSebelumnya || undefined,
+      jenjangTerdeteksi: parsed.jenjangTerdeteksi || undefined,
+      tahunLulus: parsed.tahunLulus || undefined,
       nomorDokumen: parsed.nomorDokumen || undefined,
       anggotaKeluarga: normalizedMembers || undefined,
       rawText: candidate,

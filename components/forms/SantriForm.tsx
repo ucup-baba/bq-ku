@@ -170,11 +170,50 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       newOcrTags.asalSekolahSebelumnya = true;
     }
 
+    // Opsi A: Deteksi cerdas jika berkas adalah SKL/Ijazah SMA / SMK / MA -> Otomatis set Jenjang ALUMNI
+    let customNoticeText: string | null = null;
+    const isSklCategory = kategori === 'SKL_IJAZAH';
+    const schoolUpper = (extracted.asalSekolahSebelumnya || extracted.rawText || '').toUpperCase();
+    const isSmaSmkIjazah = isSklCategory && (
+      extracted.jenjangTerdeteksi === 'ALUMNI' ||
+      /SMA|SMK|MADRASAH\s+ALIYAH|\bMA\b|SEKOLAH\s+MENENGAH\s+ATAS|SEKOLAH\s+MENENGAH\s+KEJURUAN/i.test(schoolUpper)
+    );
+
+    if (isSmaSmkIjazah) {
+      updated.jenjang = 'ALUMNI';
+      newOcrTags.jenjang = true;
+
+      const gradYear = extracted.tahunLulus || new Date().getFullYear();
+      if (!updated.kelas || updated.kelas === '7' || updated.kelas === '10' || updated.kelas.toLowerCase().includes('kelas')) {
+        updated.kelas = `Lulus ${gradYear}`;
+        newOcrTags.kelas = true;
+      }
+
+      if (!updated.sekolahSekarang || updated.sekolahSekarang.includes('Baitul Qowwam')) {
+        updated.sekolahSekarang = `Alumni BQ (${gradYear}) / Kuliah / Khidmah`;
+        newOcrTags.sekolahSekarang = true;
+      }
+
+      customNoticeText = `🎓 Ijazah SMA/SMK terdeteksi! Jenjang santri otomatis disetel ke "ALUMNI" (Status: ${updated.kelas}) sesuai aturan santri purna BQ.`;
+    } else if (isSklCategory && (extracted.jenjangTerdeteksi === 'SMA' || /SMP|MTS/i.test(schoolUpper))) {
+      // Lulusan SMP/MTs masuk jenjang SMA di BQ
+      if (formData.jenjang === 'SMP') {
+        updated.jenjang = 'SMA';
+        newOcrTags.jenjang = true;
+        if (!updated.kelas || updated.kelas === '7') {
+          updated.kelas = '10';
+          newOcrTags.kelas = true;
+        }
+      }
+    }
+
     setFormData(updated);
     setOcrFilledFields(newOcrTags);
 
     const filledCount = Object.keys(newOcrTags).length;
-    if (filledCount > 0) {
+    if (customNoticeText) {
+      setOcrAutoFilledNotice(customNoticeText);
+    } else if (filledCount > 0) {
       const categoryName = kategori.replace(/_/g, ' ');
       setOcrAutoFilledNotice(`Formulir berhasil terisi otomatis dari berkas ${categoryName}! (${filledCount} kolom terisi, ditandai badge "✨ Diisi dari OCR")`);
     } else {
@@ -655,10 +694,23 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           Pendidikan & Status Pondok
         </h3>
 
+        {formData.jenjang === 'ALUMNI' && (
+          <div className="p-3.5 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 flex items-start gap-2.5 text-xs text-indigo-900 dark:text-indigo-200">
+            <GraduationCap size={22} weight="duotone" className="text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold">Kategori Santri Purna / Alumni BQ (Lulusan SMA/SMK)</p>
+              <p className="text-[11px] text-indigo-700 dark:text-indigo-300 mt-0.5">
+                Santri yang telah lulus tingkat SMA/SMK di Baitul Qowwam. Isi kolom di bawah dengan status kelulusan dan aktivitas studi lanjut (kuliah) atau khidmah saat ini.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Jenjang Pendidikan *
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+              <span>Jenjang Pendidikan *</span>
+              {ocrFilledFields.jenjang && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
             </label>
             <select
               value={formData.jenjang}
@@ -668,48 +720,50 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               <option value="SMP">SMP</option>
               <option value="SMA">SMA</option>
               <option value="SMK">SMK</option>
-              <option value="ALUMNI">Alumni</option>
+              <option value="ALUMNI">Alumni (Lulusan SMA/SMK)</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Kelas Saat Ini *
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+              <span>{formData.jenjang === 'ALUMNI' ? 'Status / Tahun Lulus *' : 'Kelas Saat Ini *'}</span>
+              {ocrFilledFields.kelas && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
             </label>
             <input
               type="text"
               required
               value={formData.kelas}
               onChange={e => setFormData({ ...formData, kelas: e.target.value })}
-              placeholder="Contoh: 7A, 10 IPA, atau Lulus 2024"
+              placeholder={formData.jenjang === 'ALUMNI' ? 'Contoh: Lulus 2024 / Angkatan 6' : 'Contoh: 7A, 10 IPA'}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
           </div>
 
           <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Sekolah Sekarang *
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
+              <span>{formData.jenjang === 'ALUMNI' ? 'Aktivitas / Kampus / Khidmah Saat Ini *' : 'Sekolah Sekarang *'}</span>
+              {ocrFilledFields.sekolahSekarang && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
             </label>
             <input
               type="text"
               required
               value={formData.sekolahSekarang}
               onChange={e => setFormData({ ...formData, sekolahSekarang: e.target.value })}
-              placeholder="Contoh: SMP IT Baitul Qowwam / SMA IT BQ"
+              placeholder={formData.jenjang === 'ALUMNI' ? 'Contoh: Mahasiswa UNY / Pengabdian Asrama BQ / Bekerja' : 'Contoh: SMP IT Baitul Qowwam / SMA IT BQ'}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
           </div>
 
           <div className="sm:col-span-4">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-              <span>Asal Sekolah Sebelumnya (SD / MTs)</span>
+              <span>{formData.jenjang === 'ALUMNI' ? 'Asal SMA / SMK Terakhir (Lulusan)' : 'Asal Sekolah Sebelumnya (SD / MTs)'}</span>
               {ocrFilledFields.asalSekolahSebelumnya && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
             </label>
             <input
               type="text"
               value={formData.asalSekolahSebelumnya}
               onChange={e => setFormData({ ...formData, asalSekolahSebelumnya: e.target.value })}
-              placeholder="Contoh: SD Negeri 1 Sleman"
+              placeholder={formData.jenjang === 'ALUMNI' ? 'Contoh: SMA IT Baitul Qowwam / SMK Negeri 2 Depok' : 'Contoh: SD Negeri 1 Sleman'}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
           </div>

@@ -181,7 +181,7 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
               {santri.jenisKelamin}
             </span>
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white border border-slate-200 dark:border-transparent backdrop-blur-sm">
-              {santri.jenjang} • KELAS {santri.kelas}
+              {santri.jenjang === 'ALUMNI' ? 'ALUMNI' : santri.jenjang} • {santri.jenjang === 'ALUMNI' ? (santri.kelas.toLowerCase().includes('lulus') ? santri.kelas : `Lulus ${santri.kelas}`) : `KELAS ${santri.kelas}`}
             </span>
             {calculateAge(santri.tanggalLahir) && (
               <span className="px-3 py-1 rounded-full text-xs font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-200 border border-teal-300/60 dark:border-teal-700 backdrop-blur-sm">

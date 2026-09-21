@@ -26,6 +26,8 @@ export interface ExtractedDocumentData {
   confidence?: number;
   anggotaKeluarga?: FamilyMemberCandidate[];
   statusSosial?: 'REGULER' | 'YATIM' | 'PIATU' | 'YATIM_PIATU' | 'DHUAFA';
+  jenjangTerdeteksi?: 'SMP' | 'SMA' | 'SMK' | 'ALUMNI';
+  tahunLulus?: string;
 }
 
 export function cleanOcrDigits(input: string): string {
@@ -569,8 +571,28 @@ function extractSkl(text: string): Partial<ExtractedDocumentData> {
   const nisnMatch = text.match(/Nomor Induk Siswa Nasional\s*:\s*([0-9A-Za-z]+)/i);
   if (nisnMatch) data.nisn = cleanOcrDigits(nisnMatch[1]).slice(0, 10);
 
-  const sekolahMatch = text.match(/Kepala\s+(SMP\s+.+|MTs\s+.+|SD\s+.+)/i);
+  const sekolahMatch = text.match(/Kepala\s+(SMP\s+.+|MTs\s+.+|SD\s+.+|SMA\s+.+|SMK\s+.+|MA\s+.+)/i) ||
+                       text.match(/(?:Nama Sekolah|Sekolah|Madrasah)\s*:\s*([^\n|]+)/i) ||
+                       text.match(/\b((?:SMA|SMK|MA|SMP|MTs|SD|MI)\s+[A-Za-z0-9\s.,-]+)/i);
   if (sekolahMatch) data.asalSekolahSebelumnya = sekolahMatch[1].trim();
+
+  // Deteksi jenjang kelulusan
+  const isSmaSmk = /SMA|SMK|MADRASAH\s+ALIYAH|\bMA\b|SEKOLAH\s+MENENGAH\s+ATAS|SEKOLAH\s+MENENGAH\s+KEJURUAN/i.test(text);
+  const isSmpMts = /SMP|MTS|MADRASAH\s+TSANAWIYAH|SEKOLAH\s+MENENGAH\s+PERTAMA/i.test(text);
+  const isSdMi = /SD|MI|MADRASAH\s+IBTIDAIYAH|SEKOLAH\s+DASAR/i.test(text);
+
+  if (isSmaSmk) {
+    data.jenjangTerdeteksi = 'ALUMNI';
+  } else if (isSmpMts) {
+    data.jenjangTerdeteksi = 'SMA';
+  } else if (isSdMi) {
+    data.jenjangTerdeteksi = 'SMP';
+  }
+
+  const thnMatch = text.match(/Tahun\s*(?:Pelajaran|Ajaran|Kelulusan)?\s*[:.]?\s*(20[123]\d)/i) || text.match(/\b(20[123]\d)\b/);
+  if (thnMatch) {
+    data.tahunLulus = thnMatch[1];
+  }
 
   return data;
 }
