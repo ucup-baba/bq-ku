@@ -372,24 +372,13 @@ export function DocumentUploadBox({
         {/* Tombol Pemicu Magic Multi-Scan */}
         <button
           type="button"
-          onClick={() => {
-            if (isNameEmpty) {
-              alert('Silakan tulis Nama Lengkap Calon Santri pada Langkah 1 di atas terlebih dahulu.');
-              return;
-            }
-            setIsBatchModalOpen(true);
-          }}
-          disabled={isNameEmpty}
-          className={`w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
-            isNameEmpty
-              ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700 cursor-not-allowed shadow-none'
-              : 'bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 active:scale-[0.99] text-white shadow-md hover:shadow-lg'
-          }`}
-          title={isNameEmpty ? 'Ketik nama santri di Langkah 1 terlebih dahulu' : 'Pindai banyak dokumen sekaligus'}
+          onClick={() => setIsBatchModalOpen(true)}
+          className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 active:scale-[0.99] text-white shadow-md hover:shadow-lg cursor-pointer"
+          title="Pindai banyak dokumen sekaligus"
         >
-          {isNameEmpty ? <LockKey size={16} weight="fill" /> : <Sparkle size={16} weight="fill" className="text-amber-300" />}
+          <Sparkle size={16} weight="fill" className="text-amber-300" />
           <span>✨ Multi-Scan Sekaligus</span>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isNameEmpty ? 'bg-slate-300 dark:bg-slate-700 text-slate-500' : 'bg-white/20 text-white'}`}>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-white/20 text-white">
             Batch AI
           </span>
         </button>

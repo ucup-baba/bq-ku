@@ -110,6 +110,10 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   // Superpower 2 & 4: Mobile Stepper (1: Berkas & Nama, 2: Identitas Santri, 3: Orang Tua & Domisili, 4: Pendidikan & Minat)
   const [activeMobileStep, setActiveMobileStep] = useState<number>(1);
 
+  // Modern In-App Toast & Field Highlight Notification
+  const [toastMessage, setToastMessage] = useState<{ title: string; desc: string } | null>(null);
+  const [nameHighlight, setNameHighlight] = useState<boolean>(false);
+
   // Superpower 5: Local Storage Draft Resiliency
   const DRAFT_STORAGE_KEY = 'bq_draft_santri_form';
   const [hasExistingDraft, setHasExistingDraft] = useState<boolean>(false);
@@ -734,7 +738,14 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
 
   const handleStepClick = (targetStep: number) => {
     if (targetStep > 1 && isFormNameEmpty) {
-      alert('Silakan tulis Nama Lengkap Calon Santri pada Langkah 1 terlebih dahulu.');
+      setToastMessage({
+        title: 'Nama Santri Belum Diisi',
+        desc: 'Silakan isi Nama Lengkap Calon Santri pada Langkah 1 terlebih dahulu untuk melanjutkan ke langkah berikutnya.',
+      });
+      setNameHighlight(true);
+      setTimeout(() => setNameHighlight(false), 3500);
+      setTimeout(() => setToastMessage(null), 4000);
+
       const nameInput = document.querySelector('input[placeholder*="Muhammad Hanif"]') as HTMLInputElement;
       if (nameInput) {
         nameInput.focus();
@@ -748,6 +759,32 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-20 md:pb-12">
+      {/* Modern In-App Toast Notification (Menggantikan Alert Browser Chrome) */}
+      {toastMessage && (
+        <div className="fixed top-3 left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-50 animate-in fade-in slide-in-from-top-3 duration-300">
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-900/95 dark:bg-slate-800/95 text-white shadow-2xl border-2 border-amber-500/80 flex items-start gap-3 backdrop-blur-md">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/30">
+              <LockKey size={18} weight="fill" />
+            </div>
+            <div className="flex-1 min-w-0 pr-1">
+              <h5 className="font-extrabold text-xs sm:text-sm text-amber-300 tracking-wide flex items-center gap-1.5">
+                <span>{toastMessage.title}</span>
+              </h5>
+              <p className="text-[11px] sm:text-xs text-slate-200 font-medium mt-0.5 leading-relaxed">
+                {toastMessage.desc}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <X size={16} weight="bold" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Superpower 2: Mobile Sticky Stepper Header (Navigasi Atas yang Selalu Menempel saat Scroll di Mobile) */}
       <div className="block md:hidden sticky top-0 z-30 -mt-4 -mx-4 px-4 pt-3 pb-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 shadow-md transition-all rounded-b-2xl">
         <div className="flex items-center justify-between gap-2 mb-2">
@@ -957,7 +994,9 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
                 }}
                 placeholder="Contoh: Muhammad Hanif"
                 className={`w-full px-4 py-3 rounded-2xl border text-sm font-semibold transition-all shadow-inner ${
-                  isNameLockedFromKk 
+                  nameHighlight
+                    ? 'ring-4 ring-amber-400 border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-slate-900 dark:text-slate-100 animate-pulse'
+                    : isNameLockedFromKk 
                     ? 'bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700 cursor-not-allowed select-all pr-24'
                     : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none'
                 }`}
@@ -974,6 +1013,12 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
                 </button>
               )}
             </div>
+            {nameHighlight && (
+              <p className="text-[11px] font-bold text-amber-600 dark:text-amber-400 mt-1.5 flex items-center gap-1 animate-in fade-in">
+                <WarningCircle size={14} weight="fill" />
+                <span>Ketik nama calon santri di sini terlebih dahulu.</span>
+              </p>
+            )}
             {isNameLockedFromKk && (
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 Nama terkunci otomatis sebagai acuan dokumen. Klik tombol <strong>Hapus</strong> jika ingin mengganti santri.
