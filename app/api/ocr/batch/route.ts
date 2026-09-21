@@ -162,11 +162,12 @@ export async function POST(req: NextRequest) {
 
               // Upload individual 1-page PDF if split so preview opens ONLY this single page!
               if (pdfResult.pageBuffer) {
-                const pageSuffix = pdfResults.length > 1 ? `hal${pdfResult.halaman}` : undefined;
+                const sameCategoryCount = pdfResults.filter(r => r.kategori === pdfResult.kategori).length;
+                const pageSuffix = sameCategoryCount > 1 ? `hal${pdfResult.halaman}` : undefined;
                 try {
                   const uploadedPage = await optimizeAndUpload(
                     pdfResult.pageBuffer,
-                    `${item.fileName.replace(/\.pdf$/i, '')}_hal${pdfResult.halaman}.pdf`,
+                    `${item.fileName.replace(/\.pdf$/i, '')}.pdf`,
                     'application/pdf',
                     namaSantri || finalExtracted?.namaLengkap || null,
                     tahunMasuk,
@@ -334,11 +335,12 @@ export async function POST(req: NextRequest) {
             let pageFileName = file.name;
 
             if (pdfResult.pageBuffer) {
-              const pageSuffix = pdfResults.length > 1 ? `hal${pdfResult.halaman}` : undefined;
+              const sameCategoryCount = pdfResults.filter(r => r.kategori === pdfResult.kategori).length;
+              const pageSuffix = sameCategoryCount > 1 ? `hal${pdfResult.halaman}` : undefined;
               try {
                 const pageUpload = await optimizeAndUpload(
                   pdfResult.pageBuffer,
-                  `${file.name.replace(/\.pdf$/i, '')}_hal${pdfResult.halaman}.pdf`,
+                  `${file.name.replace(/\.pdf$/i, '')}.pdf`,
                   'application/pdf',
                   namaSantri || finalExtracted?.namaLengkap || null,
                   tahunMasuk,
