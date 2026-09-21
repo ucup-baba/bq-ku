@@ -22,7 +22,7 @@ import { DocumentUploadBox } from './DocumentUploadBox';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
 import { useTheme } from '@/components/theme/ThemeProvider';
-import { toTitleCase } from '@/lib/utils/formatters';
+import { toTitleCase, calculateAge } from '@/lib/utils/formatters';
 
 export interface SantriFormProps {
   initialData?: any;
@@ -587,9 +587,20 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Tanggal Lahir *
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Tanggal Lahir *
+              </label>
+              {(() => {
+                const ageInfo = calculateAge(formData.tanggalLahir);
+                return ageInfo ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+                    <Sparkle size={12} weight="fill" className="text-teal-500" />
+                    Usia: {ageInfo.text}
+                  </span>
+                ) : null;
+              })()}
+            </div>
             <input
               type="date"
               required

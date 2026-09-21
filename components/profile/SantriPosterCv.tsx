@@ -18,12 +18,12 @@ import {
   Phone,
   ArrowLeft,
   IdentificationCard,
-  DownloadSimple,
   Eye,
   ArrowSquareOut
 } from '@phosphor-icons/react';
 import { DoodleArrow, DoodleBadgeTape, DoodleSparkle, DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
 import { DocumentPreviewModal } from '@/components/ui/DocumentPreviewModal';
+import { calculateAge, formatDateIndonesian } from '@/lib/utils/formatters';
 
 
 export interface SantriPosterCvProps {
@@ -183,6 +183,11 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white border border-slate-200 dark:border-transparent backdrop-blur-sm">
               {santri.jenjang} • KELAS {santri.kelas}
             </span>
+            {calculateAge(santri.tanggalLahir) && (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-teal-100 dark:bg-teal-900/60 text-teal-800 dark:text-teal-200 border border-teal-300/60 dark:border-teal-700 backdrop-blur-sm">
+                {calculateAge(santri.tanggalLahir)?.text}
+              </span>
+            )}
           </div>
         </div>
 
@@ -333,9 +338,18 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
               Identitas & Wali Santri
             </span>
             <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
-              <div className="flex justify-between">
+              <div className="flex justify-between items-baseline">
                 <span className="text-slate-500 dark:text-slate-400">TTL:</span>
-                <span className="font-semibold text-slate-900 dark:text-white">{santri.tempatLahir}, {santri.tanggalLahir}</span>
+                <div className="text-right">
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {santri.tempatLahir}, {formatDateIndonesian(santri.tanggalLahir) || santri.tanggalLahir}
+                  </span>
+                  {calculateAge(santri.tanggalLahir) && (
+                    <span className="ml-1.5 inline-block text-[10px] font-extrabold px-1.5 py-0.5 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 rounded border border-teal-200 dark:border-teal-800">
+                      {calculateAge(santri.tanggalLahir)?.text}
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Orang Tua:</span>

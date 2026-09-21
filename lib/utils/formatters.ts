@@ -105,3 +105,89 @@ export function matchBestFamilyMember(
   // Minimum score threshold to consider a valid match
   return highestScore >= 20 ? bestMatch : null;
 }
+
+/**
+ * Menghitung umur secara presisi dari tanggal lahir (format YYYY-MM-DD atau date valid).
+ * Mengembalikan objek umur { years, months, days, text } atau null jika tanggal tidak valid.
+ * Contoh:
+ * - "2006-08-11" -> { years: 18, months: 1, days: 10, text: "18 Tahun" }
+ */
+export function calculateAge(birthDateInput?: string | null): {
+  years: number;
+  months: number;
+  days: number;
+  text: string;
+} | null {
+  if (!birthDateInput) return null;
+
+  // Mendukung format YYYY-MM-DD
+  const parts = birthDateInput.split(/[-/]/);
+  let birthDate: Date;
+  if (parts.length === 3 && parts[0].length === 4) {
+    birthDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  } else {
+    birthDate = new Date(birthDateInput);
+  }
+
+  if (isNaN(birthDate.getTime())) return null;
+
+  const today = new Date();
+  if (birthDate > today) return null; // tanggal di masa depan
+
+  let years = today.getFullYear() - birthDate.getFullYear();
+  let months = today.getMonth() - birthDate.getMonth();
+  let days = today.getDate() - birthDate.getDate();
+
+  if (days < 0) {
+    months -= 1;
+    const prevMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    days += prevMonth.getDate();
+  }
+
+  if (months < 0) {
+    years -= 1;
+    months += 12;
+  }
+
+  let text = '';
+  if (years > 0) {
+    if (months > 0 && years < 7) {
+      text = `${years} Thn ${months} Bln`;
+    } else {
+      text = `${years} Tahun`;
+    }
+  } else if (months > 0) {
+    text = `${months} Bulan`;
+  } else {
+    text = `${days} Hari`;
+  }
+
+  return { years, months, days, text };
+}
+
+/**
+ * Format tanggal ke format Indonesia ramah dibaca.
+ * Contoh: "2006-08-11" -> "11 Agustus 2006"
+ */
+export function formatDateIndonesian(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const parts = dateStr.split(/[-/]/);
+  let date: Date;
+  if (parts.length === 3 && parts[0].length === 4) {
+    date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+  } else {
+    date = new Date(dateStr);
+  }
+
+  if (isNaN(date.getTime())) return dateStr;
+
+  const day = date.getDate();
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+
+  return `${day} ${month} ${year}`;
+}

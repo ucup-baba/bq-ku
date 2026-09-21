@@ -14,6 +14,7 @@ import {
   Buildings
 } from '@phosphor-icons/react';
 import { DoodleSparkle } from '@/components/ui/DoodleStickers';
+import { calculateAge } from '@/lib/utils/formatters';
 
 export interface SantriCardProps {
   santri: {
@@ -21,6 +22,7 @@ export interface SantriCardProps {
     namaLengkap: string;
     namaPanggilan?: string | null;
     nik: string;
+    tanggalLahir?: string | null;
     jenisKelamin: 'IKHWAN' | 'AKHWAT';
     jenjang: string;
     kelas: string;
@@ -69,6 +71,11 @@ export function SantriCard({ santri }: SantriCardProps) {
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
               {santri.jenjang} • {santri.kelas}
             </span>
+            {calculateAge(santri.tanggalLahir) && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200/80 dark:border-teal-800/80">
+                {calculateAge(santri.tanggalLahir)?.text}
+              </span>
+            )}
           </div>
 
           {hasKip && (
