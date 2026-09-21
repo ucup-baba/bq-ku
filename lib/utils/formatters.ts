@@ -331,3 +331,21 @@ export function checkNameMatch(
     reason: `Tingkat kecocokan nama rendah (${confidence}%). Kemungkinan santri yang berbeda.`,
   };
 }
+
+/**
+ * Memformat string angka 16 digit (NIK / No KK) menjadi kelompok 4 digit dengan spasi
+ * Contoh: "3404145501100001" -> "3404 1455 0110 0001"
+ */
+export function formatNikDisplay(val?: string | null): string {
+  if (!val) return '';
+  const digits = val.replace(/\D/g, '').slice(0, 16);
+  return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
+}
+
+/**
+ * Membersihkan input menjadi hanya angka murni (maksimal panjang tertentu jika ditentukan)
+ */
+export function cleanNumericInput(val: string, maxLen?: number): string {
+  const digits = val.replace(/\D/g, '');
+  return maxLen ? digits.slice(0, maxLen) : digits;
+}

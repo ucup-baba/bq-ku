@@ -17,7 +17,8 @@ import {
   FilePdf,
   Lightning,
   ShieldCheck,
-  LockKey
+  LockKey,
+  Camera
 } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase/client';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
@@ -96,6 +97,7 @@ export function DocumentUploadBox({
 
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -529,11 +531,21 @@ export function DocumentUploadBox({
 
               <button
                 type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:border-teal-500 text-xs font-semibold rounded-xl transition-colors shadow-sm cursor-pointer"
+                title="Foto ulang dokumen dengan kamera HP"
+              >
+                <Camera size={15} weight="bold" />
+                Foto Ulang
+              </button>
+
+              <button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="inline-flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:border-teal-500 text-xs font-semibold rounded-xl transition-colors shadow-sm cursor-pointer"
               >
                 <UploadSimple size={15} weight="bold" />
-                Ganti File Baru
+                Ganti File
               </button>
 
               {onRemoveDocument && (
@@ -551,28 +563,25 @@ export function DocumentUploadBox({
         ) : (
           /* Empty Dropzone */
           <div 
-            onClick={() => {
-              if (isNameEmpty) {
-                alert('Silakan tulis Nama Lengkap Calon Santri pada Langkah 1 di atas terlebih dahulu.');
-                const nameInput = document.querySelector('input[placeholder*="Muhammad Hanif"]') as HTMLInputElement;
-                if (nameInput) {
-                  nameInput.focus();
-                  nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                return;
-              }
-              fileInputRef.current?.click();
-            }}
-            className={`border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all ${
+            className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center transition-all ${
               isNameEmpty
                 ? 'border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/40 cursor-not-allowed'
-                : 'border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 cursor-pointer bg-slate-50/40 dark:bg-slate-800/20'
+                : 'border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 bg-slate-50/40 dark:bg-slate-800/20'
             }`}
           >
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*,.pdf"
+              disabled={isNameEmpty}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            <input
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
               disabled={isNameEmpty}
               onChange={handleFileChange}
               className="hidden"
@@ -585,13 +594,40 @@ export function DocumentUploadBox({
               {isNameEmpty ? <LockKey size={28} weight="fill" /> : <UploadSimple size={28} weight="duotone" />}
             </div>
             <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">
-              {isNameEmpty ? 'Tulis Nama Calon Santri di Atas Terlebih Dahulu' : 'Klik atau Tarik file foto berkas ke sini'}
+              {isNameEmpty ? 'Tulis Nama Calon Santri di Atas Terlebih Dahulu' : 'Unggah atau Foto Berkas Dokumen'}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-4">
               {isNameEmpty
                 ? 'Isi nama calon santri pada Langkah 1 di atas untuk membuka fitur unggah dan pemindaian berkas.'
-                : 'Mendukung file JPG, PNG, atau scan PDF. Dokumen langsung dibaca dan otomatis mengisi data santri.'}
+                : 'Mendukung foto berkas kamera HP (JPG, PNG) atau file PDF. Dokumen dibaca OCR presisi tinggi.'}
             </p>
+
+            {!isNameEmpty && (
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    cameraInputRef.current?.click();
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-sm active:scale-95 transition-all cursor-pointer"
+                >
+                  <Camera size={16} weight="bold" />
+                  Foto via Kamera HP
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:border-teal-500 text-slate-700 dark:text-slate-200 font-bold text-xs shadow-sm active:scale-95 transition-all cursor-pointer"
+                >
+                  <UploadSimple size={16} weight="bold" />
+                  Pilih Galeri / PDF
+                </button>
+              </div>
+            )}
           </div>
         )
       ) : (

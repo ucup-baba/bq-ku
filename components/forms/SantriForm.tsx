@@ -21,14 +21,18 @@ import {
   LockKeyOpen,
   Trash,
   XCircle,
-  WarningCircle
+  WarningCircle,
+  WhatsappLogo,
+  CaretRight,
+  CaretLeft,
+  FileText
 } from '@phosphor-icons/react';
 import { DocumentUploadBox } from './DocumentUploadBox';
 import { BatchItemResult } from './BatchScanModal';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from '@/lib/ocr/parser';
 import { DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
 import { useTheme } from '@/components/theme/ThemeProvider';
-import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, checkNameMatch } from '@/lib/utils/formatters';
+import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, checkNameMatch, formatNikDisplay, cleanNumericInput } from '@/lib/utils/formatters';
 import { DocumentGuardModal, DocumentMismatchData } from '@/components/modals/DocumentGuardModal';
 
 export interface SantriFormProps {
@@ -83,6 +87,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       initialData?.documents?.some((d: any) => d.kategori === 'KARTU_KELUARGA') && initialData?.namaLengkap
     );
   });
+
   const [pendingDocuments, setPendingDocuments] = useState<Array<{
     kategori: string;
     fileUrl: string;
@@ -101,6 +106,74 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     }
     return [];
   });
+
+  // Superpower 2 & 4: Mobile Stepper (1: Berkas & Nama, 2: Identitas Santri, 3: Orang Tua & Domisili, 4: Pendidikan & Minat)
+  const [activeMobileStep, setActiveMobileStep] = useState<number>(1);
+
+  // Superpower 5: Local Storage Draft Resiliency
+  const DRAFT_STORAGE_KEY = 'bq_draft_santri_form';
+  const [hasExistingDraft, setHasExistingDraft] = useState<boolean>(false);
+  const [draftInfo, setDraftInfo] = useState<{ name: string; time: string } | null>(null);
+
+  useEffect(() => {
+    if (isEditing) return;
+    try {
+      const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.formData?.namaLengkap) {
+          setHasExistingDraft(true);
+          setDraftInfo({
+            name: parsed.formData.namaLengkap,
+            time: parsed.savedAt
+              ? new Date(parsed.savedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+              : 'sebelumnya',
+          });
+        }
+      }
+    } catch {}
+  }, [isEditing]);
+
+  // Auto-save draft on form changes
+  useEffect(() => {
+    if (isEditing || !formData.namaLengkap.trim()) return;
+    const timeout = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          DRAFT_STORAGE_KEY,
+          JSON.stringify({
+            formData,
+            pendingDocuments,
+            savedAt: Date.now(),
+          })
+        );
+      } catch {}
+    }, 800);
+    return () => clearTimeout(timeout);
+  }, [formData, pendingDocuments, isEditing]);
+
+  const handleRestoreDraft = () => {
+    try {
+      const saved = localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.formData) {
+          setFormData(parsed.formData);
+          if (parsed.pendingDocuments) setPendingDocuments(parsed.pendingDocuments);
+          if (parsed.formData.jenisKelamin) setGenderTheme(parsed.formData.jenisKelamin);
+          setOcrAutoFilledNotice(`Draf pendaftaran untuk "${parsed.formData.namaLengkap}" berhasil dipulihkan!`);
+        }
+      }
+    } catch {}
+    setHasExistingDraft(false);
+  };
+
+  const handleDiscardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {}
+    setHasExistingDraft(false);
+  };
 
 
   // Ekstraksi data santri ke formulir
@@ -640,6 +713,11 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         }
       }
 
+      // Bersihkan draf lokal saat santri berhasil disimpan
+      try {
+        localStorage.removeItem(DRAFT_STORAGE_KEY);
+      } catch {}
+
       if (onSuccess) {
         onSuccess(data.data);
       } else {
@@ -653,7 +731,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-24">
+    <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-32 md:pb-24">
       {/* Top Banner / Heading */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div>
@@ -684,8 +762,91 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         </div>
       </div>
 
+      {/* Superpower 5: Draft Recovery Banner */}
+      {hasExistingDraft && (
+        <div className="p-4 rounded-3xl bg-teal-50 dark:bg-teal-950/50 border-2 border-teal-300 dark:border-teal-700 text-teal-950 dark:text-teal-100 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm animate-in fade-in duration-300">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-teal-100 dark:bg-teal-900 text-teal-700 dark:text-teal-300 flex items-center justify-center shrink-0 shadow-sm">
+              <Sparkle size={20} weight="fill" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                Ditemukan Draf Pendaftaran Tersimpan
+              </h4>
+              <p className="text-slate-600 dark:text-slate-300 text-[11px] mt-0.5">
+                Ada data pengisian santri <strong>&quot;{draftInfo?.name}&quot;</strong> (tersimpan pukul {draftInfo?.time}) yang belum sempat disimpan.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleRestoreDraft}
+              className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow transition-all cursor-pointer"
+            >
+              Pulihkan Draf
+            </button>
+            <button
+              type="button"
+              onClick={handleDiscardDraft}
+              className="px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold text-xs hover:bg-slate-300 transition-all cursor-pointer"
+            >
+              Abaikan
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Superpower 2: Mobile Stepper Header (Anti-Scroll Panjang di HP) */}
+      <div className="block md:hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-2.5 shadow-sm sticky top-14 z-30">
+        <div className="grid grid-cols-4 gap-1.5">
+          {[
+            { step: 1, label: 'Berkas', icon: FileText },
+            { step: 2, label: 'Santri', icon: User },
+            { step: 3, label: 'Keluarga', icon: Users },
+            { step: 4, label: 'Sekolah', icon: GraduationCap },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeMobileStep === tab.step;
+            const isPassed = activeMobileStep > tab.step;
+            return (
+              <button
+                key={tab.step}
+                type="button"
+                onClick={() => {
+                  setActiveMobileStep(tab.step);
+                  window.scrollTo({ top: 100, behavior: 'smooth' });
+                }}
+                className={`py-2.5 px-1 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
+                  isActive
+                    ? 'bg-teal-600 text-white shadow-sm ring-2 ring-teal-500/30'
+                    : isPassed
+                    ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <Icon size={18} weight={isActive ? 'fill' : 'duotone'} />
+                <span className="text-[10px] font-extrabold truncate w-full text-center">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Mini status indicator */}
+        <div className="mt-2 px-1 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="font-semibold text-teal-700 dark:text-teal-300 truncate mr-2">
+            Langkah {activeMobileStep}/4: {
+              activeMobileStep === 1 ? 'Identitas Nama & Berkas' :
+              activeMobileStep === 2 ? 'Data Diri & Pas Foto' :
+              activeMobileStep === 3 ? 'Orang Tua & Domisili' : 'Pendidikan & Minat'
+            }
+          </span>
+          <span className="font-bold shrink-0">{activeMobileStep * 25}%</span>
+        </div>
+      </div>
+
       {/* Step 1: Input Nama Santri (Paling Utama) */}
-      <div className="bg-white dark:bg-slate-900 border-2 border-teal-500/30 rounded-3xl p-6 shadow-sm space-y-4 relative overflow-hidden">
+      <div className={`${activeMobileStep === 1 ? 'block' : 'hidden'} md:block bg-white dark:bg-slate-900 border-2 border-teal-500/30 rounded-3xl p-6 shadow-sm space-y-4 relative overflow-hidden`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-teal-600 text-white flex items-center justify-center font-black text-sm shadow-sm">
@@ -810,7 +971,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
 
       {/* Step 2: Pindai Dokumen Kependudukan (OCR) */}
       {showOcrBox && (
-        <div className="bg-gradient-to-br from-teal-500/5 via-emerald-500/5 to-cyan-500/5 border border-teal-200 dark:border-teal-900/60 rounded-3xl p-6 shadow-sm space-y-4">
+        <div className={`${activeMobileStep === 1 ? 'block' : 'hidden'} md:block bg-gradient-to-br from-teal-500/5 via-emerald-500/5 to-cyan-500/5 border border-teal-200 dark:border-teal-900/60 rounded-3xl p-6 shadow-sm space-y-4`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-teal-800 dark:text-teal-300 font-bold text-base">
               <Sparkle size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
@@ -883,7 +1044,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       )}
 
       {/* Dual Photo Section */}
-      <div id="santri-form-section" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm scroll-mt-6">
+      <div id="santri-form-section" className={`${activeMobileStep === 2 ? 'block' : 'hidden'} md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm scroll-mt-6`}>
         <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 mb-1 flex items-center gap-2">
           <Camera size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
           Sistem Dua Foto Santri (Formal & Profil Kreatif)
@@ -921,12 +1082,12 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               {formData.fotoProfilUrl ? (
                 <img src={formData.fotoProfilUrl} alt="Profil" className="w-full h-full object-cover" />
               ) : (
-                <Sparkle size={36} className="text-slate-400" />
+                <User size={36} className="text-slate-400" />
               )}
             </div>
             <div>
-              <span className="inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-lime-100 dark:bg-lime-950/60 text-lime-800 dark:text-lime-300 mb-1">
-                Foto Profil Pose / CV
+              <span className="inline-block text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 mb-1">
+                Foto Pose / Profil Santai
               </span>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Pose ekspresif untuk poster CV digital</p>
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg cursor-pointer hover:bg-slate-50">
@@ -940,7 +1101,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       </div>
 
       {/* Bagian Identitas Kependudukan Santri */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
+      <div className={`${activeMobileStep === 2 ? 'block' : 'hidden'} md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5`}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
           <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <IdentificationCard size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
@@ -962,12 +1123,14 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
             </label>
             <input
               type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               required
-              maxLength={16}
-              value={formData.nik}
-              onChange={e => setFormData({ ...formData, nik: e.target.value.replace(/\D/g, '') })}
-              placeholder="3304..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              maxLength={19}
+              value={formatNikDisplay(formData.nik)}
+              onChange={e => setFormData({ ...formData, nik: cleanNumericInput(e.target.value, 16) })}
+              placeholder="3404 1455 0110 0001"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-mono tracking-wide focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
           </div>
 
@@ -978,11 +1141,13 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
             </label>
             <input
               type="text"
-              maxLength={16}
-              value={formData.noKk}
-              onChange={e => setFormData({ ...formData, noKk: e.target.value.replace(/\D/g, '') })}
-              placeholder="3304..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={19}
+              value={formatNikDisplay(formData.noKk)}
+              onChange={e => setFormData({ ...formData, noKk: cleanNumericInput(e.target.value, 16) })}
+              placeholder="3404 1423 1111 0001"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-mono tracking-wide focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
           </div>
 
@@ -993,11 +1158,13 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
             </label>
             <input
               type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={10}
               value={formData.nisn}
-              onChange={e => setFormData({ ...formData, nisn: e.target.value.replace(/\D/g, '') })}
-              placeholder="0087..."
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
+              onChange={e => setFormData({ ...formData, nisn: cleanNumericInput(e.target.value, 10) })}
+              placeholder="0087123456"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-mono tracking-wide focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
           </div>
 
@@ -1078,7 +1245,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       </div>
 
       {/* Bagian Pendidikan & Pondok */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
+      <div className={`${activeMobileStep === 4 ? 'block' : 'hidden'} md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5`}>
         <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <GraduationCap size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
           Pendidikan & Status Pondok
@@ -1174,10 +1341,10 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       </div>
 
       {/* Bagian Orang Tua & Wali */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
+      <div className={`${activeMobileStep === 3 ? 'block' : 'hidden'} md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5`}>
         <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <Users size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
-          Data Orang Tua / Wali
+          Data Orang Tua / Wali & Domisili
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1270,13 +1437,28 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-              Kontak WhatsApp Wali
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Kontak WhatsApp Wali
+              </label>
+              {formData.kontakWali && (
+                <a
+                  href={`https://wa.me/${formData.kontakWali.replace(/\D/g, '').replace(/^0/, '62')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                  title="Tes kirim pesan WhatsApp ke nomor wali"
+                >
+                  <WhatsappLogo size={14} weight="fill" className="text-emerald-500" />
+                  Tes Chat WA
+                </a>
+              )}
+            </div>
             <input
-              type="text"
+              type="tel"
+              inputMode="tel"
               value={formData.kontakWali}
-              onChange={e => setFormData({ ...formData, kontakWali: e.target.value })}
+              onChange={e => setFormData({ ...formData, kontakWali: cleanNumericInput(e.target.value, 16) })}
               placeholder="08123456789"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
@@ -1312,7 +1494,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       </div>
 
       {/* Bagian Profil CV & Minat Bakat (Untuk Kartu Poster CV) */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5">
+      <div className={`${activeMobileStep === 4 ? 'block' : 'hidden'} md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5`}>
         <div className="flex items-center justify-between">
           <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <BookOpen size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
@@ -1398,8 +1580,8 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         </div>
       )}
 
-      {/* Submit Button Bar */}
-      <div className="flex items-center justify-end gap-3 pt-4">
+      {/* Desktop Submit Button Bar */}
+      <div className="hidden md:flex items-center justify-end gap-3 pt-4">
         <button
           type="button"
           onClick={() => router.back()}
@@ -1415,6 +1597,63 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <FloppyDisk size={18} weight="bold" />
           {isSubmitting ? 'Menyimpan Data...' : isEditing ? 'Simpan Perubahan' : 'Simpan Data Santri'}
         </button>
+      </div>
+
+      {/* Superpower 4: Mobile Sticky Bottom Thumb Action Bar */}
+      <div className="block md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-3.5 shadow-2xl safe-area-inset-bottom">
+        <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
+          {activeMobileStep > 1 ? (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveMobileStep((prev) => (Math.max(1, prev - 1) as 1 | 2 | 3 | 4));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-all"
+            >
+              <CaretLeft size={16} weight="bold" />
+              Kembali
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-all"
+            >
+              <ArrowLeft size={16} />
+              Batal
+            </button>
+          )}
+
+          {activeMobileStep < 4 ? (
+            <button
+              type="button"
+              onClick={() => {
+                setActiveMobileStep((prev) => (Math.min(4, prev + 1) as 1 | 2 | 3 | 4));
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md active:scale-95 transition-all"
+            >
+              <span>
+                {activeMobileStep === 1
+                  ? 'Lanjut: Data Santri'
+                  : activeMobileStep === 2
+                  ? 'Lanjut: Orang Tua & Wali'
+                  : 'Lanjut: Pendidikan & Minat'}
+              </span>
+              <CaretRight size={16} weight="bold" />
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 text-white font-bold text-xs shadow-md active:scale-95 transition-all disabled:opacity-50"
+            >
+              <FloppyDisk size={16} weight="bold" />
+              <span>{isSubmitting ? 'Menyimpan...' : isEditing ? 'Simpan Perubahan' : 'Simpan Data Santri'}</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Modal Penjaga Identitas Dokumen */}

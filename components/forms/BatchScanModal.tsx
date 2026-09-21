@@ -17,7 +17,8 @@ import {
   FilePdf,
   ShieldCheck,
   Check,
-  LockKey
+  LockKey,
+  Camera
 } from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase/client';
 import { ExtractedDocumentData } from '@/lib/ocr/parser';
@@ -70,6 +71,7 @@ export function BatchScanModal({
   const [isDragOver, setIsDragOver] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
 
@@ -253,23 +255,26 @@ export function BatchScanModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-6">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end sm:justify-center sm:items-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
+      <div className="relative w-full sm:max-w-2xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col mt-auto sm:my-6">
+        {/* Mobile Pull Indicator */}
+        <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
+
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-transparent">
+        <div className="px-5 sm:px-6 py-4 sm:py-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-transparent">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 flex items-center justify-center shrink-0">
               <Sparkle size={22} weight="duotone" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <span>Magic Multi-Scan</span>
                 <span className="text-[10px] bg-teal-100 dark:bg-teal-900/70 text-teal-800 dark:text-teal-300 px-2 py-0.5 rounded-full font-bold">
-                  AI Klasifikasi Otomatis
+                  AI OCR
                 </span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Pindai banyak berkas (KK, Akta, KTP, SKL) sekaligus dalam 1 kali drop
+                Pindai banyak berkas (KK, Akta, KTP, SKL) sekaligus
               </p>
             </div>
           </div>
@@ -280,14 +285,14 @@ export function BatchScanModal({
               handleResetModal();
               onClose();
             }}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
           {errorBanner && (
             <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300 text-xs font-semibold flex items-center gap-2">
               <WarningCircle size={18} weight="fill" className="shrink-0 text-rose-600" />
@@ -312,7 +317,59 @@ export function BatchScanModal({
                 </div>
               )}
 
-              {/* Drag and Drop Zone */}
+              {/* Mobile Quick Action Buttons (Camera & File) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  disabled={isNameEmpty}
+                  onClick={() => cameraInputRef.current?.click()}
+                  className={`py-3 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer ${
+                    isNameEmpty
+                      ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
+                      : 'bg-teal-600 hover:bg-teal-700 text-white active:scale-[0.98]'
+                  }`}
+                >
+                  <Camera size={18} weight="bold" />
+                  <span>Jepret Kamera HP Langsung</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={isNameEmpty}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`py-3 px-4 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                    isNameEmpty
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-800 cursor-not-allowed'
+                      : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 active:scale-[0.98]'
+                  }`}
+                >
+                  <UploadSimple size={18} weight="bold" />
+                  <span>Pilih dari Galeri / File PDF</span>
+                </button>
+              </div>
+
+              {/* Hidden Inputs */}
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) handleFilesAdded(e.target.files);
+                }}
+              />
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) handleFilesAdded(e.target.files);
+                }}
+              />
+
+              {/* Drag and Drop Zone (Desktop & Tablet) */}
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
                 onDragLeave={() => setIsDragOver(false)}
@@ -321,37 +378,30 @@ export function BatchScanModal({
                   setIsDragOver(false);
                   if (e.dataTransfer.files) handleFilesAdded(e.dataTransfer.files);
                 }}
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer transition-all ${
-                  isDragOver
-                    ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-950/30 scale-[0.99]'
-                    : 'border-slate-300 dark:border-slate-700 hover:border-teal-400 hover:bg-slate-50/50 dark:hover:bg-slate-800/50'
+                onClick={() => {
+                  if (!isNameEmpty) fileInputRef.current?.click();
+                }}
+                className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 text-center transition-all ${
+                  isNameEmpty 
+                    ? 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 opacity-60 cursor-not-allowed'
+                    : isDragOver
+                    ? 'border-teal-500 bg-teal-50/50 dark:bg-teal-950/30 scale-[0.99] cursor-pointer'
+                    : 'border-slate-300 dark:border-slate-700 hover:border-teal-400 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 cursor-pointer'
                 }`}
               >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files) handleFilesAdded(e.target.files);
-                  }}
-                />
-
-                <div className="w-14 h-14 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto mb-3">
-                  <UploadSimple size={28} weight="duotone" />
+                <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto mb-2.5">
+                  <UploadSimple size={24} weight="duotone" />
                 </div>
 
-                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
-                  Pilih atau Tarik Semua Berkas ke Sini
+                <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
+                  Atau Tarik Semua Berkas ke Sini
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-3 leading-relaxed">
-                  Bisa beberapa foto dokumen (KK, Akta, SKL, KTP) atau 1 file PDF yang berisi gabungan berkas. Gemini AI akan otomatis memisahkan dan membaca isinya.
+                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-2 leading-relaxed">
+                  Foto dokumen (KK, Akta, SKL, KTP) atau 1 PDF gabungan. Gemini AI otomatis membaca isinya.
                 </p>
 
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-xs font-bold">
-                  <Lightning size={14} weight="fill" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-[11px] font-bold">
+                  <Lightning size={12} weight="fill" />
                   <span>Maksimal 10 berkas (Foto atau PDF)</span>
                 </div>
               </div>
