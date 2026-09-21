@@ -730,10 +730,109 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     }
   };
 
+  const isFormNameEmpty = !formData.namaLengkap || !formData.namaLengkap.trim();
+
+  const handleStepClick = (targetStep: number) => {
+    if (targetStep > 1 && isFormNameEmpty) {
+      alert('Silakan tulis Nama Lengkap Calon Santri pada Langkah 1 terlebih dahulu.');
+      const nameInput = document.querySelector('input[placeholder*="Muhammad Hanif"]') as HTMLInputElement;
+      if (nameInput) {
+        nameInput.focus();
+        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+    setActiveMobileStep(targetStep);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-44 md:pb-24">
-      {/* Top Banner / Heading */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+    <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-20 md:pb-12">
+      {/* Superpower 2: Mobile Sticky Stepper Header (Navigasi Atas yang Selalu Menempel saat Scroll di Mobile) */}
+      <div className="block md:hidden sticky top-0 z-30 -mt-4 -mx-4 px-4 pt-3 pb-2.5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-800/80 shadow-md transition-all rounded-b-2xl">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400 hover:text-teal-600 active:scale-95 transition-all"
+          >
+            <ArrowLeft size={14} weight="bold" />
+            <span>Kembali</span>
+          </button>
+          <span className="text-[11px] font-black tracking-wide text-slate-700 dark:text-slate-200">
+            {isEditing ? 'EDIT DATA SANTRI' : 'PENDAFTARAN SANTRI'}
+          </span>
+          <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950 px-2 py-0.5 rounded-full">
+            {activeMobileStep * 25}%
+          </span>
+        </div>
+
+        <div className="grid grid-cols-4 gap-1.5">
+          {[
+            { step: 1, label: 'Berkas', icon: FileText },
+            { step: 2, label: 'Santri', icon: User },
+            { step: 3, label: 'Keluarga', icon: Users },
+            { step: 4, label: 'Sekolah', icon: GraduationCap },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeMobileStep === tab.step;
+            const isPassed = activeMobileStep > tab.step;
+            const isLocked = tab.step > 1 && isFormNameEmpty;
+
+            return (
+              <button
+                key={tab.step}
+                type="button"
+                onClick={() => handleStepClick(tab.step)}
+                className={`py-2 px-1 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all ${
+                  isActive
+                    ? 'bg-teal-600 text-white shadow-sm ring-2 ring-teal-500/30'
+                    : isLocked
+                    ? 'opacity-40 text-slate-400 dark:text-slate-600 cursor-not-allowed bg-slate-100/60 dark:bg-slate-800/40'
+                    : isPassed
+                    ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 cursor-pointer'
+                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer'
+                }`}
+              >
+                <div className="relative">
+                  <Icon size={18} weight={isActive ? 'fill' : 'duotone'} />
+                  {isLocked && (
+                    <span className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-0.5 shadow">
+                      <LockKey size={8} weight="fill" />
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] font-extrabold truncate w-full text-center">
+                  {tab.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Mini status indicator & progress */}
+        <div className="mt-1.5 px-0.5 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="font-semibold text-teal-700 dark:text-teal-300 truncate mr-2">
+            Langkah {activeMobileStep}/4: {
+              activeMobileStep === 1 ? 'Identitas Nama & Berkas' :
+              activeMobileStep === 2 ? 'Data Diri & Pas Foto' :
+              activeMobileStep === 3 ? 'Orang Tua & Domisili' : 'Pendidikan & Minat'
+            }
+          </span>
+          {isFormNameEmpty ? (
+            <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+              <LockKey size={10} weight="fill" /> Isi nama santri
+            </span>
+          ) : (
+            <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold flex items-center gap-1">
+              <CheckCircle size={10} weight="fill" /> Siap lanjut
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Top Banner / Heading (Desktop Only) */}
+      <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div>
           <button
             type="button"
@@ -796,54 +895,6 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           </div>
         </div>
       )}
-
-      {/* Superpower 2: Mobile Stepper Header (Anti-Scroll Panjang di HP) */}
-      <div className="block md:hidden bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-2.5 shadow-sm sticky top-14 z-30">
-        <div className="grid grid-cols-4 gap-1.5">
-          {[
-            { step: 1, label: 'Berkas', icon: FileText },
-            { step: 2, label: 'Santri', icon: User },
-            { step: 3, label: 'Keluarga', icon: Users },
-            { step: 4, label: 'Sekolah', icon: GraduationCap },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeMobileStep === tab.step;
-            const isPassed = activeMobileStep > tab.step;
-            return (
-              <button
-                key={tab.step}
-                type="button"
-                onClick={() => {
-                  setActiveMobileStep(tab.step);
-                  window.scrollTo({ top: 100, behavior: 'smooth' });
-                }}
-                className={`py-2.5 px-1 rounded-2xl flex flex-col items-center justify-center gap-1 text-[11px] font-bold transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-teal-600 text-white shadow-sm ring-2 ring-teal-500/30'
-                    : isPassed
-                    ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300'
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <Icon size={18} weight={isActive ? 'fill' : 'duotone'} />
-                <span className="text-[10px] font-extrabold truncate w-full text-center">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Mini status indicator */}
-        <div className="mt-2 px-1 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-          <span className="font-semibold text-teal-700 dark:text-teal-300 truncate mr-2">
-            Langkah {activeMobileStep}/4: {
-              activeMobileStep === 1 ? 'Identitas Nama & Berkas' :
-              activeMobileStep === 2 ? 'Data Diri & Pas Foto' :
-              activeMobileStep === 3 ? 'Orang Tua & Domisili' : 'Pendidikan & Minat'
-            }
-          </span>
-          <span className="font-bold shrink-0">{activeMobileStep * 25}%</span>
-        </div>
-      </div>
 
       {/* Step 1: Input Nama Santri (Paling Utama) */}
       <div className={`${activeMobileStep === 1 ? 'block' : 'hidden'} md:block bg-white dark:bg-slate-900 border-2 border-teal-500/30 rounded-3xl p-6 shadow-sm space-y-4 relative overflow-hidden`}>
@@ -1043,6 +1094,31 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         </div>
       )}
 
+      {/* Tombol Lanjut Mobile untuk Langkah 1 */}
+      <div className={`${activeMobileStep === 1 ? 'block' : 'hidden'} md:hidden pt-2`}>
+        <button
+          type="button"
+          onClick={() => handleStepClick(2)}
+          className={`w-full py-4 px-5 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer ${
+            isFormNameEmpty
+              ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-70'
+              : 'bg-teal-600 hover:bg-teal-700 text-white active:scale-[0.98]'
+          }`}
+        >
+          {isFormNameEmpty ? (
+            <>
+              <LockKey size={18} weight="fill" className="text-amber-500" />
+              <span>Isi Nama Calon Santri untuk Lanjut</span>
+            </>
+          ) : (
+            <>
+              <span>Lanjut ke Langkah 2: Data Santri & Foto</span>
+              <CaretRight size={18} weight="bold" />
+            </>
+          )}
+        </button>
+      </div>
+
       {/* Dual Photo Section */}
       <div id="santri-form-section" className={`${activeMobileStep === 2 ? 'block' : 'hidden'} md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm scroll-mt-6`}>
         <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 mb-1 flex items-center gap-2">
@@ -1241,6 +1317,28 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Tombol Navigasi Mobile untuk Langkah 2 */}
+      <div className={`${activeMobileStep === 2 ? 'block' : 'hidden'} md:hidden pt-2`}>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleStepClick(1)}
+            className="py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <CaretLeft size={16} weight="bold" />
+            <span>Kembali: Berkas</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleStepClick(3)}
+            className="py-3 px-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <span>Lanjut: Keluarga</span>
+            <CaretRight size={16} weight="bold" />
+          </button>
         </div>
       </div>
 
@@ -1493,6 +1591,28 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         </div>
       </div>
 
+      {/* Tombol Navigasi Mobile untuk Langkah 3 */}
+      <div className={`${activeMobileStep === 3 ? 'block' : 'hidden'} md:hidden pt-2`}>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => handleStepClick(2)}
+            className="py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <CaretLeft size={16} weight="bold" />
+            <span>Kembali: Santri</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleStepClick(4)}
+            className="py-3 px-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-[0.98] transition-all cursor-pointer"
+          >
+            <span>Lanjut: Sekolah</span>
+            <CaretRight size={16} weight="bold" />
+          </button>
+        </div>
+      </div>
+
       {/* Bagian Profil CV & Minat Bakat (Untuk Kartu Poster CV) */}
       <div className={`${activeMobileStep === 4 ? 'block' : 'hidden'} md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-5`}>
         <div className="flex items-center justify-between">
@@ -1580,80 +1700,31 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         </div>
       )}
 
-      {/* Desktop Submit Button Bar */}
-      <div className="hidden md:flex items-center justify-end gap-3 pt-4">
+      {/* Submit Button Bar (Desktop & Mobile on Step 4) */}
+      <div className={`${activeMobileStep === 4 ? 'flex' : 'hidden'} md:flex items-center justify-end gap-3 pt-4`}>
         <button
           type="button"
-          onClick={() => router.back()}
-          className="px-6 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          onClick={() => {
+            if (activeMobileStep === 4) {
+              handleStepClick(3);
+            } else {
+              router.back();
+            }
+          }}
+          className="px-5 py-3.5 rounded-2xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
         >
-          Batal
+          <CaretLeft size={16} weight="bold" className="md:hidden" />
+          <span className="md:hidden">Kembali: Keluarga</span>
+          <span className="hidden md:inline">Batal</span>
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white font-bold text-sm shadow-md transition-all disabled:opacity-50"
+          className="flex-1 md:flex-initial flex items-center justify-center gap-2 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white font-bold text-sm shadow-md transition-all disabled:opacity-50 cursor-pointer"
         >
           <FloppyDisk size={18} weight="bold" />
           {isSubmitting ? 'Menyimpan Data...' : isEditing ? 'Simpan Perubahan' : 'Simpan Data Santri'}
         </button>
-      </div>
-
-      {/* Superpower 4: Mobile Sticky Bottom Thumb Action Bar (Positioned neatly above MobileBottomNav) */}
-      <div className="block md:hidden fixed bottom-[58px] left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 px-3.5 py-2.5 shadow-xl">
-        <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
-          {activeMobileStep > 1 ? (
-            <button
-              type="button"
-              onClick={() => {
-                setActiveMobileStep((prev) => (Math.max(1, prev - 1) as 1 | 2 | 3 | 4));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-all"
-            >
-              <CaretLeft size={16} weight="bold" />
-              Kembali
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-all"
-            >
-              <ArrowLeft size={16} />
-              Batal
-            </button>
-          )}
-
-          {activeMobileStep < 4 ? (
-            <button
-              type="button"
-              onClick={() => {
-                setActiveMobileStep((prev) => (Math.min(4, prev + 1) as 1 | 2 | 3 | 4));
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md active:scale-95 transition-all"
-            >
-              <span>
-                {activeMobileStep === 1
-                  ? 'Lanjut: Data Santri'
-                  : activeMobileStep === 2
-                  ? 'Lanjut: Orang Tua & Wali'
-                  : 'Lanjut: Pendidikan & Minat'}
-              </span>
-              <CaretRight size={16} weight="bold" />
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 text-white font-bold text-xs shadow-md active:scale-95 transition-all disabled:opacity-50"
-            >
-              <FloppyDisk size={16} weight="bold" />
-              <span>{isSubmitting ? 'Menyimpan...' : isEditing ? 'Simpan Perubahan' : 'Simpan Data Santri'}</span>
-            </button>
-          )}
-        </div>
       </div>
 
       {/* Modal Penjaga Identitas Dokumen */}
