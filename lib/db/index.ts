@@ -48,17 +48,7 @@ export function getDb(): any {
       }
     }
 
-    // Auto seed initial data if running in non-test and table is empty
-    if (dbPath !== ':memory:' && process.env.NODE_ENV !== 'test') {
-      try {
-        const row = _db.prepare('SELECT COUNT(*) as count FROM santri').get() as { count: number };
-        if (row && row.count === 0) {
-          import('./seed').then(m => m.runSeed()).catch(e => console.error('Seed trigger error:', e));
-        }
-      } catch (err) {
-        // Ignore if table not ready
-      }
-    }
+    // Auto seed disabled per user instruction
   }
 
   return _db;
