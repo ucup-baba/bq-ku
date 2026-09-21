@@ -214,31 +214,31 @@ export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
     return {
       jenjang: 'ALUMNI',
       kelas: 'Lulus 2024',
-      sekolahSekarang: 'Alumni BQ / Perguruan Tinggi / Khidmah',
+      sekolahSekarang: '',
       label: 'Alumni (Lulusan SMA/SMK)',
-      noticeText: `🎓 Terdeteksi asal sekolah tingkat SMA/SMK (${schoolName}): Jenjang otomatis disetel ke "ALUMNI" (Status: Lulus).`,
+      noticeText: `🎓 Terdeteksi lulusan SMA/SMK (${schoolName}): Jenjang otomatis disetel ke "ALUMNI".`,
     };
   }
 
-  // 2. Asal SMP / MTs -> Masuk SMA IT Baitul Qowwam (Kelas 10)
+  // 2. Asal SMP / MTs -> Naik ke SMA (Kelas 10)
   if (/SMP|MTS|MADRASAH\s+TSANAWIYAH|SEKOLAH\s+MENENGAH\s+PERTAMA/i.test(s)) {
     return {
       jenjang: 'SMA',
       kelas: '10',
-      sekolahSekarang: 'SMA IT Baitul Qowwam',
-      label: 'SMA IT Baitul Qowwam (Kelas 10)',
-      noticeText: `🎓 Terdeteksi lulusan SMP/MTs (${schoolName}): Santri baru jenjang SMA! Jenjang otomatis disetel ke "SMA" (Kelas 10 • SMA IT Baitul Qowwam).`,
+      sekolahSekarang: '',
+      label: 'Jenjang SMA (Kelas 10)',
+      noticeText: `🎓 Terdeteksi lulusan SMP/MTs (${schoolName}): Jenjang otomatis disetel ke "SMA" (Kelas 10).`,
     };
   }
 
-  // 3. Asal SD / MI -> Masuk SMP IT Baitul Qowwam (Kelas 7)
+  // 3. Asal SD / MI -> Naik ke SMP (Kelas 7)
   if (/SD|MI|MADRASAH\s+IBTIDAIYAH|SEKOLAH\s+DASAR/i.test(s)) {
     return {
       jenjang: 'SMP',
       kelas: '7',
-      sekolahSekarang: 'SMP IT Baitul Qowwam',
-      label: 'SMP IT Baitul Qowwam (Kelas 7)',
-      noticeText: `🎓 Terdeteksi lulusan SD/MI (${schoolName}): Santri baru jenjang SMP! Jenjang otomatis disetel ke "SMP" (Kelas 7 • SMP IT Baitul Qowwam).`,
+      sekolahSekarang: '',
+      label: 'Jenjang SMP (Kelas 7)',
+      noticeText: `🎓 Terdeteksi lulusan SD/MI (${schoolName}): Jenjang otomatis disetel ke "SMP" (Kelas 7).`,
     };
   }
 
