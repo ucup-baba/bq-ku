@@ -25,7 +25,7 @@ import {
 } from '@phosphor-icons/react';
 import { DocumentUploadBox } from './DocumentUploadBox';
 import { BatchItemResult } from './BatchScanModal';
-import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
+import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from '@/lib/ocr/parser';
 import { DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, checkNameMatch } from '@/lib/utils/formatters';
@@ -158,10 +158,16 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       updated.tanggalLahir = normalizedTgl;
       newOcrTags.tanggalLahir = true;
     }
+    let g: 'IKHWAN' | 'AKHWAT' | undefined = undefined;
+    if (extracted.nik) {
+      const gNik = extractGenderFromNik(extracted.nik);
+      if (gNik) g = gNik;
+    }
     if (extracted.jenisKelamin) {
-      let g = extracted.jenisKelamin;
-      if (/LAKI|IKHWAN|PRIA/i.test(g)) g = 'IKHWAN';
-      else if (/PEREMPUAN|AKHWAT|WANITA/i.test(g)) g = 'AKHWAT';
+      if (/PEREMPUAN|AKHWAT|WANITA/i.test(extracted.jenisKelamin)) g = 'AKHWAT';
+      else if (/LAKI|IKHWAN|PRIA/i.test(extracted.jenisKelamin)) g = 'IKHWAN';
+    }
+    if (g) {
       updated.jenisKelamin = g;
       setGenderTheme(g);
       newOcrTags.jenisKelamin = true;
@@ -173,6 +179,10 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     if (extracted.namaIbu) {
       updated.namaIbu = extracted.namaIbu.includes('(Almh') ? extracted.namaIbu : toTitleCase(extracted.namaIbu);
       newOcrTags.namaIbu = true;
+    }
+    if (extracted.kontakWali) {
+      updated.kontakWali = extracted.kontakWali;
+      newOcrTags.kontakWali = true;
     }
     if (extracted.statusSosial) {
       updated.statusSosial = extracted.statusSosial;
@@ -391,14 +401,22 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         currentForm.tanggalLahir = parseIndonesianDate(rawTgl) || rawTgl;
         newOcrTags.tanggalLahir = true;
       }
-      if (ext.jenisKelamin && !currentForm.jenisKelamin) {
-        let g = ext.jenisKelamin;
-        if (/LAKI|IKHWAN|PRIA/i.test(g)) g = 'IKHWAN';
-        else if (/PEREMPUAN|AKHWAT|WANITA/i.test(g)) g = 'AKHWAT';
-        currentForm.jenisKelamin = g;
-        setGenderTheme(g);
+      // Deteksi Jenis Kelamin secara akurat (rumus NIK + teks dokumen)
+      let detectedGender: 'IKHWAN' | 'AKHWAT' | undefined = undefined;
+      if (ext.nik) {
+        const gNik = extractGenderFromNik(ext.nik);
+        if (gNik) detectedGender = gNik;
+      }
+      if (ext.jenisKelamin) {
+        if (/PEREMPUAN|AKHWAT|WANITA/i.test(ext.jenisKelamin)) detectedGender = 'AKHWAT';
+        else if (/LAKI|IKHWAN|PRIA/i.test(ext.jenisKelamin)) detectedGender = 'IKHWAN';
+      }
+      if (detectedGender) {
+        currentForm.jenisKelamin = detectedGender;
+        setGenderTheme(detectedGender);
         newOcrTags.jenisKelamin = true;
       }
+
       if (ext.namaAyah && !currentForm.namaAyah) {
         currentForm.namaAyah = ext.namaAyah.includes('(Alm') ? ext.namaAyah : toTitleCase(ext.namaAyah);
         newOcrTags.namaAyah = true;
@@ -406,6 +424,10 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       if (ext.namaIbu && !currentForm.namaIbu) {
         currentForm.namaIbu = ext.namaIbu.includes('(Almh') ? ext.namaIbu : toTitleCase(ext.namaIbu);
         newOcrTags.namaIbu = true;
+      }
+      if (ext.kontakWali && !currentForm.kontakWali) {
+        currentForm.kontakWali = ext.kontakWali;
+        newOcrTags.kontakWali = true;
       }
       if (ext.statusSosial && currentForm.statusSosial === 'REGULER') {
         currentForm.statusSosial = ext.statusSosial;

@@ -4,7 +4,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { generateStandardizedFileName } from '@/lib/utils/file-naming';
 import { classifyAndExtractDocument, classifyMultiPagePdf } from '@/lib/ocr/gemini-batch';
 import { matchBestFamilyMember } from '@/lib/utils/formatters';
-import { parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
+import { parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from '@/lib/ocr/parser';
 
 export const maxDuration = 60; // Allow up to 60s for batch processing
 
@@ -25,6 +25,7 @@ async function optimizeAndUpload(
   tahunMasuk: string | null,
   jenisKelamin: string | null,
   kategori: string,
+  suffix?: string | null,
 ): Promise<{ fileUrl: string; fileName: string; finalBuffer: Buffer; finalMime: string }> {
   const isImage = mimeType.startsWith('image/');
   const isPdf = mimeType === 'application/pdf';
@@ -56,6 +57,7 @@ async function optimizeAndUpload(
     kategori,
     originalFileName: originalName,
     ext: targetExt,
+    suffix,
   });
 
   let fileUrl = `/uploads/${fileName}`;
@@ -148,11 +150,42 @@ export async function POST(req: NextRequest) {
                 }
               }
 
+              // Determine gender for naming & state
+              let itemGender = finalExtracted?.jenisKelamin || jenisKelamin;
+              if (!itemGender && finalExtracted?.nik) {
+                const gNik = extractGenderFromNik(finalExtracted.nik);
+                if (gNik) itemGender = gNik;
+              }
+
+              let pageFileUrl = item.fileUrl;
+              let pageFileName = item.fileName;
+
+              // Upload individual 1-page PDF if split so preview opens ONLY this single page!
+              if (pdfResult.pageBuffer) {
+                const pageSuffix = pdfResults.length > 1 ? `hal${pdfResult.halaman}` : undefined;
+                try {
+                  const uploadedPage = await optimizeAndUpload(
+                    pdfResult.pageBuffer,
+                    `${item.fileName.replace(/\.pdf$/i, '')}_hal${pdfResult.halaman}.pdf`,
+                    'application/pdf',
+                    namaSantri || finalExtracted?.namaLengkap || null,
+                    tahunMasuk,
+                    itemGender || null,
+                    pdfResult.kategori,
+                    pageSuffix,
+                  );
+                  pageFileUrl = uploadedPage.fileUrl;
+                  pageFileName = uploadedPage.fileName;
+                } catch (uploadErr) {
+                  console.warn(`[batch] Gagal upload halaman terpisah ${pdfResult.halaman}:`, uploadErr);
+                }
+              }
+
               results.push({
                 index: i,
                 kategori: pdfResult.kategori,
-                fileUrl: item.fileUrl,
-                fileName: item.fileName,
+                fileUrl: pageFileUrl,
+                fileName: pageFileName,
                 extracted: finalExtracted,
               });
             }
@@ -263,14 +296,7 @@ export async function POST(req: NextRequest) {
             continue;
           }
 
-          // Upload the PDF once
-          const firstKategori = pdfResults[0].kategori;
-          const { fileUrl, fileName } = await optimizeAndUpload(
-            buffer, file.name, 'application/pdf',
-            namaSantri, tahunMasuk, jenisKelamin, firstKategori,
-          );
-
-          // Return each detected document from the PDF
+          // Return each detected document from the PDF with its own page upload
           for (const pdfResult of pdfResults) {
             let finalExtracted = pdfResult.data;
 
@@ -297,11 +323,41 @@ export async function POST(req: NextRequest) {
               }
             }
 
+            // Determine gender for naming & state
+            let itemGender = finalExtracted?.jenisKelamin || jenisKelamin;
+            if (!itemGender && finalExtracted?.nik) {
+              const gNik = extractGenderFromNik(finalExtracted.nik);
+              if (gNik) itemGender = gNik;
+            }
+
+            let pageFileUrl = '';
+            let pageFileName = file.name;
+
+            if (pdfResult.pageBuffer) {
+              const pageSuffix = pdfResults.length > 1 ? `hal${pdfResult.halaman}` : undefined;
+              try {
+                const pageUpload = await optimizeAndUpload(
+                  pdfResult.pageBuffer,
+                  `${file.name.replace(/\.pdf$/i, '')}_hal${pdfResult.halaman}.pdf`,
+                  'application/pdf',
+                  namaSantri || finalExtracted?.namaLengkap || null,
+                  tahunMasuk,
+                  itemGender || null,
+                  pdfResult.kategori,
+                  pageSuffix,
+                );
+                pageFileUrl = pageUpload.fileUrl;
+                pageFileName = pageUpload.fileName;
+              } catch (uploadErr) {
+                console.warn(`[batch] Gagal upload halaman terpisah ${pdfResult.halaman}:`, uploadErr);
+              }
+            }
+
             results.push({
               index: i,
               kategori: pdfResult.kategori,
-              fileUrl,
-              fileName,
+              fileUrl: pageFileUrl,
+              fileName: pageFileName,
               extracted: finalExtracted,
             });
           }

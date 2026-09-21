@@ -70,7 +70,7 @@ Catatan Khusus Kartu Keluarga (KK):
 - "tanggalLahir" SEMUA anggota keluarga wajib berformat YYYY-MM-DD agar dapat dibaca oleh input date browser.
 - "namaLengkap" dan "nik" di root default-kan ke calon santri (anak usia sekolah, contoh: Rahmat Kurniawan).`;
 
-    const candidateModels = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-flash-latest'];
+    const candidateModels = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-flash-latest'];
     let candidate: string | null = null;
 
     for (const modelName of candidateModels) {

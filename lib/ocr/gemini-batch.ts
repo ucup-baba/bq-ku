@@ -1,11 +1,33 @@
 import fs from 'fs';
 import path from 'path';
-import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from './parser';
+import { PDFDocument } from 'pdf-lib';
+import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from './parser';
+
+/**
+ * Split a multi-page PDF into individual 1-page PDF buffers.
+ */
+export async function splitPdfPages(pdfBuffer: Buffer): Promise<Buffer[]> {
+  try {
+    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const pageCount = pdfDoc.getPageCount();
+    const pages: Buffer[] = [];
+
+    for (let i = 0; i < pageCount; i++) {
+      const subDoc = await PDFDocument.create();
+      const [copiedPage] = await subDoc.copyPages(pdfDoc, [i]);
+      subDoc.addPage(copiedPage);
+      const pdfBytes = await subDoc.save();
+      pages.push(Buffer.from(pdfBytes));
+    }
+    return pages;
+  } catch (err) {
+    console.error('Error splitting PDF pages:', err);
+    return [pdfBuffer];
+  }
+}
 
 /**
  * Auto-classify a document image/PDF and extract structured data in one Gemini Vision call.
- * Unlike processGeminiVisionOcr (which requires a kategori hint), this function
- * asks Gemini to DETECT the document type automatically.
  */
 export async function classifyAndExtractDocument(
   imageBuffer: Buffer,
@@ -19,31 +41,43 @@ export async function classifyAndExtractDocument(
 
     const prompt = `Anda adalah asisten OCR AI presisi tinggi untuk administrasi pendaftaran berkas santri di Pondok Pesantren Baitul Qowwam (Yogyakarta).
 
-TUGAS UTAMA: Identifikasi OTOMATIS jenis dokumen Indonesia pada gambar ini, lalu ekstrak seluruh data identitas.
+TUGAS UTAMA: Identifikasi OTOMATIS jenis dokumen Indonesia pada gambar ini, lalu ekstrak seluruh data identitas santri dan keluarga secara akurat.
 
-Langkah:
-1. DETEKSI jenis dokumen: Apakah ini Kartu Keluarga (KK), KTP Orang Tua, Akta Kelahiran, SKL/Ijazah, KIP/PIP, KRM/PKH/KKS, atau SKTM?
-2. EKSTRAK semua data yang relevan sesuai jenis dokumen.
+ATURAN KETAT IDENTIFIKASI KATEGORI ("kategori"):
+1. "KARTU_KELUARGA": Dokumen berlabel "KARTU KELUARGA" dari Dukcapil yang memuat tabel susunan anggota keluarga, nomor KK, dan NIK.
+2. "AKTA_KELAHIRAN": Dokumen berlabel "KUTIPAN AKTA KELAHIRAN" / "SURAT KENAL LAHIR" dari Dinas Kependudukan dan Catatan Sipil.
+3. "KTP_ORTU": Kartu Tanda Penduduk milik Ayah atau Ibu.
+4. "SKL_IJAZAH": HANYA untuk dokumen resmi "SURAT KETERANGAN LULUS" atau "IJAZAH" yang diterbitkan oleh pihak sekolah dengan tanda tangan kepala sekolah, nilai kelulusan, atau cap/stempel resmi sekolah.
+5. "LAINNYA": Untuk "Formulir Pendaftaran", "Angket Calon Santri", lembar biodata santri Yayasan Baitul Qowwam, surat pernyataan, dll.
+   PERINGATAN PENTING: JANGAN sekali-kali menandai Formulir Pendaftaran / Angket sebagai "SKL_IJAZAH" meskipun di dalamnya tertulis nama sekolah asal (misal SMPN 1 Tempel) atau tahun lulus! Itu adalah Formulir Pendaftaran ("LAINNYA"), BUKAN Ijazah/SKL!
+6. "KIP_PIP" / "KRM_PKH_KKS" / "SKTM" / "SERTIFIKAT_PRESTASI": Sesuai dokumen bansos/prestasi.
+
+ATURAN KETAT JENIS KELAMIN ("jenisKelamin"):
+- "AKHWAT": Untuk calon santri Perempuan / Wanita / Siswi.
+  * PETUNJUK NIK: Di Indonesia, NIK perempuan memiliki 2 digit tanggal lahir bernilai LEBIH DARI 40 (misal NIK 34041455... angka 55 = 15 + 40, ini PASTI PEREMPUAN/AKHWAT).
+  * Pada formulir atau KK jika tertulis "PEREMPUAN" atau pada Akta tertulis "ANAK PEREMPUAN", wajib isi "AKHWAT"!
+- "IKHWAN": Untuk calon santri Laki-laki / Pria / Siswa (2 digit tanggal pada NIK bernilai 01-31).
 
 Kembalikan HANYA JSON valid (tanpa markdown) dengan format:
 {
-  "kategori": "KARTU_KELUARGA" | "KTP_ORTU" | "AKTA_KELAHIRAN" | "SKL_IJAZAH" | "KIP_PIP" | "KRM_PKH_KKS" | "SKTM",
+  "kategori": "KARTU_KELUARGA" | "KTP_ORTU" | "AKTA_KELAHIRAN" | "SKL_IJAZAH" | "KIP_PIP" | "KRM_PKH_KKS" | "SKTM" | "LAINNYA",
   "confidence": 0.0-1.0,
   "noKk": "16 digit nomor KK (jika KK)",
-  "nik": "16 digit NIK calon santri atau pemilik berkas",
-  "nisn": "10 digit NISN jika ada pada SKL/Ijazah/KIP",
+  "nik": "16 digit NIK calon santri",
+  "nisn": "10 digit NISN santri jika ada",
   "namaLengkap": "Nama lengkap calon santri (jika KK, pilih anak usia sekolah, BUKAN kepala keluarga)",
   "tempatLahir": "Kota/Kabupaten kelahiran",
   "tanggalLahir": "YYYY-MM-DD",
   "jenisKelamin": "IKHWAN" (Laki-laki) atau "AKHWAT" (Perempuan),
   "namaAyah": "Nama lengkap ayah kandung",
   "namaIbu": "Nama lengkap ibu kandung",
+  "kontakWali": "Nomor WhatsApp/telepon orang tua atau santri jika tercantum",
   "pekerjaanOrtu": "Pekerjaan orang tua",
-  "alamat": "Alamat lengkap termasuk Dusun/Jalan, RT/RW, Desa/Kelurahan, Kecamatan, Kab/Kota, Provinsi, dan Kode Pos",
-  "asalSekolahSebelumnya": "Nama sekolah asal jika tercantum di SKL/ijazah/KIP",
+  "alamat": "Alamat lengkap termasuk Dusun/Jalan, RT/RW, Desa/Kelurahan, Kecamatan, Kab/Kota, Provinsi",
+  "asalSekolahSebelumnya": "Nama sekolah asal santri",
   "jenjangTerdeteksi": "SMP" | "SMA" | "SMK" | "ALUMNI",
-  "tahunLulus": "Tahun kelulusan 4 digit",
-  "nomorDokumen": "Nomor surat/nomor akta/nomor KIP jika ada",
+  "tahunLulus": "Tahun kelulusan 4 digit jika ada",
+  "nomorDokumen": "Nomor surat/nomor akta jika ada",
   "statusSosial": "REGULER" | "YATIM" | "PIATU" | "YATIM_PIATU" | "DHUAFA",
   "anggotaKeluarga": [
     {
@@ -55,21 +89,9 @@ Kembalikan HANYA JSON valid (tanpa markdown) dengan format:
       "hubungan": "KEPALA KELUARGA" | "ISTRI" | "ANAK"
     }
   ]
-}
+}`;
 
-Catatan Khusus SKL / Ijazah:
-- SMA/SMK/MA → jenjangTerdeteksi: "ALUMNI"
-- SMP/MTs → jenjangTerdeteksi: "SMA" (santri baru masuk SMA)
-- SD/MI → jenjangTerdeteksi: "SMP" (santri baru masuk SMP)
-
-Catatan Khusus Kartu Keluarga (KK):
-- "noKk" = 16 digit nomor KK di bagian atas dokumen.
-- "namaAyah": nama AYAH KANDUNG, BUKAN otomatis kepala keluarga jika kepala keluarganya Ibu. Jika ayah meninggal, tulis '(Alm.)' dan set statusSosial: "YATIM".
-- "namaIbu": nama IBU KANDUNG. JANGAN mengisi namaAyah sama dengan namaIbu.
-- Daftarkan SELURUH anggota keluarga ke array "anggotaKeluarga".
-- tanggalLahir wajib format YYYY-MM-DD.`;
-
-    const candidateModels = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-flash-latest'];
+    const candidateModels = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-flash-latest'];
     let candidate: string | null = null;
 
     for (const modelName of candidateModels) {
@@ -102,9 +124,6 @@ Catatan Khusus Kartu Keluarga (KK):
             candidate = text;
             break;
           }
-        } else {
-          const errText = await res.text();
-          console.warn(`[batch] Model ${modelName} status ${res.status}: ${errText.slice(0, 80)}`);
         }
       } catch (mErr) {
         console.warn(`[batch] Model ${modelName} fetch error:`, mErr);
@@ -122,14 +141,20 @@ Catatan Khusus Kartu Keluarga (KK):
       return parseIndonesianDate(dStr) || dStr;
     };
 
-    const normalizeGender = (g: string | undefined): 'IKHWAN' | 'AKHWAT' | undefined => {
+    // Smart Gender Normalization (checks parsed text + NIK mathematical formula)
+    const normalizeGender = (g: string | undefined, nik?: string): 'IKHWAN' | 'AKHWAT' | undefined => {
+      // 1. Check NIK first (most mathematically certain: day > 40 means female)
+      if (nik) {
+        const nikGender = extractGenderFromNik(nik);
+        if (nikGender) return nikGender;
+      }
       if (!g) return undefined;
-      if (/LAKI|IKHWAN|PRIA/i.test(g)) return 'IKHWAN';
-      if (/PEREMPUAN|AKHWAT|WANITA/i.test(g)) return 'AKHWAT';
+      if (/PEREMPUAN|AKHWAT|WANITA|GIRL|FEMALE/i.test(g)) return 'AKHWAT';
+      if (/LAKI|IKHWAN|PRIA|BOY|MALE/i.test(g)) return 'IKHWAN';
       return undefined;
     };
 
-    const kategori = parsed.kategori || 'KARTU_KELUARGA';
+    const kategori = parsed.kategori || 'LAINNYA';
 
     const data: ExtractedDocumentData = {
       kategori,
@@ -139,9 +164,10 @@ Catatan Khusus Kartu Keluarga (KK):
       nisn: parsed.nisn,
       tempatLahir: parsed.tempatLahir,
       tanggalLahir: normalizeDate(parsed.tanggalLahir, parsed.nik),
-      jenisKelamin: normalizeGender(parsed.jenisKelamin),
+      jenisKelamin: normalizeGender(parsed.jenisKelamin, parsed.nik),
       namaAyah: parsed.namaAyah,
       namaIbu: parsed.namaIbu,
+      kontakWali: parsed.kontakWali,
       pekerjaanOrtu: parsed.pekerjaanOrtu,
       alamat: parsed.alamat,
       asalSekolahSebelumnya: parsed.asalSekolahSebelumnya,
@@ -154,7 +180,7 @@ Catatan Khusus Kartu Keluarga (KK):
         nik: m.nik,
         tempatLahir: m.tempatLahir,
         tanggalLahir: normalizeDate(m.tanggalLahir, m.nik),
-        gender: normalizeGender(m.gender),
+        gender: normalizeGender(m.gender, m.nik),
         hubungan: m.hubungan,
       })),
       rawText: candidate,
@@ -167,149 +193,43 @@ Catatan Khusus Kartu Keluarga (KK):
   }
 }
 
+export interface MultiPagePdfResult {
+  halaman: number;
+  kategori: string;
+  rawText: string;
+  data: ExtractedDocumentData;
+  pageBuffer: Buffer;
+}
+
 /**
- * Process a multi-page PDF: asks Gemini to classify and extract each page as a separate document.
- * Returns array of results, one per detected document.
+ * Process a multi-page PDF: splits into 1-page buffers and classifies each page individually.
+ * This guarantees each document has its OWN single-page file URL and distinct categorization!
  */
 export async function classifyMultiPagePdf(
   pdfBuffer: Buffer,
-): Promise<Array<{ kategori: string; rawText: string; data: ExtractedDocumentData }>> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return [];
-
+): Promise<MultiPagePdfResult[]> {
   try {
-    const base64Data = pdfBuffer.toString('base64');
+    const pageBuffers = await splitPdfPages(pdfBuffer);
+    const results: MultiPagePdfResult[] = [];
 
-    const prompt = `Anda adalah asisten OCR AI presisi tinggi untuk administrasi pendaftaran berkas santri di Pondok Pesantren Baitul Qowwam.
+    for (let pageIdx = 0; pageIdx < pageBuffers.length; pageIdx++) {
+      const pageBuf = pageBuffers[pageIdx];
+      const pageResult = await classifyAndExtractDocument(pageBuf, 'application/pdf');
 
-PDF ini mungkin mengandung BEBERAPA dokumen berbeda (misalnya halaman 1 = Kartu Keluarga, halaman 2 = Akta Kelahiran, dll).
-
-TUGAS: Identifikasi SETIAP halaman sebagai dokumen terpisah, deteksi jenisnya, dan ekstrak data masing-masing.
-
-Kembalikan HANYA JSON array valid (tanpa markdown):
-[
-  {
-    "halaman": 1,
-    "kategori": "KARTU_KELUARGA" | "KTP_ORTU" | "AKTA_KELAHIRAN" | "SKL_IJAZAH" | "KIP_PIP" | "KRM_PKH_KKS" | "SKTM",
-    "confidence": 0.0-1.0,
-    "noKk": "16 digit nomor KK",
-    "nik": "16 digit NIK",
-    "nisn": "10 digit NISN jika ada",
-    "namaLengkap": "Nama lengkap calon santri",
-    "tempatLahir": "Kota/Kabupaten",
-    "tanggalLahir": "YYYY-MM-DD",
-    "jenisKelamin": "IKHWAN" | "AKHWAT",
-    "namaAyah": "Nama ayah kandung",
-    "namaIbu": "Nama ibu kandung",
-    "pekerjaanOrtu": "Pekerjaan orang tua",
-    "alamat": "Alamat lengkap",
-    "asalSekolahSebelumnya": "Nama sekolah asal",
-    "jenjangTerdeteksi": "SMP" | "SMA" | "SMK" | "ALUMNI",
-    "tahunLulus": "2024",
-    "nomorDokumen": "Nomor surat/akta/KIP",
-    "statusSosial": "REGULER" | "YATIM" | "PIATU" | "YATIM_PIATU" | "DHUAFA",
-    "anggotaKeluarga": [...]
-  }
-]
-
-Jika seluruh halaman adalah dokumen YANG SAMA (misal KK multi-halaman), kembalikan 1 elemen saja dengan data lengkap.
-
-Catatan: SKL SMA/SMK → jenjangTerdeteksi "ALUMNI", SKL SMP → "SMA", SKL SD → "SMP".
-Untuk KK: namaLengkap = anak usia sekolah (BUKAN kepala keluarga). tanggalLahir wajib YYYY-MM-DD.`;
-
-    const candidateModels = ['gemini-3-flash-preview', 'gemini-3.1-flash-lite-preview', 'gemini-flash-latest'];
-    let candidate: string | null = null;
-
-    for (const modelName of candidateModels) {
-      try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: prompt },
-                    { inlineData: { mimeType: 'application/pdf', data: base64Data } }
-                  ]
-                }
-              ],
-              generationConfig: {
-                responseMimeType: 'application/json'
-              }
-            })
-          }
-        );
-
-        if (res.ok) {
-          const d = await res.json();
-          const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            candidate = text;
-            break;
-          }
-        }
-      } catch (mErr) {
-        console.warn(`[batch-pdf] Model ${modelName} error:`, mErr);
+      if (pageResult) {
+        results.push({
+          halaman: pageIdx + 1,
+          kategori: pageResult.kategori,
+          rawText: pageResult.rawText,
+          data: pageResult.data,
+          pageBuffer: pageBuf,
+        });
       }
     }
 
-    if (!candidate) return [];
-
-    const cleanJsonStr = candidate.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
-    let parsed = JSON.parse(cleanJsonStr);
-
-    // Ensure it's an array
-    if (!Array.isArray(parsed)) parsed = [parsed];
-
-    const normalizeDate = (dStr: string | undefined, nik?: string) => {
-      if (!dStr) return nik ? extractBirthDateFromNik(nik) || undefined : undefined;
-      return parseIndonesianDate(dStr) || dStr;
-    };
-
-    const normalizeGender = (g: string | undefined): 'IKHWAN' | 'AKHWAT' | undefined => {
-      if (!g) return undefined;
-      if (/LAKI|IKHWAN|PRIA/i.test(g)) return 'IKHWAN';
-      if (/PEREMPUAN|AKHWAT|WANITA/i.test(g)) return 'AKHWAT';
-      return undefined;
-    };
-
-    return parsed.map((item: any) => {
-      const kategori = item.kategori || 'KARTU_KELUARGA';
-      const data: ExtractedDocumentData = {
-        kategori,
-        namaLengkap: item.namaLengkap,
-        nik: item.nik,
-        noKk: item.noKk,
-        nisn: item.nisn,
-        tempatLahir: item.tempatLahir,
-        tanggalLahir: normalizeDate(item.tanggalLahir, item.nik),
-        jenisKelamin: normalizeGender(item.jenisKelamin),
-        namaAyah: item.namaAyah,
-        namaIbu: item.namaIbu,
-        pekerjaanOrtu: item.pekerjaanOrtu,
-        alamat: item.alamat,
-        asalSekolahSebelumnya: item.asalSekolahSebelumnya,
-        jenjangTerdeteksi: item.jenjangTerdeteksi,
-        tahunLulus: item.tahunLulus,
-        nomorDokumen: item.nomorDokumen,
-        statusSosial: item.statusSosial,
-        anggotaKeluarga: item.anggotaKeluarga?.map((m: any) => ({
-          nama: m.nama,
-          nik: m.nik,
-          tempatLahir: m.tempatLahir,
-          tanggalLahir: normalizeDate(m.tanggalLahir, m.nik),
-          gender: normalizeGender(m.gender),
-          hubungan: m.hubungan,
-        })),
-        rawText: candidate!,
-      };
-      return { kategori, rawText: candidate!, data };
-    });
+    return results;
   } catch (err) {
-    console.error('[batch-pdf] classifyMultiPagePdf error:', err);
+    console.error('[batch] classifyMultiPagePdf error:', err);
     return [];
   }
 }

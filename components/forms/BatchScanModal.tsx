@@ -51,6 +51,7 @@ const CATEGORY_LABELS: Record<string, { label: string; icon: any; color: string 
   KRM_PKH_KKS: { label: 'KRM / PKH / KKS', icon: FileText, color: 'text-orange-600 bg-orange-50 dark:bg-orange-950/60 dark:text-orange-400 border-orange-200' },
   SKTM: { label: 'SKTM', icon: FileText, color: 'text-teal-600 bg-teal-50 dark:bg-teal-950/60 dark:text-teal-400 border-teal-200' },
   SERTIFIKAT_PRESTASI: { label: 'Sertifikat Prestasi', icon: Certificate, color: 'text-rose-600 bg-rose-50 dark:bg-rose-950/60 dark:text-rose-400 border-rose-200' },
+  LAINNYA: { label: 'Formulir / Berkas Lainnya', icon: FileText, color: 'text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 border-slate-300' },
 };
 
 export function BatchScanModal({
@@ -493,6 +494,9 @@ export function BatchScanModal({
                                 )}
                                 {result.extracted.nik && (
                                   <span>NIK: {result.extracted.nik}</span>
+                                )}
+                                {result.extracted.jenisKelamin && (
+                                  <span>Gender: <b className={result.extracted.jenisKelamin === 'AKHWAT' ? 'text-pink-600 dark:text-pink-400' : 'text-teal-600 dark:text-teal-400'}>{result.extracted.jenisKelamin}</b></span>
                                 )}
                                 {result.extracted.noKk && (
                                   <span>No KK: {result.extracted.noKk}</span>

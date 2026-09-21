@@ -8,6 +8,7 @@ export interface FileNamingOptions {
   kategori?: string | null;
   originalFileName?: string | null;
   ext?: string | null;
+  suffix?: string | null;
 }
 
 export function slugify(text: string): string {
@@ -34,6 +35,7 @@ export function getKategoriShorthand(kategori?: string | null): string {
   if (k.includes('SERTIFIKAT')) return 'sertifikat';
   if (k.includes('FOTO_FORMAL') || k.includes('FORMAL')) return 'foto-formal';
   if (k.includes('FOTO_PROFIL') || k.includes('PROFIL') || k.includes('CV')) return 'foto-profil';
+  if (k.includes('LAINNYA') || k.includes('FORMULIR') || k.includes('ANGKET')) return 'formulir';
 
   return slugify(kategori) || 'berkas';
 }
@@ -54,7 +56,8 @@ export function generateStandardizedFileName(options: FileNamingOptions, uploadD
   if (!extension.startsWith('.')) extension = `.${extension}`;
   extension = extension.toLowerCase();
 
-  const baseName = `${tahun}_${gender}_${namaSlug}_${ketFile}`;
+  const suffixPart = options.suffix ? `_${options.suffix}` : '';
+  const baseName = `${tahun}_${gender}_${namaSlug}_${ketFile}${suffixPart}`;
   let finalName = `${baseName}${extension}`;
 
   // If uploadDir provided, ensure unique filename without accidental overwrites

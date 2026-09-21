@@ -28,6 +28,7 @@ export interface ExtractedDocumentData {
   statusSosial?: 'REGULER' | 'YATIM' | 'PIATU' | 'YATIM_PIATU' | 'DHUAFA';
   jenjangTerdeteksi?: 'SMP' | 'SMA' | 'SMK' | 'ALUMNI';
   tahunLulus?: string;
+  kontakWali?: string;
 }
 
 export function cleanOcrDigits(input: string): string {
@@ -133,6 +134,17 @@ export function extractBirthDateFromNik(nik: string): string | null {
   const mmStr = String(month).padStart(2, '0');
   const ddStr = String(day).padStart(2, '0');
   return `${fullYear}-${mmStr}-${ddStr}`;
+}
+
+export function extractGenderFromNik(nik: string): 'IKHWAN' | 'AKHWAT' | null {
+  if (!nik) return null;
+  const digits = cleanOcrDigits(nik);
+  if (digits.length < 12) return null;
+  const day = parseInt(digits.slice(6, 8), 10);
+  if (isNaN(day)) return null;
+  if (day > 40 && day <= 71) return 'AKHWAT';
+  if (day >= 1 && day <= 31) return 'IKHWAN';
+  return null;
 }
 
 function extractKtp(text: string): Partial<ExtractedDocumentData> {

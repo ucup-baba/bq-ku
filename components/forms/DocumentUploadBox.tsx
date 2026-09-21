@@ -52,6 +52,7 @@ export const DOCUMENT_CATEGORIES = [
   { id: 'KRM_PKH_KKS', label: 'KRM / PKH / KKS', wajib: false, icon: FileText, desc: 'Kartu Rentan Miskin / PKH' },
   { id: 'SKTM', label: 'Surat Keterangan Tidak Mampu', wajib: false, icon: FileText, desc: 'Dari Kelurahan/Desa' },
   { id: 'SERTIFIKAT_PRESTASI', label: 'Sertifikat Prestasi/Tahfidz', wajib: false, icon: Certificate, desc: 'Piagam lomba atau syahadah' },
+  { id: 'LAINNYA', label: 'Formulir / Berkas Lainnya', wajib: false, icon: FileText, desc: 'Formulir pendaftaran / berkas tambahan' },
 ];
 
 export function DocumentUploadBox({ 
