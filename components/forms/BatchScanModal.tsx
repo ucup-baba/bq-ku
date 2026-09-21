@@ -251,7 +251,7 @@ export function BatchScanModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col justify-end sm:justify-center sm:items-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
-      <div className="relative w-full sm:max-w-2xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] sm:max-h-[85vh] flex flex-col mt-auto sm:my-6">
+      <div className="relative w-full sm:max-w-2xl bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[82vh] sm:max-h-[85vh] flex flex-col mb-[62px] sm:mb-6 mt-auto">
         {/* Mobile Pull Indicator */}
         <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto my-2.5 sm:hidden shrink-0" />
 
@@ -364,6 +364,35 @@ export function BatchScanModal({
                 }}
               />
 
+              {/* Quick Action Card (Posisi AGAK DI ATAS agar langsung terlihat di HP tanpa scroll) */}
+              {selectedFiles.length > 0 && (
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-teal-500/15 via-emerald-500/20 to-teal-500/10 border-2 border-teal-500 dark:border-teal-400 shadow-md flex items-center justify-between gap-3 animate-in fade-in duration-200">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                      <Lightning size={20} weight="fill" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-teal-950 dark:text-teal-100 truncate">
+                        {selectedFiles.length} Berkas Siap Dipindai
+                      </p>
+                      <p className="text-[10px] text-teal-700 dark:text-teal-300">
+                        Klik tombol untuk mulai proses OCR AI
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleStartBatchOcr}
+                    disabled={isProcessing}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white font-extrabold text-xs shadow-lg active:scale-95 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Sparkle size={15} weight="fill" />
+                    <span>{isProcessing ? 'Memproses...' : 'Mulai Pindai'}</span>
+                  </button>
+                </div>
+              )}
+
               {/* Drag and Drop Zone (Desktop & Tablet) */}
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
@@ -376,7 +405,9 @@ export function BatchScanModal({
                 onClick={() => {
                   if (!isNameEmpty) fileInputRef.current?.click();
                 }}
-                className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 text-center transition-all ${
+                className={`border-2 border-dashed rounded-3xl text-center transition-all ${
+                  selectedFiles.length > 0 ? 'p-3.5 sm:p-5' : 'p-6 sm:p-8'
+                } ${
                   isNameEmpty 
                     ? 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 opacity-60 cursor-not-allowed'
                     : isDragOver
@@ -384,20 +415,24 @@ export function BatchScanModal({
                     : 'border-slate-300 dark:border-slate-700 hover:border-teal-400 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 cursor-pointer'
                 }`}
               >
-                <div className="w-12 h-12 rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto mb-2.5">
-                  <UploadSimple size={24} weight="duotone" />
+                <div className={`rounded-2xl bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto ${
+                  selectedFiles.length > 0 ? 'w-8 h-8 mb-1.5' : 'w-12 h-12 mb-2.5'
+                }`}>
+                  <UploadSimple size={selectedFiles.length > 0 ? 18 : 24} weight="duotone" />
                 </div>
 
-                <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 mb-1">
-                  Atau Tarik Semua Berkas ke Sini
+                <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 mb-0.5">
+                  {selectedFiles.length > 0 ? '+ Tambah Berkas Lainnya (Tarik / Klik)' : 'Atau Tarik Semua Berkas ke Sini'}
                 </h4>
-                <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-2 leading-relaxed">
-                  Foto dokumen (KK, Akta, SKL, KTP) atau 1 PDF gabungan. Gemini AI otomatis membaca isinya.
-                </p>
+                {selectedFiles.length === 0 && (
+                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-2 leading-relaxed">
+                    Foto dokumen (KK, Akta, SKL, KTP) atau 1 PDF gabungan. Gemini AI otomatis membaca isinya.
+                  </p>
+                )}
 
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-[11px] font-bold">
-                  <Lightning size={12} weight="fill" />
-                  <span>Maksimal 10 berkas (Foto atau PDF)</span>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-[10px] font-bold mt-1">
+                  <Lightning size={11} weight="fill" />
+                  <span>Maksimal 10 berkas</span>
                 </div>
               </div>
 

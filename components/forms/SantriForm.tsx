@@ -731,7 +731,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-32 md:pb-24">
+    <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-44 md:pb-24">
       {/* Top Banner / Heading */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
         <div>
@@ -1599,8 +1599,8 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         </button>
       </div>
 
-      {/* Superpower 4: Mobile Sticky Bottom Thumb Action Bar */}
-      <div className="block md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-3.5 shadow-2xl safe-area-inset-bottom">
+      {/* Superpower 4: Mobile Sticky Bottom Thumb Action Bar (Positioned neatly above MobileBottomNav) */}
+      <div className="block md:hidden fixed bottom-[58px] left-0 right-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 px-3.5 py-2.5 shadow-xl">
         <div className="flex items-center justify-between gap-2 max-w-md mx-auto">
           {activeMobileStep > 1 ? (
             <button

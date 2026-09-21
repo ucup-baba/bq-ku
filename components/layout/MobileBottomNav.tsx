@@ -16,11 +16,6 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const { theme, toggleTheme } = useTheme();
 
-  // Sembunyikan navbar bawah pada halaman formulir agar tidak menutupi tombol aksi atau modal
-  if (pathname === '/tambah' || pathname?.startsWith('/tambah/') || pathname?.endsWith('/edit')) {
-    return null;
-  }
-
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800/80 px-4 py-2 z-40 shadow-lg">
       <div className="flex items-center justify-around max-w-md mx-auto">
