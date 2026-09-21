@@ -22,10 +22,12 @@ import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } f
 import { DoodleBadgeTape, DoodleSparkle } from '@/components/ui/DoodleStickers';
 import { matchBestFamilyMember } from '@/lib/utils/formatters';
 import { DocumentPreviewModal } from '@/components/ui/DocumentPreviewModal';
+import { BatchScanModal, BatchItemResult } from './BatchScanModal';
 
 
 export interface DocumentUploadBoxProps {
   onDataExtracted?: (data: ExtractedDocumentData, fileUrl: string, kategori: string, fileName?: string) => void;
+  onBatchExtracted?: (results: BatchItemResult[]) => void;
   targetNamaSantri?: string;
   tahunMasuk?: number | string;
   jenisKelamin?: string;
@@ -52,6 +54,7 @@ export const DOCUMENT_CATEGORIES = [
 
 export function DocumentUploadBox({ 
   onDataExtracted, 
+  onBatchExtracted,
   targetNamaSantri, 
   tahunMasuk, 
   jenisKelamin, 
@@ -59,6 +62,7 @@ export function DocumentUploadBox({
   uploadedDocuments = [],
   onRemoveDocument
 }: DocumentUploadBoxProps) {
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [selectedKategori, setSelectedKategori] = useState('KARTU_KELUARGA');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [filePreview, setFilePreview] = useState<string | null>(null);
@@ -262,8 +266,8 @@ export function DocumentUploadBox({
         <DoodleSparkle className="text-lime-500" size={28} />
       </div>
 
-      {/* Upload Progress Bar */}
-      <div className="mb-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      {/* Upload Progress Bar + Multi-Scan Trigger */}
+      <div className="mb-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex-1 w-full">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
@@ -291,6 +295,19 @@ export function DocumentUploadBox({
             />
           </div>
         </div>
+
+        {/* Tombol Pemicu Magic Multi-Scan */}
+        <button
+          type="button"
+          onClick={() => setIsBatchModalOpen(true)}
+          className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 active:scale-[0.99] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all"
+        >
+          <Sparkle size={16} weight="fill" className="text-amber-300" />
+          <span>✨ Multi-Scan Sekaligus</span>
+          <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full font-bold">
+            Batch AI
+          </span>
+        </button>
       </div>
 
       {/* Kategori Berkas Selector */}
@@ -736,6 +753,20 @@ export function DocumentUploadBox({
           </div>
         </div>
       )}
+
+      {/* Batch Multi-Scan Modal */}
+      <BatchScanModal
+        isOpen={isBatchModalOpen}
+        onClose={() => setIsBatchModalOpen(false)}
+        onBatchApply={(results) => {
+          if (onBatchExtracted) {
+            onBatchExtracted(results);
+          }
+        }}
+        targetNamaSantri={targetNamaSantri}
+        tahunMasuk={tahunMasuk}
+        jenisKelamin={jenisKelamin}
+      />
 
       {/* Pop-up Document Preview Modal */}
       <DocumentPreviewModal

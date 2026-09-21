@@ -58,15 +58,27 @@ CREATE TABLE IF NOT EXISTS public.users (
   "createdAt" TEXT
 );
 
--- 4. KEAMANAN DATA (Row Level Security)
+-- 4. TABEL TOKEN UPLOAD MANDIRI WALI
+CREATE TABLE IF NOT EXISTS public.upload_tokens (
+  id TEXT PRIMARY KEY,
+  "santriId" TEXT NOT NULL REFERENCES public.santri(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  "expiresAt" TEXT NOT NULL,
+  "usedCount" INTEGER DEFAULT 0,
+  "createdAt" TEXT
+);
+
+-- 5. KEAMANAN DATA (Row Level Security)
 ALTER TABLE public.santri ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.upload_tokens ENABLE ROW LEVEL SECURITY;
 
 -- Kebijakan Akses (Memungkinkan aplikasi membaca & menyimpan data)
 CREATE POLICY "Public Read Write on santri" ON public.santri FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Read Write on documents" ON public.documents FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Public Read Write on users" ON public.users FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Public Read Write on upload_tokens" ON public.upload_tokens FOR ALL USING (true) WITH CHECK (true);
 
 -- 5. STORAGE BUCKET 'berkas' UNTUK DOKUMEN & FOTO
 INSERT INTO storage.buckets (id, name, public)

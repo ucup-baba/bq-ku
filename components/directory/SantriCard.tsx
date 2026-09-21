@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { 
   User, 
@@ -9,9 +9,12 @@ import {
   CheckCircle, 
   Clock, 
   ArrowRight, 
-  Sparkle,
-  FileText,
-  Buildings
+  Sparkle, 
+  FileText, 
+  Buildings,
+  WhatsappLogo,
+  SpinnerGap,
+  WarningCircle
 } from '@phosphor-icons/react';
 import { DoodleSparkle } from '@/components/ui/DoodleStickers';
 import { calculateAge } from '@/lib/utils/formatters';
@@ -31,12 +34,15 @@ export interface SantriCardProps {
     fotoFormalUrl?: string | null;
     fotoProfilUrl?: string | null;
     keahlian?: string | null;
+    kontakWali?: string | null;
     documents?: Array<{ kategori: string; statusVerifikasi: string }>;
   };
 }
 
 export function SantriCard({ santri }: SantriCardProps) {
   const isIkhwan = santri.jenisKelamin === 'IKHWAN';
+  const [isGeneratingWa, setIsGeneratingWa] = useState(false);
+  const [waError, setWaError] = useState<string | null>(null);
 
   // Document status counting
   const docs = santri.documents || [];
@@ -49,6 +55,53 @@ export function SantriCard({ santri }: SantriCardProps) {
     : [];
 
   const displayPhoto = santri.fotoProfilUrl || santri.fotoFormalUrl;
+
+  const handleSendWaReminder = async () => {
+    if (!santri.kontakWali) {
+      setWaError('Nomor WhatsApp wali belum tercantum. Silakan isi di menu "Edit Berkas" terlebih dahulu.');
+      setTimeout(() => setWaError(null), 6000);
+      return;
+    }
+
+    setIsGeneratingWa(true);
+    setWaError(null);
+    try {
+      const res = await fetch('/api/upload-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ santriId: santri.id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Gagal membuat tautan unggah');
+      }
+
+      // Format nomor HP agar standar WhatsApp internasional (62xxx)
+      let phone = santri.kontakWali.replace(/[^0-9]/g, '');
+      if (phone.startsWith('0')) {
+        phone = '62' + phone.substring(1);
+      } else if (!phone.startsWith('62')) {
+        phone = '62' + phone;
+      }
+
+      // Daftar berkas yang masih kurang
+      const missingLabels: string[] = [];
+      if (!docs.some(d => d.kategori === 'KARTU_KELUARGA')) missingLabels.push('• Kartu Keluarga (KK)');
+      if (!docs.some(d => d.kategori === 'AKTA_KELAHIRAN')) missingLabels.push('• Akta Kelahiran');
+      if (!docs.some(d => d.kategori === 'KTP_ORTU')) missingLabels.push('• KTP Orang Tua (Ayah/Ibu)');
+      if (!docs.some(d => d.kategori === 'SKL_IJAZAH')) missingLabels.push('• SKL / Ijazah Terakhir');
+
+      const message = `Assalamu'alaikum Warahmatullahi Wabarakatuh.\n\nYth. Bapak/Ibu Wali dari Ananda *${santri.namaLengkap}*.\n\nKami menginfokan bahwa kelengkapan berkas administrasi santri di *Pondok Pesantren Baitul Qowwam* saat ini masih belum lengkap (${uploadedRequired.length}/4 berkas wajib terunggah).\n\nBerkas yang belum lengkap:\n${missingLabels.join('\n')}\n\nMohon berkenan mengunggah foto atau pindaian berkas tersebut melalui tautan mandiri resmi berikut:\n${data.uploadUrl}\n\n_(Tautan di atas aman, resmi, dan dapat langsung difoto lewat HP tanpa perlu login)_\n\nAtas kerja sama Bapak/Ibu, kami ucapkan jazakumullah khairan katsiran.\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n\n— *Panitia Administrasi Baitul Qowwam*`;
+
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+    } catch (err: any) {
+      setWaError(err.message || 'Gagal menyiapkan pengingat WhatsApp');
+      setTimeout(() => setWaError(null), 6000);
+    } finally {
+      setIsGeneratingWa(false);
+    }
+  };
 
   return (
     <div className={`relative bg-white dark:bg-slate-900 border rounded-3xl p-5 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 flex flex-col justify-between ${
@@ -178,6 +231,38 @@ export function SantriCard({ santri }: SantriCardProps) {
               );
             })}
           </div>
+
+          {/* Tombol Pengingat WhatsApp jika berkas belum 4/4 */}
+          {uploadedRequired.length < 4 && (
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleSendWaReminder}
+                disabled={isGeneratingWa}
+                className="w-full py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm disabled:opacity-50"
+                title={santri.kontakWali ? `Kirim ke WA: ${santri.kontakWali}` : 'Kontak wali belum diisi'}
+              >
+                {isGeneratingWa ? (
+                  <>
+                    <SpinnerGap size={14} className="animate-spin" />
+                    <span>Menyiapkan Tautan WA...</span>
+                  </>
+                ) : (
+                  <>
+                    <WhatsappLogo size={15} weight="fill" className="shrink-0" />
+                    <span>Kirim Pengingat Berkas ke Wali</span>
+                  </>
+                )}
+              </button>
+
+              {waError && (
+                <p className="text-[10px] text-rose-500 dark:text-rose-400 mt-1 flex items-center gap-1 font-medium">
+                  <WarningCircle size={12} weight="fill" className="shrink-0" />
+                  <span>{waError}</span>
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

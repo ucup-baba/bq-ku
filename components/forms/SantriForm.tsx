@@ -24,6 +24,7 @@ import {
   WarningCircle
 } from '@phosphor-icons/react';
 import { DocumentUploadBox } from './DocumentUploadBox';
+import { BatchItemResult } from './BatchScanModal';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
 import { useTheme } from '@/components/theme/ThemeProvider';
@@ -315,6 +316,164 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     }
 
     applyExtractedData(extracted, fileUrl, kategori);
+  };
+
+  // Handler untuk hasil Magic Multi-Scan (Batch)
+  const handleBatchOcrCompleted = (results: BatchItemResult[]) => {
+    if (!results || results.length === 0) return;
+
+    // 1. Urutkan agar Kartu Keluarga diproses terlebih dahulu sebagai jangkar data master
+    const sorted = [...results].sort((a, b) => {
+      if (a.kategori === 'KARTU_KELUARGA') return -1;
+      if (b.kategori === 'KARTU_KELUARGA') return 1;
+      return 0;
+    });
+
+    let currentForm = { ...formData };
+    let masterName = currentForm.namaLengkap;
+    const addedDocs: any[] = [];
+    const newOcrTags: Record<string, boolean> = { ...ocrFilledFields };
+
+    for (const item of sorted) {
+      if (!item.extracted || item.error) continue;
+      const ext = item.extracted;
+
+      // Jika belum ada master name dan item adalah KK, tetapkan nama dari KK
+      if (item.kategori === 'KARTU_KELUARGA' && ext.namaLengkap) {
+        masterName = ext.namaLengkap;
+        setIsNameLockedFromKk(true);
+      }
+
+      // Validasi kesesuaian nama jika bukan KK dan master name sudah ada
+      if (item.kategori !== 'KARTU_KELUARGA' && masterName && ext.namaLengkap) {
+        const match = checkNameMatch(masterName, ext.namaLengkap);
+        if (!match.isMatch) {
+          console.warn(`[Batch] Melewati berkas ${item.fileName} karena nama (${ext.namaLengkap}) tidak cocok dengan (${masterName})`);
+          continue;
+        }
+      }
+
+      // Tambahkan ke pending documents
+      if (item.fileUrl) {
+        addedDocs.push({
+          kategori: item.kategori,
+          fileUrl: item.fileUrl,
+          nomorDokumen: ext.nomorDokumen || (item.kategori === 'KARTU_KELUARGA' ? ext.noKk : ext.nik),
+          rawOcrText: ext.rawText,
+          extractedFields: ext,
+          statusVerifikasi: 'VERIFIED',
+        });
+      }
+
+      // Map fields ke formulir
+      if (ext.namaLengkap && (!currentForm.namaLengkap || item.kategori === 'KARTU_KELUARGA')) {
+        currentForm.namaLengkap = toTitleCase(ext.namaLengkap);
+        newOcrTags.namaLengkap = true;
+      }
+      if (ext.nik && !currentForm.nik) {
+        currentForm.nik = ext.nik;
+        newOcrTags.nik = true;
+      }
+      if (ext.noKk && !currentForm.noKk) {
+        currentForm.noKk = ext.noKk;
+        newOcrTags.noKk = true;
+      }
+      if (ext.nisn && !currentForm.nisn) {
+        currentForm.nisn = ext.nisn;
+        newOcrTags.nisn = true;
+      }
+      if (ext.tempatLahir && !currentForm.tempatLahir) {
+        currentForm.tempatLahir = ext.tempatLahir;
+        newOcrTags.tempatLahir = true;
+      }
+      const rawTgl = ext.tanggalLahir || (ext.nik ? extractBirthDateFromNik(ext.nik) : null);
+      if (rawTgl && !currentForm.tanggalLahir) {
+        currentForm.tanggalLahir = parseIndonesianDate(rawTgl) || rawTgl;
+        newOcrTags.tanggalLahir = true;
+      }
+      if (ext.jenisKelamin && !currentForm.jenisKelamin) {
+        let g = ext.jenisKelamin;
+        if (/LAKI|IKHWAN|PRIA/i.test(g)) g = 'IKHWAN';
+        else if (/PEREMPUAN|AKHWAT|WANITA/i.test(g)) g = 'AKHWAT';
+        currentForm.jenisKelamin = g;
+        setGenderTheme(g);
+        newOcrTags.jenisKelamin = true;
+      }
+      if (ext.namaAyah && !currentForm.namaAyah) {
+        currentForm.namaAyah = ext.namaAyah.includes('(Alm') ? ext.namaAyah : toTitleCase(ext.namaAyah);
+        newOcrTags.namaAyah = true;
+      }
+      if (ext.namaIbu && !currentForm.namaIbu) {
+        currentForm.namaIbu = ext.namaIbu.includes('(Almh') ? ext.namaIbu : toTitleCase(ext.namaIbu);
+        newOcrTags.namaIbu = true;
+      }
+      if (ext.statusSosial && currentForm.statusSosial === 'REGULER') {
+        currentForm.statusSosial = ext.statusSosial;
+        newOcrTags.statusSosial = true;
+      }
+      if (ext.alamat && !currentForm.alamat) {
+        currentForm.alamat = ext.alamat;
+        newOcrTags.alamat = true;
+      }
+      if (ext.pekerjaanOrtu && !currentForm.pekerjaanOrtu) {
+        currentForm.pekerjaanOrtu = ext.pekerjaanOrtu;
+        newOcrTags.pekerjaanOrtu = true;
+      }
+
+      // Deteksi cerdas jenjang & asal sekolah
+      const rawSchool = ext.asalSekolahSebelumnya || '';
+      if (rawSchool && !currentForm.asalSekolahSebelumnya) {
+        currentForm.asalSekolahSebelumnya = rawSchool;
+        newOcrTags.asalSekolahSebelumnya = true;
+      }
+      const targetSchoolToAnalyze = rawSchool || ext.rawText || '';
+      const derivedEdu = deriveEducationFromPreviousSchool(targetSchoolToAnalyze);
+      if (derivedEdu && currentForm.jenjang === 'SMA') {
+        currentForm.jenjang = derivedEdu.jenjang;
+        currentForm.kelas = ext.tahunLulus && derivedEdu.jenjang === 'ALUMNI' ? `Lulus ${ext.tahunLulus}` : derivedEdu.kelas;
+        if (derivedEdu.sekolahSekarang) currentForm.sekolahSekarang = derivedEdu.sekolahSekarang;
+        newOcrTags.jenjang = true;
+        newOcrTags.kelas = true;
+      } else if (ext.jenjangTerdeteksi) {
+        if (ext.jenjangTerdeteksi === 'ALUMNI') {
+          currentForm.jenjang = 'ALUMNI';
+          currentForm.kelas = ext.tahunLulus ? `Lulus ${ext.tahunLulus}` : 'Lulus 2024';
+          newOcrTags.jenjang = true;
+          newOcrTags.kelas = true;
+        } else if (ext.jenjangTerdeteksi === 'SMA') {
+          currentForm.jenjang = 'SMA';
+          currentForm.kelas = '10';
+          newOcrTags.jenjang = true;
+          newOcrTags.kelas = true;
+        } else if (ext.jenjangTerdeteksi === 'SMP') {
+          currentForm.jenjang = 'SMP';
+          currentForm.kelas = '7';
+          newOcrTags.jenjang = true;
+          newOcrTags.kelas = true;
+        }
+      }
+    }
+
+    // Merge dokumen ke pending documents
+    setPendingDocuments(prev => {
+      const existingCategories = addedDocs.map(d => d.kategori);
+      const remaining = prev.filter(d => !existingCategories.includes(d.kategori));
+      return [...remaining, ...addedDocs];
+    });
+
+    setFormData(currentForm);
+    setOcrFilledFields(newOcrTags);
+
+    setOcrAutoFilledNotice(
+      `✨ Multi-Scan Berhasil! ${addedDocs.length} berkas diproses & data formulir telah terisi otomatis.`
+    );
+
+    setTimeout(() => {
+      const section = document.getElementById('santri-form-section');
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 200);
   };
 
   // Reset identitas dan berkas Kartu Keluarga jika ingin mengganti santri
@@ -644,6 +803,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <DocumentUploadBox 
             key={uploadBoxKey}
             onDataExtracted={handleOcrDataExtracted} 
+            onBatchExtracted={handleBatchOcrCompleted}
             targetNamaSantri={formData.namaLengkap} 
             tahunMasuk={formData.tahunMasuk}
             jenisKelamin={formData.jenisKelamin}

@@ -14,6 +14,15 @@ export type SantriDocument = {
   createdAt?: string | null;
 };
 
+export type UploadToken = {
+  id: string;
+  santriId: string;
+  token: string;
+  expiresAt: string;
+  usedCount: number;
+  createdAt?: string | null;
+};
+
 export type Santri = {
   id: string;
   namaLengkap: string;
@@ -366,4 +375,61 @@ export async function deleteDocument(id: string): Promise<boolean> {
   // SQLite Fallback
   const info = db.prepare('DELETE FROM documents WHERE id = ?').run(id);
   return info.changes > 0;
+}
+
+export async function createUploadTokenRecord(santriId: string, token: string, expiresAt: string): Promise<UploadToken> {
+  const id = 'tok_' + Math.random().toString(36).substring(2, 9);
+  const createdAt = new Date().toISOString();
+  const record: UploadToken = {
+    id,
+    santriId,
+    token,
+    expiresAt,
+    usedCount: 0,
+    createdAt,
+  };
+
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { data, error } = await supabase.from('upload_tokens').insert(record).select().single();
+    if (error) {
+      console.error('Error creating upload token:', error);
+      throw new Error(error.message);
+    }
+    return (data || record) as UploadToken;
+  }
+
+  // SQLite Fallback
+  const stmt = db.prepare(`
+    INSERT INTO upload_tokens (id, santriId, token, expiresAt, usedCount, createdAt)
+    VALUES (@id, @santriId, @token, @expiresAt, @usedCount, @createdAt)
+  `);
+  stmt.run(record);
+  return record;
+}
+
+export async function getUploadTokenRecord(token: string): Promise<UploadToken | null> {
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { data, error } = await supabase.from('upload_tokens').select('*').eq('token', token).single();
+    if (error || !data) return null;
+    return data as UploadToken;
+  }
+
+  // SQLite Fallback
+  const row = db.prepare('SELECT * FROM upload_tokens WHERE token = ?').get(token);
+  return (row as UploadToken) || null;
+}
+
+export async function incrementUploadTokenUsage(token: string): Promise<void> {
+  const supabase = getSupabaseServerClient();
+  if (supabase) {
+    const { data } = await supabase.from('upload_tokens').select('usedCount').eq('token', token).single();
+    const currentCount = data?.usedCount || 0;
+    await supabase.from('upload_tokens').update({ usedCount: currentCount + 1 }).eq('token', token);
+    return;
+  }
+
+  // SQLite Fallback
+  db.prepare('UPDATE upload_tokens SET usedCount = usedCount + 1 WHERE token = ?').run(token);
 }

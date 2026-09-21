@@ -49,3 +49,12 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL CHECK(role IN ('SUPERADMIN', 'PANITIA', 'VIEWER')),
   createdAt TEXT
 );
+
+CREATE TABLE IF NOT EXISTS upload_tokens (
+  id TEXT PRIMARY KEY,
+  santriId TEXT NOT NULL REFERENCES santri(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  expiresAt TEXT NOT NULL,
+  usedCount INTEGER DEFAULT 0,
+  createdAt TEXT
+);
