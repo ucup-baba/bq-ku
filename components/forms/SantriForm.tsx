@@ -22,7 +22,7 @@ import { DocumentUploadBox } from './DocumentUploadBox';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
 import { useTheme } from '@/components/theme/ThemeProvider';
-import { toTitleCase, calculateAge } from '@/lib/utils/formatters';
+import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool } from '@/lib/utils/formatters';
 
 export interface SantriFormProps {
   initialData?: any;
@@ -165,45 +165,57 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       updated.pekerjaanOrtu = extracted.pekerjaanOrtu;
       newOcrTags.pekerjaanOrtu = true;
     }
-    if (extracted.asalSekolahSebelumnya) {
-      updated.asalSekolahSebelumnya = extracted.asalSekolahSebelumnya;
+    let customNoticeText: string | null = null;
+    const rawSchoolName = extracted.asalSekolahSebelumnya || '';
+    if (rawSchoolName) {
+      updated.asalSekolahSebelumnya = rawSchoolName;
       newOcrTags.asalSekolahSebelumnya = true;
     }
 
-    // Opsi A: Deteksi cerdas jika berkas adalah SKL/Ijazah SMA / SMK / MA -> Otomatis set Jenjang ALUMNI
-    let customNoticeText: string | null = null;
-    const isSklCategory = kategori === 'SKL_IJAZAH';
-    const schoolUpper = (extracted.asalSekolahSebelumnya || extracted.rawText || '').toUpperCase();
-    const isSmaSmkIjazah = isSklCategory && (
-      extracted.jenjangTerdeteksi === 'ALUMNI' ||
-      /SMA|SMK|MADRASAH\s+ALIYAH|\bMA\b|SEKOLAH\s+MENENGAH\s+ATAS|SEKOLAH\s+MENENGAH\s+KEJURUAN/i.test(schoolUpper)
-    );
+    // Deteksi cerdas jenjang & status pendidikan di Baitul Qowwam berdasarkan asal sekolah atau teks berkas
+    const targetSchoolToAnalyze = rawSchoolName || extracted.rawText || '';
+    const derivedEdu = deriveEducationFromPreviousSchool(targetSchoolToAnalyze);
 
-    if (isSmaSmkIjazah) {
-      updated.jenjang = 'ALUMNI';
+    if (derivedEdu) {
+      updated.jenjang = derivedEdu.jenjang;
       newOcrTags.jenjang = true;
 
-      const gradYear = extracted.tahunLulus || new Date().getFullYear();
-      if (!updated.kelas || updated.kelas === '7' || updated.kelas === '10' || updated.kelas.toLowerCase().includes('kelas')) {
-        updated.kelas = `Lulus ${gradYear}`;
+      if (extracted.tahunLulus && derivedEdu.jenjang === 'ALUMNI') {
+        updated.kelas = `Lulus ${extracted.tahunLulus}`;
+      } else {
+        updated.kelas = derivedEdu.kelas;
+      }
+      newOcrTags.kelas = true;
+
+      updated.sekolahSekarang = derivedEdu.sekolahSekarang;
+      newOcrTags.sekolahSekarang = true;
+
+      customNoticeText = derivedEdu.noticeText;
+    } else if (extracted.jenjangTerdeteksi) {
+      if (extracted.jenjangTerdeteksi === 'ALUMNI') {
+        updated.jenjang = 'ALUMNI';
+        newOcrTags.jenjang = true;
+        updated.kelas = extracted.tahunLulus ? `Lulus ${extracted.tahunLulus}` : 'Lulus 2024';
         newOcrTags.kelas = true;
-      }
-
-      if (!updated.sekolahSekarang || updated.sekolahSekarang.includes('Baitul Qowwam')) {
-        updated.sekolahSekarang = `Alumni BQ (${gradYear}) / Kuliah / Khidmah`;
+        updated.sekolahSekarang = 'Alumni BQ / Perguruan Tinggi / Khidmah';
         newOcrTags.sekolahSekarang = true;
-      }
-
-      customNoticeText = `🎓 Ijazah SMA/SMK terdeteksi! Jenjang santri otomatis disetel ke "ALUMNI" (Status: ${updated.kelas}) sesuai aturan santri purna BQ.`;
-    } else if (isSklCategory && (extracted.jenjangTerdeteksi === 'SMA' || /SMP|MTS/i.test(schoolUpper))) {
-      // Lulusan SMP/MTs masuk jenjang SMA di BQ
-      if (formData.jenjang === 'SMP') {
+        customNoticeText = '🎓 Terdeteksi jenjang ALUMNI! Status disesuaikan ke Lulusan SMA/SMK BQ.';
+      } else if (extracted.jenjangTerdeteksi === 'SMA') {
         updated.jenjang = 'SMA';
         newOcrTags.jenjang = true;
-        if (!updated.kelas || updated.kelas === '7') {
-          updated.kelas = '10';
-          newOcrTags.kelas = true;
-        }
+        updated.kelas = '10';
+        newOcrTags.kelas = true;
+        updated.sekolahSekarang = 'SMA IT Baitul Qowwam';
+        newOcrTags.sekolahSekarang = true;
+        customNoticeText = '🎓 Terdeteksi jenjang SMA! Kelas disetel ke Kelas 10 • SMA IT Baitul Qowwam.';
+      } else if (extracted.jenjangTerdeteksi === 'SMP') {
+        updated.jenjang = 'SMP';
+        newOcrTags.jenjang = true;
+        updated.kelas = '7';
+        newOcrTags.kelas = true;
+        updated.sekolahSekarang = 'SMP IT Baitul Qowwam';
+        newOcrTags.sekolahSekarang = true;
+        customNoticeText = '🎓 Terdeteksi jenjang SMP! Kelas disetel ke Kelas 7 • SMP IT Baitul Qowwam.';
       }
     }
 
@@ -756,16 +768,60 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
 
           <div className="sm:col-span-4">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
-              <span>{formData.jenjang === 'ALUMNI' ? 'Asal SMA / SMK Terakhir (Lulusan)' : 'Asal Sekolah Sebelumnya (SD / MTs)'}</span>
+              <span>{formData.jenjang === 'ALUMNI' ? 'Asal SMA / SMK Terakhir (Lulusan)' : 'Asal Sekolah Sebelumnya (SD / MTs / SMP)'}</span>
               {ocrFilledFields.asalSekolahSebelumnya && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
             </label>
             <input
               type="text"
               value={formData.asalSekolahSebelumnya}
-              onChange={e => setFormData({ ...formData, asalSekolahSebelumnya: e.target.value })}
-              placeholder={formData.jenjang === 'ALUMNI' ? 'Contoh: SMA IT Baitul Qowwam / SMK Negeri 2 Depok' : 'Contoh: SD Negeri 1 Sleman'}
+              onChange={e => {
+                const val = e.target.value;
+                const derived = deriveEducationFromPreviousSchool(val);
+                if (derived) {
+                  setFormData(prev => ({
+                    ...prev,
+                    asalSekolahSebelumnya: val,
+                    jenjang: derived.jenjang,
+                    kelas: (prev.kelas === '7' || prev.kelas === '10' || prev.kelas.startsWith('Lulus') || !prev.kelas) ? derived.kelas : prev.kelas,
+                    sekolahSekarang: (prev.sekolahSekarang.includes('Baitul Qowwam') || prev.sekolahSekarang.includes('Alumni') || !prev.sekolahSekarang) ? derived.sekolahSekarang : prev.sekolahSekarang,
+                  }));
+                } else {
+                  setFormData(prev => ({ ...prev, asalSekolahSebelumnya: val }));
+                }
+              }}
+              placeholder={formData.jenjang === 'ALUMNI' ? 'Contoh: SMA IT Baitul Qowwam / SMK Negeri 2 Depok' : 'Contoh: SD Negeri 1 Sleman / SMP Muhammadiyah 1 Tempel'}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
+
+            {/* Quick sync suggestion chip if previous school detected doesn't match current jenjang */}
+            {(() => {
+              const suggestion = deriveEducationFromPreviousSchool(formData.asalSekolahSebelumnya);
+              if (suggestion && suggestion.jenjang !== formData.jenjang) {
+                return (
+                  <div className="mt-2.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                      <Sparkle size={15} weight="fill" className="text-amber-500 flex-shrink-0" />
+                      Asal sekolah terdeteksi lulusan {suggestion.jenjang === 'SMA' ? 'SMP/MTs' : suggestion.jenjang === 'SMP' ? 'SD/MI' : 'SMA/SMK'}. Rekomendasi jenjang: <strong>{suggestion.jenjang}</strong>.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          jenjang: suggestion.jenjang,
+                          kelas: suggestion.kelas,
+                          sekolahSekarang: suggestion.sekolahSekarang,
+                        }));
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer whitespace-nowrap"
+                    >
+                      Terapkan Jenjang {suggestion.jenjang}
+                    </button>
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
       </div>

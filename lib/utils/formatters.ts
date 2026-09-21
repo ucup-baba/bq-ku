@@ -191,3 +191,56 @@ export function formatDateIndonesian(dateStr?: string | null): string {
 
   return `${day} ${month} ${year}`;
 }
+
+/**
+ * Menentukan otomatis jenjang pendidikan di Baitul Qowwam, kelas awal,
+ * dan sekolah tujuan berdasarkan nama asal sekolah sebelumnya:
+ * - Asal SD/MI -> Masuk SMP IT Baitul Qowwam (Kelas 7)
+ * - Asal SMP/MTs -> Masuk SMA IT Baitul Qowwam (Kelas 10)
+ * - Asal SMA/SMK/MA -> Lulusan menengah -> ALUMNI BQ (Lulus)
+ */
+export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
+  jenjang: 'SMP' | 'SMA' | 'SMK' | 'ALUMNI';
+  kelas: string;
+  sekolahSekarang: string;
+  label: string;
+  noticeText: string;
+} | null {
+  if (!schoolName || !schoolName.trim()) return null;
+  const s = schoolName.toUpperCase().trim();
+
+  // 1. Asal SMA / SMK / MA -> Santri Purna / ALUMNI
+  if (/SMA|SMK|MADRASAH\s+ALIYAH|\bMA\b|SEKOLAH\s+MENENGAH\s+ATAS|SEKOLAH\s+MENENGAH\s+KEJURUAN/i.test(s)) {
+    return {
+      jenjang: 'ALUMNI',
+      kelas: 'Lulus 2024',
+      sekolahSekarang: 'Alumni BQ / Perguruan Tinggi / Khidmah',
+      label: 'Alumni (Lulusan SMA/SMK)',
+      noticeText: `🎓 Terdeteksi asal sekolah tingkat SMA/SMK (${schoolName}): Jenjang otomatis disetel ke "ALUMNI" (Status: Lulus).`,
+    };
+  }
+
+  // 2. Asal SMP / MTs -> Masuk SMA IT Baitul Qowwam (Kelas 10)
+  if (/SMP|MTS|MADRASAH\s+TSANAWIYAH|SEKOLAH\s+MENENGAH\s+PERTAMA/i.test(s)) {
+    return {
+      jenjang: 'SMA',
+      kelas: '10',
+      sekolahSekarang: 'SMA IT Baitul Qowwam',
+      label: 'SMA IT Baitul Qowwam (Kelas 10)',
+      noticeText: `🎓 Terdeteksi lulusan SMP/MTs (${schoolName}): Santri baru jenjang SMA! Jenjang otomatis disetel ke "SMA" (Kelas 10 • SMA IT Baitul Qowwam).`,
+    };
+  }
+
+  // 3. Asal SD / MI -> Masuk SMP IT Baitul Qowwam (Kelas 7)
+  if (/SD|MI|MADRASAH\s+IBTIDAIYAH|SEKOLAH\s+DASAR/i.test(s)) {
+    return {
+      jenjang: 'SMP',
+      kelas: '7',
+      sekolahSekarang: 'SMP IT Baitul Qowwam',
+      label: 'SMP IT Baitul Qowwam (Kelas 7)',
+      noticeText: `🎓 Terdeteksi lulusan SD/MI (${schoolName}): Santri baru jenjang SMP! Jenjang otomatis disetel ke "SMP" (Kelas 7 • SMP IT Baitul Qowwam).`,
+    };
+  }
+
+  return null;
+}
