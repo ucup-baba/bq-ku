@@ -16,8 +16,10 @@ import {
   Lightning,
   FilePdf,
   ShieldCheck,
-  Check
+  Check,
+  LockKey
 } from '@phosphor-icons/react';
+import { supabase } from '@/lib/supabase/client';
 import { ExtractedDocumentData } from '@/lib/ocr/parser';
 import { checkNameMatch, toTitleCase } from '@/lib/utils/formatters';
 
@@ -98,39 +100,119 @@ export function BatchScanModal({
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const isNameEmpty = !targetNamaSantri || !targetNamaSantri.trim();
+
   const handleStartBatchOcr = async () => {
+    if (isNameEmpty) {
+      setErrorBanner('Silakan tulis Nama Lengkap Calon Santri pada formulir Langkah 1 terlebih dahulu.');
+      return;
+    }
+
     if (selectedFiles.length === 0) {
       setErrorBanner('Silakan pilih minimal 1 berkas.');
       return;
     }
 
     setIsProcessing(true);
-    setProgressMsg(`Mengunggah & menganalisis ${selectedFiles.length} berkas dengan Gemini Vision...`);
+    setProgressMsg(`Menyiapkan ${selectedFiles.length} berkas...`);
     setErrorBanner(null);
 
     try {
-      const formData = new FormData();
-      selectedFiles.forEach(f => formData.append('files', f));
-      if (targetNamaSantri) formData.append('namaSantri', targetNamaSantri);
-      if (tahunMasuk) formData.append('tahunMasuk', String(tahunMasuk));
-      if (jenisKelamin) formData.append('jenisKelamin', jenisKelamin);
+      let resultsData: any[] = [];
 
-      const res = await fetch('/api/ocr/batch', {
-        method: 'POST',
-        body: formData,
-      });
+      // Strategi 1: Jika client Supabase tersedia, unggah langsung ke Supabase Cloud Storage
+      // Ini 100% menghindari batasan payload 4.5MB Vercel (mendukung file hingga 50MB)
+      if (supabase) {
+        const uploadedItems: Array<{ fileUrl: string; fileName: string }> = [];
 
-      const json = await res.json();
-      if (!res.ok || !json.success) {
-        throw new Error(json.error || 'Gagal memproses batch scan.');
+        for (let i = 0; i < selectedFiles.length; i++) {
+          const file = selectedFiles[i];
+          setProgressMsg(`Mengunggah berkas ${i + 1}/${selectedFiles.length}: ${file.name}...`);
+
+          const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const pathName = `${Date.now()}_${cleanName}`;
+
+          const { error: uploadError } = await supabase.storage
+            .from('berkas')
+            .upload(pathName, file, { upsert: true });
+
+          if (uploadError) {
+            throw new Error(`Gagal mengunggah ${file.name} ke storage: ${uploadError.message}`);
+          }
+
+          const { data: pUrl } = supabase.storage.from('berkas').getPublicUrl(pathName);
+          uploadedItems.push({
+            fileUrl: pUrl.publicUrl,
+            fileName: file.name,
+          });
+        }
+
+        setProgressMsg(`Memindai & mengekstrak data berkas dengan Gemini Vision AI...`);
+
+        const res = await fetch('/api/ocr/batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: uploadedItems,
+            namaSantri: targetNamaSantri,
+            tahunMasuk,
+            jenisKelamin,
+          }),
+        });
+
+        const resText = await res.text();
+        let json;
+        try {
+          json = JSON.parse(resText);
+        } catch {
+          if (res.status === 413 || resText.includes('Request Entity Too Large')) {
+            throw new Error('Ukuran berkas melebihi batas server (maks 4.5 MB). Silakan gunakan file yang lebih kecil.');
+          }
+          throw new Error(resText || `Gagal memproses batch OCR (Status ${res.status})`);
+        }
+
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Gagal memproses batch scan.');
+        }
+
+        resultsData = json.results;
+      } else {
+        // Strategi 2: Fallback multipart/form-data
+        const formData = new FormData();
+        selectedFiles.forEach(f => formData.append('files', f));
+        if (targetNamaSantri) formData.append('namaSantri', targetNamaSantri);
+        if (tahunMasuk) formData.append('tahunMasuk', String(tahunMasuk));
+        if (jenisKelamin) formData.append('jenisKelamin', jenisKelamin);
+
+        const res = await fetch('/api/ocr/batch', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const resText = await res.text();
+        let json;
+        try {
+          json = JSON.parse(resText);
+        } catch {
+          if (res.status === 413 || resText.includes('Request Entity Too Large')) {
+            throw new Error('Ukuran berkas terlalu besar untuk dikirim sekaligus (maks 4.5 MB). Silakan gunakan file yang lebih ringkas atau unggah satu per satu.');
+          }
+          throw new Error(resText || `Gagal memproses batch scan (Status ${res.status})`);
+        }
+
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || 'Gagal memproses batch scan.');
+        }
+
+        resultsData = json.results;
       }
 
       // First check if there's a KK in the results to establish master name
-      const kkResult = json.results.find((r: any) => r.kategori === 'KARTU_KELUARGA' && r.extracted?.namaLengkap);
+      const kkResult = resultsData.find((r: any) => r.kategori === 'KARTU_KELUARGA' && r.extracted?.namaLengkap);
       const masterName = targetNamaSantri || (kkResult?.extracted?.namaLengkap);
 
       // Validate name match for each result
-      const processedResults: BatchItemResult[] = json.results.map((r: any) => {
+      const processedResults: BatchItemResult[] = resultsData.map((r: any) => {
         let isMatch = true;
         if (masterName && r.extracted?.namaLengkap && r.kategori !== 'KARTU_KELUARGA') {
           const matchCheck = checkNameMatch(masterName, r.extracted.namaLengkap);
@@ -215,6 +297,20 @@ export function BatchScanModal({
           {/* STEP 1: Upload Dropzone (if results not yet processed) */}
           {!batchResults && (
             <div className="space-y-4">
+              {isNameEmpty && (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-3">
+                  <LockKey size={22} weight="fill" className="text-amber-600 shrink-0" />
+                  <div>
+                    <p className="font-bold text-slate-900 dark:text-slate-100">
+                      Nama Santri Belum Diisi di Formulir
+                    </p>
+                    <p className="text-[11px] text-amber-800 dark:text-amber-300 font-normal mt-0.5">
+                      Mohon tutup modal ini dan ketik <strong>Nama Lengkap Calon Santri</strong> pada formulir Langkah 1 terlebih dahulu sebagai patokan verifikasi dokumen.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Drag and Drop Zone */}
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
@@ -438,11 +534,16 @@ export function BatchScanModal({
             <button
               type="button"
               onClick={handleStartBatchOcr}
-              disabled={selectedFiles.length === 0 || isProcessing}
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white text-xs font-bold shadow-md transition-all disabled:opacity-50"
+              disabled={selectedFiles.length === 0 || isProcessing || isNameEmpty}
+              className={`inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all ${
+                isNameEmpty
+                  ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 cursor-not-allowed shadow-none'
+                  : 'bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white disabled:opacity-50'
+              }`}
+              title={isNameEmpty ? 'Isi nama santri pada formulir terlebih dahulu' : undefined}
             >
-              <Sparkle size={16} weight="fill" />
-              <span>Mulai Pindai {selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}</span>
+              {isNameEmpty ? <LockKey size={16} weight="fill" /> : <Sparkle size={16} weight="fill" />}
+              <span>{isNameEmpty ? 'Nama Santri Wajib Diisi' : `Mulai Pindai ${selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}`}</span>
             </button>
           ) : (
             <button

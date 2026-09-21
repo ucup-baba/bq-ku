@@ -83,6 +83,147 @@ async function optimizeAndUpload(
 
 export async function POST(req: NextRequest) {
   try {
+    const contentType = req.headers.get('content-type') || '';
+
+    // SUPPORT 1: JSON Payload (fileUrls already uploaded to Supabase Storage - avoids Vercel 4.5MB limit)
+    if (contentType.includes('application/json')) {
+      const body = await req.json();
+      const items = (body.items || []) as Array<{ fileUrl: string; fileName: string; kategori?: string }>;
+      const namaSantri = body.namaSantri as string | null;
+      const tahunMasuk = body.tahunMasuk as string | null;
+      const jenisKelamin = body.jenisKelamin as string | null;
+
+      if (!items || items.length === 0) {
+        return NextResponse.json({ error: 'Tidak ada berkas yang disediakan' }, { status: 400 });
+      }
+
+      const results: BatchResult[] = [];
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        try {
+          const fetchRes = await fetch(item.fileUrl);
+          if (!fetchRes.ok) {
+            throw new Error(`Gagal mengunduh berkas dari URL: HTTP ${fetchRes.status}`);
+          }
+          const arrayBuf = await fetchRes.arrayBuffer();
+          const buffer = Buffer.from(arrayBuf);
+          const isPdf = item.fileName.toLowerCase().endsWith('.pdf') || item.fileUrl.toLowerCase().includes('.pdf');
+
+          if (isPdf) {
+            const pdfResults = await classifyMultiPagePdf(buffer);
+            if (pdfResults.length === 0) {
+              results.push({
+                index: i,
+                kategori: 'UNKNOWN',
+                fileUrl: item.fileUrl,
+                fileName: item.fileName,
+                extracted: null,
+                error: 'Gagal mengklasifikasi dokumen PDF',
+              });
+              continue;
+            }
+
+            for (const pdfResult of pdfResults) {
+              let finalExtracted = pdfResult.data;
+              if (namaSantri && pdfResult.data?.anggotaKeluarga && pdfResult.data.anggotaKeluarga.length > 0) {
+                const matched = matchBestFamilyMember(namaSantri, pdfResult.data.anggotaKeluarga);
+                if (matched) {
+                  let bDate = matched.tanggalLahir || pdfResult.data.tanggalLahir;
+                  if (bDate) bDate = parseIndonesianDate(bDate) || bDate;
+                  else if (matched.nik) bDate = extractBirthDateFromNik(matched.nik) || undefined;
+
+                  let gender = matched.gender || pdfResult.data.jenisKelamin;
+                  if (/LAKI|IKHWAN|PRIA/i.test(gender || '')) gender = 'IKHWAN';
+                  else if (/PEREMPUAN|AKHWAT|WANITA/i.test(gender || '')) gender = 'AKHWAT';
+
+                  finalExtracted = {
+                    ...pdfResult.data,
+                    namaLengkap: matched.nama,
+                    nik: matched.nik || pdfResult.data.nik,
+                    tempatLahir: matched.tempatLahir || pdfResult.data.tempatLahir,
+                    tanggalLahir: bDate,
+                    jenisKelamin: gender,
+                  };
+                }
+              }
+
+              results.push({
+                index: i,
+                kategori: pdfResult.kategori,
+                fileUrl: item.fileUrl,
+                fileName: item.fileName,
+                extracted: finalExtracted,
+              });
+            }
+          } else {
+            // Image
+            const mimeType = item.fileUrl.endsWith('.png') ? 'image/png' : item.fileUrl.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+            const result = await classifyAndExtractDocument(buffer, mimeType);
+            if (!result) {
+              results.push({
+                index: i,
+                kategori: 'UNKNOWN',
+                fileUrl: item.fileUrl,
+                fileName: item.fileName,
+                extracted: null,
+                error: 'Gagal mengklasifikasi dokumen gambar',
+              });
+              continue;
+            }
+
+            let finalExtracted = result.data;
+            if (namaSantri && result.data?.anggotaKeluarga && result.data.anggotaKeluarga.length > 0) {
+              const matched = matchBestFamilyMember(namaSantri, result.data.anggotaKeluarga);
+              if (matched) {
+                let bDate = matched.tanggalLahir || result.data.tanggalLahir;
+                if (bDate) bDate = parseIndonesianDate(bDate) || bDate;
+                else if (matched.nik) bDate = extractBirthDateFromNik(matched.nik) || undefined;
+
+                let gender = matched.gender || result.data.jenisKelamin;
+                if (/LAKI|IKHWAN|PRIA/i.test(gender || '')) gender = 'IKHWAN';
+                else if (/PEREMPUAN|AKHWAT|WANITA/i.test(gender || '')) gender = 'AKHWAT';
+
+                finalExtracted = {
+                  ...result.data,
+                  namaLengkap: matched.nama,
+                  nik: matched.nik || result.data.nik,
+                  tempatLahir: matched.tempatLahir || result.data.tempatLahir,
+                  tanggalLahir: bDate,
+                  jenisKelamin: gender,
+                };
+              }
+            }
+
+            results.push({
+              index: i,
+              kategori: result.kategori,
+              fileUrl: item.fileUrl,
+              fileName: item.fileName,
+              extracted: finalExtracted,
+            });
+          }
+        } catch (itemErr: any) {
+          results.push({
+            index: i,
+            kategori: 'ERROR',
+            fileUrl: item.fileUrl,
+            fileName: item.fileName,
+            extracted: null,
+            error: itemErr.message || 'Gagal memproses berkas',
+          });
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        totalFiles: items.length,
+        totalResults: results.length,
+        results,
+      });
+    }
+
+    // SUPPORT 2: Multipart Form-Data (Direct file uploads)
     const formData = await req.formData();
     const files = formData.getAll('files') as File[];
     const namaSantri = formData.get('namaSantri') as string | null;

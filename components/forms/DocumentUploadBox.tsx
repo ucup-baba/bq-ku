@@ -16,8 +16,10 @@ import {
   Eye,
   FilePdf,
   Lightning,
-  ShieldCheck
+  ShieldCheck,
+  LockKey
 } from '@phosphor-icons/react';
+import { supabase } from '@/lib/supabase/client';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleBadgeTape, DoodleSparkle } from '@/components/ui/DoodleStickers';
 import { matchBestFamilyMember } from '@/lib/utils/formatters';
@@ -62,6 +64,7 @@ export function DocumentUploadBox({
   uploadedDocuments = [],
   onRemoveDocument
 }: DocumentUploadBoxProps) {
+  const isNameEmpty = !targetNamaSantri || !targetNamaSantri.trim();
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
   const [selectedKategori, setSelectedKategori] = useState('KARTU_KELUARGA');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -118,6 +121,11 @@ export function DocumentUploadBox({
 
 
   const handleStartOcr = async () => {
+    if (isNameEmpty) {
+      setErrorMessage('Silakan tulis Nama Lengkap Calon Santri pada Langkah 1 di atas terlebih dahulu.');
+      return;
+    }
+
     if (!selectedFile) {
       setErrorMessage('Silakan pilih berkas dokumen terlebih dahulu.');
       return;
@@ -127,34 +135,56 @@ export function DocumentUploadBox({
     setErrorMessage(null);
 
     try {
-      // 1. Upload file
-      const uploadFormData = new FormData();
-      uploadFormData.append('file', selectedFile);
-      uploadFormData.append('kategori', selectedKategori);
-      if (tahunMasuk) uploadFormData.append('tahunMasuk', String(tahunMasuk));
-      if (jenisKelamin) uploadFormData.append('jenisKelamin', jenisKelamin);
-      if (targetNamaSantri) uploadFormData.append('namaSantri', targetNamaSantri);
-      if (enhanceDocument) uploadFormData.append('enhance', 'true');
+      let fileUrl = '';
 
-      const uploadRes = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadFormData,
-      });
+      // Direct upload ke Supabase jika file > 4MB untuk menghindari limit 4.5MB Vercel
+      if (supabase && selectedFile.size > 4 * 1024 * 1024) {
+        const cleanName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const pathName = `${Date.now()}_${cleanName}`;
+        const { error: upErr } = await supabase.storage.from('berkas').upload(pathName, selectedFile, { upsert: true });
+        if (upErr) throw new Error(`Gagal mengunggah berkas: ${upErr.message}`);
+        const { data: pUrl } = supabase.storage.from('berkas').getPublicUrl(pathName);
+        fileUrl = pUrl.publicUrl;
+      } else {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', selectedFile);
+        uploadFormData.append('kategori', selectedKategori);
+        if (tahunMasuk) uploadFormData.append('tahunMasuk', String(tahunMasuk));
+        if (jenisKelamin) uploadFormData.append('jenisKelamin', jenisKelamin);
+        if (targetNamaSantri) uploadFormData.append('namaSantri', targetNamaSantri);
+        if (enhanceDocument) uploadFormData.append('enhance', 'true');
 
-      const uploadJson = await uploadRes.json();
-      if (!uploadRes.ok || !uploadJson.success) {
-        throw new Error(uploadJson.error || 'Gagal mengunggah file.');
-      }
-
-      if (uploadJson.savingsPercent !== undefined) {
-        setCompressionStats({
-          originalSize: uploadJson.originalSize,
-          compressedSize: uploadJson.compressedSize,
-          savingsPercent: uploadJson.savingsPercent,
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadFormData,
         });
+
+        const uploadText = await uploadRes.text();
+        let uploadJson;
+        try {
+          uploadJson = JSON.parse(uploadText);
+        } catch {
+          if (uploadRes.status === 413 || uploadText.includes('Request Entity Too Large')) {
+            throw new Error('Ukuran berkas melebihi batas upload (maks 4.5 MB). Silakan gunakan file yang lebih ringkas.');
+          }
+          throw new Error(uploadText || 'Gagal mengunggah berkas.');
+        }
+
+        if (!uploadRes.ok || !uploadJson.success) {
+          throw new Error(uploadJson.error || 'Gagal mengunggah file.');
+        }
+
+        if (uploadJson.savingsPercent !== undefined) {
+          setCompressionStats({
+            originalSize: uploadJson.originalSize,
+            compressedSize: uploadJson.compressedSize,
+            savingsPercent: uploadJson.savingsPercent,
+          });
+        }
+
+        fileUrl = uploadJson.fileUrl;
       }
 
-      const fileUrl = uploadJson.fileUrl;
       setUploadedUrl(fileUrl);
 
       // 2. Process OCR
@@ -167,7 +197,14 @@ export function DocumentUploadBox({
         }),
       });
 
-      const ocrJson = await ocrRes.json();
+      const ocrText = await ocrRes.text();
+      let ocrJson;
+      try {
+        ocrJson = JSON.parse(ocrText);
+      } catch {
+        throw new Error('Gagal membaca hasil analisis OCR.');
+      }
+
       if (!ocrRes.ok || !ocrJson.success) {
         throw new Error(ocrJson.error || 'Gagal memproses OCR.');
       }
@@ -266,6 +303,39 @@ export function DocumentUploadBox({
         <DoodleSparkle className="text-lime-500" size={28} />
       </div>
 
+      {/* Banner Peringatan jika Nama Santri belum diisi */}
+      {isNameEmpty && (
+        <div className="mb-5 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+              <LockKey size={22} weight="fill" />
+            </div>
+            <div>
+              <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                Langkah 1 Wajib: Tulis Nama Santri Terlebih Dahulu
+              </h4>
+              <p className="text-xs text-amber-800 dark:text-amber-300 font-normal mt-0.5">
+                Fitur scanner dinonaktifkan sementara. Silakan ketik <strong>Nama Lengkap Calon Santri</strong> pada formulir Langkah 1 di atas terlebih dahulu sebagai acuan verifikasi dokumen.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              const nameInput = document.querySelector('input[placeholder*="Muhammad Hanif"]') as HTMLInputElement;
+              if (nameInput) {
+                nameInput.focus();
+                nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }
+            }}
+            className="shrink-0 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <span>Ketik Nama</span>
+            <ArrowRight size={13} weight="bold" />
+          </button>
+        </div>
+      )}
+
       {/* Upload Progress Bar + Multi-Scan Trigger */}
       <div className="mb-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex-1 w-full">
@@ -299,12 +369,24 @@ export function DocumentUploadBox({
         {/* Tombol Pemicu Magic Multi-Scan */}
         <button
           type="button"
-          onClick={() => setIsBatchModalOpen(true)}
-          className="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 active:scale-[0.99] text-white text-xs font-bold shadow-md hover:shadow-lg transition-all"
+          onClick={() => {
+            if (isNameEmpty) {
+              alert('Silakan tulis Nama Lengkap Calon Santri pada Langkah 1 di atas terlebih dahulu.');
+              return;
+            }
+            setIsBatchModalOpen(true);
+          }}
+          disabled={isNameEmpty}
+          className={`w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all ${
+            isNameEmpty
+              ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700 cursor-not-allowed shadow-none'
+              : 'bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 active:scale-[0.99] text-white shadow-md hover:shadow-lg'
+          }`}
+          title={isNameEmpty ? 'Ketik nama santri di Langkah 1 terlebih dahulu' : 'Pindai banyak dokumen sekaligus'}
         >
-          <Sparkle size={16} weight="fill" className="text-amber-300" />
+          {isNameEmpty ? <LockKey size={16} weight="fill" /> : <Sparkle size={16} weight="fill" className="text-amber-300" />}
           <span>✨ Multi-Scan Sekaligus</span>
-          <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-full font-bold">
+          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isNameEmpty ? 'bg-slate-300 dark:bg-slate-700 text-slate-500' : 'bg-white/20 text-white'}`}>
             Batch AI
           </span>
         </button>
@@ -468,24 +550,46 @@ export function DocumentUploadBox({
         ) : (
           /* Empty Dropzone */
           <div 
-            onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 rounded-3xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-colors bg-slate-50/40 dark:bg-slate-800/20"
+            onClick={() => {
+              if (isNameEmpty) {
+                alert('Silakan tulis Nama Lengkap Calon Santri pada Langkah 1 di atas terlebih dahulu.');
+                const nameInput = document.querySelector('input[placeholder*="Muhammad Hanif"]') as HTMLInputElement;
+                if (nameInput) {
+                  nameInput.focus();
+                  nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return;
+              }
+              fileInputRef.current?.click();
+            }}
+            className={`border-2 border-dashed rounded-3xl p-8 flex flex-col items-center justify-center text-center transition-all ${
+              isNameEmpty
+                ? 'border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/40 cursor-not-allowed'
+                : 'border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 cursor-pointer bg-slate-50/40 dark:bg-slate-800/20'
+            }`}
           >
             <input
               ref={fileInputRef}
               type="file"
               accept="image/*,.pdf"
+              disabled={isNameEmpty}
               onChange={handleFileChange}
               className="hidden"
             />
-            <div className="w-14 h-14 rounded-2xl bg-teal-100/60 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 flex items-center justify-center mb-3">
-              <UploadSimple size={28} weight="duotone" />
+            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${
+              isNameEmpty
+                ? 'bg-amber-100/80 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
+                : 'bg-teal-100/60 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300'
+            }`}>
+              {isNameEmpty ? <LockKey size={28} weight="fill" /> : <UploadSimple size={28} weight="duotone" />}
             </div>
             <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">
-              Klik atau Tarik file foto berkas ke sini
+              {isNameEmpty ? 'Tulis Nama Calon Santri di Atas Terlebih Dahulu' : 'Klik atau Tarik file foto berkas ke sini'}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
-              Mendukung file JPG, PNG, atau scan PDF. Dokumen langsung dibaca dan otomatis mengisi data santri.
+              {isNameEmpty
+                ? 'Isi nama calon santri pada Langkah 1 di atas untuk membuka fitur unggah dan pemindaian berkas.'
+                : 'Mendukung file JPG, PNG, atau scan PDF. Dokumen langsung dibaca dan otomatis mengisi data santri.'}
             </p>
           </div>
         )
