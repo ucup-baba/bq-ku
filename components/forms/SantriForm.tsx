@@ -16,7 +16,12 @@ import {
   Plus,
   X,
   Buildings,
-  CheckCircle
+  CheckCircle,
+  LockKey,
+  LockKeyOpen,
+  Trash,
+  XCircle,
+  WarningCircle
 } from '@phosphor-icons/react';
 import { DocumentUploadBox } from './DocumentUploadBox';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
@@ -72,6 +77,11 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   const [ocrAutoFilledNotice, setOcrAutoFilledNotice] = useState<string | null>(null);
   const [mismatchData, setMismatchData] = useState<DocumentMismatchData | null>(null);
   const [uploadBoxKey, setUploadBoxKey] = useState<number>(0);
+  const [isNameLockedFromKk, setIsNameLockedFromKk] = useState<boolean>(() => {
+    return Boolean(
+      initialData?.documents?.some((d: any) => d.kategori === 'KARTU_KELUARGA') && initialData?.namaLengkap
+    );
+  });
   const [pendingDocuments, setPendingDocuments] = useState<Array<{
     kategori: string;
     fileUrl: string;
@@ -209,19 +219,19 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         newOcrTags.jenjang = true;
         updated.kelas = extracted.tahunLulus ? `Lulus ${extracted.tahunLulus}` : 'Lulus 2024';
         newOcrTags.kelas = true;
-        customNoticeText = '🎓 Terdeteksi jenjang ALUMNI! Status disesuaikan ke Lulusan SMA/SMK.';
+        customNoticeText = 'Terdeteksi jenjang ALUMNI! Status disesuaikan ke Lulusan SMA/SMK.';
       } else if (extracted.jenjangTerdeteksi === 'SMA') {
         updated.jenjang = 'SMA';
         newOcrTags.jenjang = true;
         updated.kelas = '10';
         newOcrTags.kelas = true;
-        customNoticeText = '🎓 Terdeteksi jenjang SMA! Jenjang disetel ke SMA (Kelas 10).';
+        customNoticeText = 'Terdeteksi jenjang SMA! Jenjang disetel ke SMA (Kelas 10).';
       } else if (extracted.jenjangTerdeteksi === 'SMP') {
         updated.jenjang = 'SMP';
         newOcrTags.jenjang = true;
         updated.kelas = '7';
         newOcrTags.kelas = true;
-        customNoticeText = '🎓 Terdeteksi jenjang SMP! Jenjang disetel ke SMP (Kelas 7).';
+        customNoticeText = 'Terdeteksi jenjang SMP! Jenjang disetel ke SMP (Kelas 7).';
       }
     }
 
@@ -233,7 +243,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       setOcrAutoFilledNotice(customNoticeText);
     } else if (filledCount > 0) {
       const categoryName = kategori.replace(/_/g, ' ');
-      setOcrAutoFilledNotice(`Formulir berhasil terisi otomatis dari berkas ${categoryName}! (${filledCount} kolom terisi, ditandai badge "✨ Diisi dari OCR")`);
+      setOcrAutoFilledNotice(`Formulir berhasil terisi otomatis dari berkas ${categoryName}! (${filledCount} kolom terisi dari OCR).`);
     } else {
       setOcrAutoFilledNotice(null);
     }
@@ -275,8 +285,10 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     fileName?: string
   ) => {
     // 🛡️ PENJAGA IDENTITAS DOKUMEN:
-    // Cek apakah di formulir sudah ada nama santri dan di dokumen terdeteksi nama santri yang berbeda
+    // Jika berkas BUKAN Kartu Keluarga, dan di formulir sudah ada nama santri (baik manual atau dari KK),
+    // maka berkas ini WAJIB cocok dengan nama santri di formulir. Jika tidak cocok -> LANGSUNG TOLAK!
     if (
+      kategori !== 'KARTU_KELUARGA' &&
       formData.namaLengkap && 
       formData.namaLengkap.trim() && 
       extracted.namaLengkap && 
@@ -284,7 +296,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     ) {
       const matchCheck = checkNameMatch(formData.namaLengkap, extracted.namaLengkap);
       if (!matchCheck.isMatch) {
-        // Tampilkan Modal Penjaga Identitas Dokumen & cegah penimpaan data
+        // Tampilkan Modal Penolakan Berkas (Strict Rejection) & hentikan proses
         setMismatchData({
           extracted,
           fileUrl,
@@ -298,14 +310,52 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       }
     }
 
+    if (kategori === 'KARTU_KELUARGA' && extracted.namaLengkap) {
+      setIsNameLockedFromKk(true);
+    }
+
     applyExtractedData(extracted, fileUrl, kategori);
+  };
+
+  // Reset identitas dan berkas Kartu Keluarga jika ingin mengganti santri
+  const handleResetKkAndName = () => {
+    if (confirm('Hapus nama santri dan berkas Kartu Keluarga untuk mengganti santri?')) {
+      setFormData(prev => ({
+        ...prev,
+        namaLengkap: '',
+        namaPanggilan: '',
+        nik: '',
+        noKk: '',
+        tempatLahir: '',
+        tanggalLahir: '',
+        namaAyah: '',
+        namaIbu: '',
+        alamat: '',
+      }));
+      setPendingDocuments(prev => prev.filter(d => d.kategori !== 'KARTU_KELUARGA'));
+      setOcrFilledFields(prev => {
+        const copy = { ...prev };
+        delete copy.namaLengkap;
+        delete copy.nik;
+        delete copy.noKk;
+        delete copy.tempatLahir;
+        delete copy.tanggalLahir;
+        delete copy.namaAyah;
+        delete copy.namaIbu;
+        delete copy.alamat;
+        return copy;
+      });
+      setIsNameLockedFromKk(false);
+      setUploadBoxKey(prev => prev + 1);
+      setOcrAutoFilledNotice('Identitas nama dan berkas Kartu Keluarga telah dihapus. Silakan unggah berkas santri baru.');
+    }
   };
 
   // Guard Action Handlers
   const handleGuardCancel = () => {
     if (mismatchData) {
       setOcrAutoFilledNotice(
-        `🛑 Penjaga Dokumen: Berkas ${mismatchData.fileName || 'baru'} dibatalkan karena terdeteksi milik "${mismatchData.detectedName}". Data "${formData.namaLengkap}" tetap aman.`
+        `Dokumen ditolak: Berkas "${mismatchData.fileName || 'baru'}" dibatalkan karena nama santri (${mismatchData.detectedName}) tidak sesuai dengan Kartu Keluarga.`
       );
     }
     setMismatchData(null);
@@ -325,56 +375,13 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       );
       window.open('/tambah?from_guard=1', '_blank');
       setOcrAutoFilledNotice(
-        `➕ Penjaga Dokumen: Pendaftaran baru untuk "${data.detectedName}" telah dibuka di tab baru! Data formulir "${formData.namaLengkap}" tetap aman.`
+        `Pendaftaran baru untuk "${data.detectedName}" telah dibuka di tab baru. Data formulir "${formData.namaLengkap}" tetap aman.`
       );
     } catch (e) {
       console.error(e);
     }
     setMismatchData(null);
     setUploadBoxKey(prev => prev + 1);
-  };
-
-  const handleGuardReplaceCurrent = (data: DocumentMismatchData) => {
-    const blank = {
-      namaLengkap: '',
-      namaPanggilan: '',
-      nik: '',
-      noKk: '',
-      nisn: '',
-      tempatLahir: '',
-      tanggalLahir: '',
-      jenisKelamin: 'IKHWAN',
-      tahunMasuk: new Date().getFullYear(),
-      jenjang: 'SMP',
-      kelas: '',
-      sekolahSekarang: '',
-      asalSekolahSebelumnya: '',
-      namaAyah: '',
-      namaIbu: '',
-      statusSosial: 'REGULER',
-      kontakWali: '',
-      pekerjaanOrtu: '',
-      alamat: '',
-      ringkasanTentang: '',
-      riwayatTahfidz: '',
-      keahlian: ['Tahfidz Qur\'an', 'Bahasa Arab Dasar'],
-      fotoFormalUrl: '',
-      fotoProfilUrl: '',
-    };
-    applyExtractedData(data.extracted, data.fileUrl, data.kategori, blank, true);
-    setMismatchData(null);
-    setUploadBoxKey(prev => prev + 1);
-    setOcrAutoFilledNotice(
-      `🔄 Penjaga Dokumen: Formulir telah di-reset untuk santri baru "${data.detectedName}". Berkas lama telah dibersihkan agar tidak tertukar.`
-    );
-  };
-
-  const handleGuardForceApply = (data: DocumentMismatchData) => {
-    applyExtractedData(data.extracted, data.fileUrl, data.kategori);
-    setMismatchData(null);
-    setOcrAutoFilledNotice(
-      `⚠️ Berkas "${data.fileName || 'baru'}" berhasil digabungkan ke profil "${formData.namaLengkap}" (dikonfirmasi pengguna).`
-    );
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'fotoFormalUrl' | 'fotoProfilUrl') => {
@@ -506,21 +513,25 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
             <div>
               <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 Identitas Utama Santri (Nama)
-                {ocrFilledFields.namaLengkap && (
-                  <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400 bg-lime-100 dark:bg-lime-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    ✨ Cocok dengan KK
+                {isNameLockedFromKk ? (
+                  <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-teal-200 dark:border-teal-800">
+                    <LockKey size={12} weight="fill" /> Terkunci dari Kartu Keluarga
                   </span>
-                )}
+                ) : ocrFilledFields.namaLengkap ? (
+                  <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400 bg-lime-100 dark:bg-lime-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <CheckCircle size={12} weight="fill" /> Sesuai Kartu Keluarga
+                  </span>
+                ) : null}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Tulis nama santri di sini. Huruf besar / kecil bebas, otomatis rapi & menjadi kunci pencocokan otomatis Kartu Keluarga.
+                Nama santri menjadi kunci acuan pencocokan seluruh dokumen berkas di Pondok Pesantren Baitul Qowwam.
               </p>
             </div>
           </div>
           {formData.namaLengkap && (
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-teal-50 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 rounded-full text-xs font-semibold text-teal-700 dark:text-teal-300">
               <Sparkle size={14} weight="duotone" className="text-teal-500" />
-              <span>Target Pencocokan: {toTitleCase(formData.namaLengkap)}</span>
+              <span>Target Acuan: {toTitleCase(formData.namaLengkap)}</span>
             </div>
           )}
         </div>
@@ -529,23 +540,52 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div className="sm:col-span-6">
             <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Nama Lengkap Calon Santri *</span>
-              <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
-                (Otomatis Title Case)
-              </span>
+              {isNameLockedFromKk ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
+                  <LockKey size={12} weight="fill" /> Terkunci dari KK
+                </span>
+              ) : (
+                <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
+                  (Otomatis Title Case)
+                </span>
+              )}
             </label>
-            <input
-              type="text"
-              required
-              value={formData.namaLengkap}
-              onChange={(e) => setFormData({ ...formData, namaLengkap: e.target.value })}
-              onBlur={() => {
-                if (formData.namaLengkap) {
-                  setFormData((prev) => ({ ...prev, namaLengkap: toTitleCase(prev.namaLengkap) }));
-                }
-              }}
-              placeholder="Contoh: Muhammad Hanif"
-              className="w-full px-4 py-3 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 text-sm font-semibold focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none transition-all shadow-inner"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                required
+                readOnly={isNameLockedFromKk}
+                value={formData.namaLengkap}
+                onChange={(e) => !isNameLockedFromKk && setFormData({ ...formData, namaLengkap: e.target.value })}
+                onBlur={() => {
+                  if (formData.namaLengkap && !isNameLockedFromKk) {
+                    setFormData((prev) => ({ ...prev, namaLengkap: toTitleCase(prev.namaLengkap) }));
+                  }
+                }}
+                placeholder="Contoh: Muhammad Hanif"
+                className={`w-full px-4 py-3 rounded-2xl border text-sm font-semibold transition-all shadow-inner ${
+                  isNameLockedFromKk 
+                    ? 'bg-slate-100 dark:bg-slate-800/90 text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-700 cursor-not-allowed select-all pr-24'
+                    : 'border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 focus:bg-white focus:outline-none'
+                }`}
+              />
+              {isNameLockedFromKk && (
+                <button
+                  type="button"
+                  onClick={handleResetKkAndName}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 px-2.5 py-1.5 rounded-xl transition-all shadow-sm cursor-pointer"
+                  title="Hapus nama & lepaskan berkas KK"
+                >
+                  <Trash size={13} weight="bold" />
+                  Hapus
+                </button>
+              )}
+            </div>
+            {isNameLockedFromKk && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                Nama terkunci otomatis sebagai acuan dokumen. Klik tombol <strong>Hapus</strong> jika ingin mengganti santri.
+              </p>
+            )}
           </div>
 
           <div className="sm:col-span-3">
@@ -619,28 +659,34 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       {/* Auto-filled Notification Banner */}
       {ocrAutoFilledNotice && (
         <div className={`p-4 rounded-3xl flex items-center justify-between shadow-sm animate-pulse-once border-2 ${
-          ocrAutoFilledNotice.includes('🛑') 
+          ocrAutoFilledNotice.toLowerCase().includes('ditolak') || ocrAutoFilledNotice.toLowerCase().includes('dibatalkan') || ocrAutoFilledNotice.toLowerCase().includes('dihapus')
             ? 'bg-rose-500/10 border-rose-500 text-rose-900 dark:text-rose-100'
-            : ocrAutoFilledNotice.includes('🔄') || ocrAutoFilledNotice.includes('⚠️')
+            : ocrAutoFilledNotice.toLowerCase().includes('peringatan')
             ? 'bg-amber-500/10 border-amber-500 text-amber-900 dark:text-amber-100'
-            : 'bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-transparent border-emerald-500 text-slate-800 dark:text-slate-100'
+            : 'bg-emerald-500/10 border-emerald-500 text-emerald-950 dark:text-emerald-100'
         }`}>
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-2xl text-white flex items-center justify-center flex-shrink-0 shadow ${
-              ocrAutoFilledNotice.includes('🛑') 
+              ocrAutoFilledNotice.toLowerCase().includes('ditolak') || ocrAutoFilledNotice.toLowerCase().includes('dibatalkan') || ocrAutoFilledNotice.toLowerCase().includes('dihapus')
                 ? 'bg-rose-500'
-                : ocrAutoFilledNotice.includes('🔄') || ocrAutoFilledNotice.includes('⚠️')
+                : ocrAutoFilledNotice.toLowerCase().includes('peringatan')
                 ? 'bg-amber-500'
                 : 'bg-emerald-500'
             }`}>
-              <CheckCircle size={20} weight="bold" />
+              {ocrAutoFilledNotice.toLowerCase().includes('ditolak') || ocrAutoFilledNotice.toLowerCase().includes('dibatalkan') || ocrAutoFilledNotice.toLowerCase().includes('dihapus') ? (
+                <XCircle size={20} weight="fill" />
+              ) : ocrAutoFilledNotice.toLowerCase().includes('peringatan') ? (
+                <WarningCircle size={20} weight="fill" />
+              ) : (
+                <CheckCircle size={20} weight="bold" />
+              )}
             </div>
             <div>
               <h4 className="text-sm font-bold flex items-center gap-2">
                 {ocrAutoFilledNotice}
               </h4>
               <p className="text-xs opacity-80">
-                Data formulir telah diperbarui. Anda dapat memeriksa, mengedit, atau menyimpannya langsung.
+                Data formulir telah disesuaikan. Anda dapat memeriksa, mengedit, atau menyimpannya langsung.
               </p>
             </div>
           </div>
@@ -730,7 +776,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>NIK Santri (16 Digit) *</span>
-              {ocrFilledFields.nik && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.nik && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
               type="text"
@@ -746,7 +792,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Nomor Kartu Keluarga (KK)</span>
-              {ocrFilledFields.noKk && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.noKk && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
               type="text"
@@ -761,7 +807,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>NISN (10 Digit)</span>
-              {ocrFilledFields.nisn && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.nisn && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
               type="text"
@@ -872,7 +918,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Jenjang Pendidikan *</span>
-              {ocrFilledFields.jenjang && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.jenjang && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <select
               value={formData.jenjang}
@@ -889,7 +935,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>{formData.jenjang === 'ALUMNI' ? 'Status / Tahun Lulus *' : 'Kelas Saat Ini *'}</span>
-              {ocrFilledFields.kelas && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.kelas && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
               type="text"
@@ -904,7 +950,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>{formData.jenjang === 'ALUMNI' ? 'Aktivitas / Kampus / Khidmah Saat Ini *' : 'Sekolah Sekarang *'}</span>
-              {ocrFilledFields.sekolahSekarang && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.sekolahSekarang && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
               type="text"
@@ -919,7 +965,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div className="sm:col-span-4">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>{formData.jenjang === 'ALUMNI' ? 'Asal SMA / SMK Terakhir (Lulusan)' : 'Asal Sekolah Sebelumnya (SD / MTs / SMP)'}</span>
-              {ocrFilledFields.asalSekolahSebelumnya && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.asalSekolahSebelumnya && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
               type="text"
@@ -960,7 +1006,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               </span>
               {ocrFilledFields.statusSosial && (
                 <span className="text-[10px] font-bold text-lime-700 dark:text-lime-400 bg-lime-100 dark:bg-lime-950/60 px-2 py-0.5 rounded-full flex items-center gap-1 border border-lime-300 dark:border-lime-800">
-                  ✨ Terdeteksi dari KK: Cerai Mati (Yatim)
+                  <Sparkle size={11} weight="fill" /> Terdeteksi dari KK: Cerai Mati (Yatim)
                 </span>
               )}
             </label>
@@ -1006,8 +1052,9 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               ))}
             </div>
             {formData.statusSosial === 'YATIM' && (
-              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1.5 flex items-center gap-1 font-medium">
-                ✓ Calon santri terdata sebagai <strong>Yatim</strong> (Ayah wafat/Almarhum). Prioritas beasiswa pendidikan & santunan yayasan.
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1.5 flex items-center gap-1.5 font-medium">
+                <CheckCircle size={13} weight="fill" className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                <span>Calon santri terdata sebagai <strong>Yatim</strong> (Ayah wafat/Almarhum). Prioritas beasiswa pendidikan & santunan yayasan.</span>
               </p>
             )}
           </div>
@@ -1015,7 +1062,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Nama Ayah</span>
-              {ocrFilledFields.namaAyah && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.namaAyah && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
               type="text"
@@ -1029,7 +1076,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div>
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Nama Ibu</span>
-              {ocrFilledFields.namaIbu && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.namaIbu && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
               type="text"
@@ -1069,7 +1116,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           <div className="sm:col-span-2">
             <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center justify-between">
               <span>Alamat Lengkap</span>
-              {ocrFilledFields.alamat && <span className="text-[10px] font-bold text-lime-600 dark:text-lime-400">✨ OCR</span>}
+              {ocrFilledFields.alamat && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
               type="text"
@@ -1193,8 +1240,6 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         data={mismatchData}
         onCancel={handleGuardCancel}
         onOpenNewRegistration={handleGuardOpenNewRegistration}
-        onReplaceCurrent={handleGuardReplaceCurrent}
-        onForceApply={handleGuardForceApply}
       />
     </form>
   );

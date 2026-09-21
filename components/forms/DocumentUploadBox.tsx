@@ -14,7 +14,9 @@ import {
   GraduationCap,
   Certificate,
   Eye,
-  FilePdf
+  FilePdf,
+  Lightning,
+  ShieldCheck
 } from '@phosphor-icons/react';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleBadgeTape, DoodleSparkle } from '@/components/ui/DoodleStickers';
@@ -330,6 +332,10 @@ export function DocumentUploadBox({
                     <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-700">
                       <CheckCircle size={11} weight="fill" /> Terunggah
                     </span>
+                  ) : cat.id === 'KARTU_KELUARGA' ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-300 dark:border-teal-700">
+                      <ShieldCheck size={11} weight="fill" /> Wajib #1
+                    </span>
                   ) : cat.wajib ? (
                     <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
                       Wajib
@@ -347,6 +353,24 @@ export function DocumentUploadBox({
           })}
         </div>
       </div>
+
+      {/* KK-First Guidance Alert */}
+      {!uploadedDocuments.some(d => d.kategori === 'KARTU_KELUARGA') && selectedKategori !== 'KARTU_KELUARGA' && (
+        <div className="mb-4 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2.5 text-xs text-amber-900 dark:text-amber-200 font-semibold">
+            <IdentificationCard size={20} weight="duotone" className="text-amber-600 flex-shrink-0" />
+            <span>Alur Verifikasi: Disarankan memindai <strong>Kartu Keluarga (KK)</strong> terlebih dahulu sebagai acuan utama identitas resmi santri.</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedKategori('KARTU_KELUARGA')}
+            className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold whitespace-nowrap shadow-sm cursor-pointer transition-all flex items-center gap-1.5"
+          >
+            <ShieldCheck size={14} weight="bold" />
+            Pilih KK Dulu
+          </button>
+        </div>
+      )}
 
       {/* Dropzone Area or Existing Document Card */}
       {!selectedFile ? (
@@ -366,8 +390,8 @@ export function DocumentUploadBox({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2 py-0.5 rounded-full border border-emerald-300/60 dark:border-emerald-700">
-                    ✓ Berkas Sudah Terlampir
+                  <span className="text-xs font-extrabold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/60 px-2.5 py-0.5 rounded-full border border-emerald-300/60 dark:border-emerald-700 flex items-center gap-1.5">
+                    <CheckCircle size={14} weight="fill" /> Berkas Sudah Terlampir
                   </span>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
                     Kategori: {DOCUMENT_CATEGORIES.find(c => c.id === selectedKategori)?.label}
@@ -501,12 +525,16 @@ export function DocumentUploadBox({
                     onChange={(e) => setEnhanceDocument(e.target.checked)}
                     className="w-3.5 h-3.5 rounded text-teal-600 focus:ring-teal-500 border-slate-300 dark:border-slate-600"
                   />
-                  <span>✨ Enhance Dokumen (Kontras HD)</span>
+                  <span className="flex items-center gap-1.5">
+                    <Sparkle size={13} weight="fill" className="text-teal-600 dark:text-teal-400" />
+                    Enhance Dokumen (Kontras HD)
+                  </span>
                 </label>
 
                 {compressionStats && compressionStats.savingsPercent > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800">
-                    ⚡ Terkompresi: {(compressionStats.compressedSize / 1024).toFixed(0)} KB (Hemat {compressionStats.savingsPercent}%)
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800">
+                    <Lightning size={13} weight="fill" className="text-amber-500" />
+                    Terkompresi: {(compressionStats.compressedSize / 1024).toFixed(0)} KB (Hemat {compressionStats.savingsPercent}%)
                   </span>
                 )}
               </div>

@@ -216,7 +216,7 @@ export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
       kelas: 'Lulus 2024',
       sekolahSekarang: '',
       label: 'Alumni (Lulusan SMA/SMK)',
-      noticeText: `🎓 Terdeteksi lulusan SMA/SMK (${schoolName}): Jenjang otomatis disetel ke "ALUMNI".`,
+      noticeText: `Terdeteksi lulusan SMA/SMK (${schoolName}): Jenjang otomatis disetel ke "ALUMNI".`,
     };
   }
 
@@ -227,7 +227,7 @@ export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
       kelas: '10',
       sekolahSekarang: '',
       label: 'Jenjang SMA (Kelas 10)',
-      noticeText: `🎓 Terdeteksi lulusan SMP/MTs (${schoolName}): Jenjang otomatis disetel ke "SMA" (Kelas 10).`,
+      noticeText: `Terdeteksi lulusan SMP/MTs (${schoolName}): Jenjang otomatis disetel ke "SMA" (Kelas 10).`,
     };
   }
 
@@ -238,7 +238,7 @@ export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
       kelas: '7',
       sekolahSekarang: '',
       label: 'Jenjang SMP (Kelas 7)',
-      noticeText: `🎓 Terdeteksi lulusan SD/MI (${schoolName}): Jenjang otomatis disetel ke "SMP" (Kelas 7).`,
+      noticeText: `Terdeteksi lulusan SD/MI (${schoolName}): Jenjang otomatis disetel ke "SMP" (Kelas 7).`,
     };
   }
 
