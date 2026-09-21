@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   User, 
@@ -22,7 +22,8 @@ import { DocumentUploadBox } from './DocumentUploadBox';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
 import { useTheme } from '@/components/theme/ThemeProvider';
-import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool } from '@/lib/utils/formatters';
+import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, checkNameMatch } from '@/lib/utils/formatters';
+import { DocumentGuardModal, DocumentMismatchData } from '@/components/modals/DocumentGuardModal';
 
 export interface SantriFormProps {
   initialData?: any;
@@ -69,6 +70,8 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showOcrBox, setShowOcrBox] = useState(true);
   const [ocrAutoFilledNotice, setOcrAutoFilledNotice] = useState<string | null>(null);
+  const [mismatchData, setMismatchData] = useState<DocumentMismatchData | null>(null);
+  const [uploadBoxKey, setUploadBoxKey] = useState<number>(0);
   const [pendingDocuments, setPendingDocuments] = useState<Array<{
     kategori: string;
     fileUrl: string;
@@ -89,14 +92,21 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   });
 
 
-  // Handle OCR extracted data injection
-  const handleOcrDataExtracted = (extracted: ExtractedDocumentData, fileUrl: string, kategori: string) => {
-    const updated = { ...formData };
-    const newOcrTags: Record<string, boolean> = { ...ocrFilledFields };
+  // Ekstraksi data santri ke formulir
+  const applyExtractedData = (
+    extracted: ExtractedDocumentData,
+    fileUrl: string,
+    kategori: string,
+    baseFormData = formData,
+    resetPreviousDocuments = false
+  ) => {
+    const updated = { ...baseFormData };
+    const newOcrTags: Record<string, boolean> = resetPreviousDocuments ? {} : { ...ocrFilledFields };
 
     if (fileUrl) {
       setPendingDocuments(prev => {
-        const filtered = prev.filter(d => d.kategori !== kategori);
+        const base = resetPreviousDocuments ? [] : prev;
+        const filtered = base.filter(d => d.kategori !== kategori);
         return [
           ...filtered,
           {
@@ -187,8 +197,10 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       }
       newOcrTags.kelas = true;
 
-      updated.sekolahSekarang = derivedEdu.sekolahSekarang;
-      newOcrTags.sekolahSekarang = true;
+      if (derivedEdu.sekolahSekarang) {
+        updated.sekolahSekarang = derivedEdu.sekolahSekarang;
+        newOcrTags.sekolahSekarang = true;
+      }
 
       customNoticeText = derivedEdu.noticeText;
     } else if (extracted.jenjangTerdeteksi) {
@@ -232,6 +244,137 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         section.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 150);
+  };
+
+  // Menerima data pendaftaran baru yang dibuka via DocumentGuardModal di tab baru
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('from_guard') === '1') {
+        const stored = sessionStorage.getItem('bq_pending_new_santri');
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            sessionStorage.removeItem('bq_pending_new_santri');
+            if (parsed.extracted && parsed.fileUrl && parsed.kategori) {
+              applyExtractedData(parsed.extracted, parsed.fileUrl, parsed.kategori);
+            }
+          } catch (err) {
+            console.error('Failed to parse pending new santri from guard:', err);
+          }
+        }
+      }
+    }
+  }, []);
+
+  // Handle OCR extracted data injection dengan Penjaga Identitas Dokumen
+  const handleOcrDataExtracted = (
+    extracted: ExtractedDocumentData, 
+    fileUrl: string, 
+    kategori: string,
+    fileName?: string
+  ) => {
+    // 🛡️ PENJAGA IDENTITAS DOKUMEN:
+    // Cek apakah di formulir sudah ada nama santri dan di dokumen terdeteksi nama santri yang berbeda
+    if (
+      formData.namaLengkap && 
+      formData.namaLengkap.trim() && 
+      extracted.namaLengkap && 
+      extracted.namaLengkap.trim()
+    ) {
+      const matchCheck = checkNameMatch(formData.namaLengkap, extracted.namaLengkap);
+      if (!matchCheck.isMatch) {
+        // Tampilkan Modal Penjaga Identitas Dokumen & cegah penimpaan data
+        setMismatchData({
+          extracted,
+          fileUrl,
+          kategori,
+          fileName: fileName || 'Dokumen',
+          currentName: formData.namaLengkap,
+          detectedName: toTitleCase(extracted.namaLengkap),
+          currentAttachedCount: pendingDocuments.length,
+        });
+        return;
+      }
+    }
+
+    applyExtractedData(extracted, fileUrl, kategori);
+  };
+
+  // Guard Action Handlers
+  const handleGuardCancel = () => {
+    if (mismatchData) {
+      setOcrAutoFilledNotice(
+        `🛑 Penjaga Dokumen: Berkas ${mismatchData.fileName || 'baru'} dibatalkan karena terdeteksi milik "${mismatchData.detectedName}". Data "${formData.namaLengkap}" tetap aman.`
+      );
+    }
+    setMismatchData(null);
+    setUploadBoxKey(prev => prev + 1);
+  };
+
+  const handleGuardOpenNewRegistration = (data: DocumentMismatchData) => {
+    try {
+      sessionStorage.setItem(
+        'bq_pending_new_santri',
+        JSON.stringify({
+          extracted: data.extracted,
+          fileUrl: data.fileUrl,
+          kategori: data.kategori,
+          fileName: data.fileName,
+        })
+      );
+      window.open('/tambah?from_guard=1', '_blank');
+      setOcrAutoFilledNotice(
+        `➕ Penjaga Dokumen: Pendaftaran baru untuk "${data.detectedName}" telah dibuka di tab baru! Data formulir "${formData.namaLengkap}" tetap aman.`
+      );
+    } catch (e) {
+      console.error(e);
+    }
+    setMismatchData(null);
+    setUploadBoxKey(prev => prev + 1);
+  };
+
+  const handleGuardReplaceCurrent = (data: DocumentMismatchData) => {
+    const blank = {
+      namaLengkap: '',
+      namaPanggilan: '',
+      nik: '',
+      noKk: '',
+      nisn: '',
+      tempatLahir: '',
+      tanggalLahir: '',
+      jenisKelamin: 'IKHWAN',
+      tahunMasuk: new Date().getFullYear(),
+      jenjang: 'SMP',
+      kelas: '',
+      sekolahSekarang: '',
+      asalSekolahSebelumnya: '',
+      namaAyah: '',
+      namaIbu: '',
+      statusSosial: 'REGULER',
+      kontakWali: '',
+      pekerjaanOrtu: '',
+      alamat: '',
+      ringkasanTentang: '',
+      riwayatTahfidz: '',
+      keahlian: ['Tahfidz Qur\'an', 'Bahasa Arab Dasar'],
+      fotoFormalUrl: '',
+      fotoProfilUrl: '',
+    };
+    applyExtractedData(data.extracted, data.fileUrl, data.kategori, blank, true);
+    setMismatchData(null);
+    setUploadBoxKey(prev => prev + 1);
+    setOcrAutoFilledNotice(
+      `🔄 Penjaga Dokumen: Formulir telah di-reset untuk santri baru "${data.detectedName}". Berkas lama telah dibersihkan agar tidak tertukar.`
+    );
+  };
+
+  const handleGuardForceApply = (data: DocumentMismatchData) => {
+    applyExtractedData(data.extracted, data.fileUrl, data.kategori);
+    setMismatchData(null);
+    setOcrAutoFilledNotice(
+      `⚠️ Berkas "${data.fileName || 'baru'}" berhasil digabungkan ke profil "${formData.namaLengkap}" (dikonfirmasi pengguna).`
+    );
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'fotoFormalUrl' | 'fotoProfilUrl') => {
@@ -459,6 +602,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           </div>
 
           <DocumentUploadBox 
+            key={uploadBoxKey}
             onDataExtracted={handleOcrDataExtracted} 
             targetNamaSantri={formData.namaLengkap} 
             tahunMasuk={formData.tahunMasuk}
@@ -474,24 +618,36 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
 
       {/* Auto-filled Notification Banner */}
       {ocrAutoFilledNotice && (
-        <div className="p-4 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-transparent border-2 border-emerald-500 rounded-3xl flex items-center justify-between shadow-sm animate-pulse-once">
+        <div className={`p-4 rounded-3xl flex items-center justify-between shadow-sm animate-pulse-once border-2 ${
+          ocrAutoFilledNotice.includes('🛑') 
+            ? 'bg-rose-500/10 border-rose-500 text-rose-900 dark:text-rose-100'
+            : ocrAutoFilledNotice.includes('🔄') || ocrAutoFilledNotice.includes('⚠️')
+            ? 'bg-amber-500/10 border-amber-500 text-amber-900 dark:text-amber-100'
+            : 'bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-transparent border-emerald-500 text-slate-800 dark:text-slate-100'
+        }`}>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-emerald-500 text-white flex items-center justify-center flex-shrink-0 shadow">
+            <div className={`w-9 h-9 rounded-2xl text-white flex items-center justify-center flex-shrink-0 shadow ${
+              ocrAutoFilledNotice.includes('🛑') 
+                ? 'bg-rose-500'
+                : ocrAutoFilledNotice.includes('🔄') || ocrAutoFilledNotice.includes('⚠️')
+                ? 'bg-amber-500'
+                : 'bg-emerald-500'
+            }`}>
               <CheckCircle size={20} weight="bold" />
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <h4 className="text-sm font-bold flex items-center gap-2">
                 {ocrAutoFilledNotice}
               </h4>
-              <p className="text-xs text-slate-600 dark:text-slate-400">
-                Data di bawah sudah otomatis terisi. Anda dapat mengedit, menambah foto, atau menyimpannya langsung.
+              <p className="text-xs opacity-80">
+                Data formulir telah diperbarui. Anda dapat memeriksa, mengedit, atau menyimpannya langsung.
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setOcrAutoFilledNotice(null)}
-            className="text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:underline px-3 py-1"
+            className="text-xs font-bold hover:underline px-3 py-1 cursor-pointer"
           >
             Tutup
           </button>
@@ -1031,6 +1187,15 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           {isSubmitting ? 'Menyimpan Data...' : isEditing ? 'Simpan Perubahan' : 'Simpan Data Santri'}
         </button>
       </div>
+
+      {/* Modal Penjaga Identitas Dokumen */}
+      <DocumentGuardModal
+        data={mismatchData}
+        onCancel={handleGuardCancel}
+        onOpenNewRegistration={handleGuardOpenNewRegistration}
+        onReplaceCurrent={handleGuardReplaceCurrent}
+        onForceApply={handleGuardForceApply}
+      />
     </form>
   );
 }

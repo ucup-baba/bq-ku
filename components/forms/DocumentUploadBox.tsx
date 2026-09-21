@@ -23,7 +23,7 @@ import { DocumentPreviewModal } from '@/components/ui/DocumentPreviewModal';
 
 
 export interface DocumentUploadBoxProps {
-  onDataExtracted?: (data: ExtractedDocumentData, fileUrl: string, kategori: string) => void;
+  onDataExtracted?: (data: ExtractedDocumentData, fileUrl: string, kategori: string, fileName?: string) => void;
   targetNamaSantri?: string;
   tahunMasuk?: number | string;
   jenisKelamin?: string;
@@ -205,7 +205,7 @@ export function DocumentUploadBox({
 
       // Auto-apply immediately to form so user doesn't need to manually click
       if (onDataExtracted && finalExtracted) {
-        onDataExtracted(finalExtracted, fileUrl, finalExtracted.kategori || selectedKategori);
+        onDataExtracted(finalExtracted, fileUrl, finalExtracted.kategori || selectedKategori, selectedFile?.name);
       }
     } catch (err: any) {
       console.error(err);
@@ -217,7 +217,7 @@ export function DocumentUploadBox({
 
   const handleApplyToForm = () => {
     if (extractedResult && uploadedUrl && onDataExtracted) {
-      onDataExtracted(extractedResult, uploadedUrl, extractedResult.kategori || selectedKategori);
+      onDataExtracted(extractedResult, uploadedUrl, extractedResult.kategori || selectedKategori, selectedFile?.name);
     }
   };
 

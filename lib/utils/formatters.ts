@@ -244,3 +244,90 @@ export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
 
   return null;
 }
+
+/**
+ * Memeriksa apakah nama santri di formulir cocok dengan nama yang terdeteksi di dokumen.
+ * Menghasilkan isMatch = false jika dokumen terindikasi kuat milik santri yang berbeda.
+ */
+export function checkNameMatch(
+  nameInForm?: string | null,
+  nameInDoc?: string | null
+): { isMatch: boolean; confidence: number; reason?: string } {
+  if (!nameInForm || !nameInForm.trim()) {
+    return { isMatch: true, confidence: 100, reason: 'Formulir belum memiliki nama santri.' };
+  }
+  if (!nameInDoc || !nameInDoc.trim()) {
+    return { isMatch: true, confidence: 50, reason: 'Dokumen tidak memiliki deteksi nama calon santri.' };
+  }
+
+  const clean = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\b(muhammad|muh|mhd|mohammed|ahmad|achmad|m)\b/g, 'm')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const strA = clean(nameInForm);
+  const strB = clean(nameInDoc);
+
+  // 1. Identik persis setelah normalisasi
+  if (strA === strB) {
+    return { isMatch: true, confidence: 100, reason: 'Nama identik sempurna.' };
+  }
+
+  // 2. Salah satu string mengandung string lainnya secara utuh (contoh: "Hanif" di dalam "Muhammad Hanif")
+  if (strA.length >= 3 && strB.length >= 3 && (strA.includes(strB) || strB.includes(strA))) {
+    return { isMatch: true, confidence: 90, reason: 'Nama merupakan bagian dari nama lengkap dokumen.' };
+  }
+
+  const tokensA = strA.split(' ').filter(t => t.length >= 2);
+  const tokensB = strB.split(' ').filter(t => t.length >= 2);
+
+  if (tokensA.length === 0 || tokensB.length === 0) {
+    return { isMatch: true, confidence: 50 };
+  }
+
+  // Hitung jumlah token yang sama persis atau sangat mirip
+  let sharedTokens = 0;
+
+  for (const ta of tokensA) {
+    if (ta === 'm') continue;
+
+    for (const tb of tokensB) {
+      if (tb === 'm') continue;
+
+      if (ta === tb) {
+        sharedTokens++;
+        break;
+      } else if (ta.length >= 4 && tb.length >= 4 && levenshteinDistance(ta, tb) <= 1) {
+        sharedTokens += 0.8;
+        break;
+      }
+    }
+  }
+
+  const realTokensA = tokensA.filter(t => t !== 'm').length;
+  const realTokensB = tokensB.filter(t => t !== 'm').length;
+  const realMax = Math.max(realTokensA, realTokensB, 1);
+
+  const confidence = Math.round((sharedTokens / realMax) * 100);
+
+  if (sharedTokens === 0) {
+    return {
+      isMatch: false,
+      confidence: 0,
+      reason: `Nama di dokumen "${nameInDoc}" berbeda dengan nama santri "${nameInForm}".`,
+    };
+  }
+
+  if (sharedTokens >= 1) {
+    return { isMatch: true, confidence: Math.max(confidence, 70), reason: 'Ditemukan kesesuaian kata nama.' };
+  }
+
+  return {
+    isMatch: false,
+    confidence,
+    reason: `Tingkat kecocokan nama rendah (${confidence}%). Kemungkinan santri yang berbeda.`,
+  };
+}
