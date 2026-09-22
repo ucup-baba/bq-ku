@@ -5,7 +5,7 @@ import { parseOcrText } from '@/lib/ocr/parser';
 
 export async function POST(req: NextRequest) {
   try {
-    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
+    const { supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
     const contentType = req.headers.get('content-type') || '';
 
     if (contentType.includes('application/json')) {

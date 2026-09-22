@@ -21,7 +21,7 @@ export async function GET(_req: NextRequest, ctx: Ctx) {
 
 export async function PUT(req: NextRequest, ctx: Ctx) {
   try {
-    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
+    const { supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
     const { id } = await ctx.params;
     const parsed = santriUpdateSchema.safeParse(await req.json());
     if (!parsed.success) return validationResponse(parsed.error);
@@ -51,7 +51,7 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
 
 export async function POST(req: NextRequest, ctx: Ctx) {
   try {
-    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
+    const { supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
     const { id } = await ctx.params;
     const parsed = documentInputSchema.safeParse(await req.json());
     if (!parsed.success) return validationResponse(parsed.error);

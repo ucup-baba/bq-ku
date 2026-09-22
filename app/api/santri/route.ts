@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
+    const { supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
     const parsed = santriInputSchema.safeParse(await req.json());
     if (!parsed.success) return validationResponse(parsed.error);
     const santri = await createSantri(supabase, parsed.data);

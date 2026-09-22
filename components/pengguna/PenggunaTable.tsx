@@ -2,13 +2,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { UserPlus, Prohibit, CheckCircle, ShieldCheck, ArrowsClockwise, Trash, Warning } from '@phosphor-icons/react';
 import { UndangPenggunaModal } from './UndangPenggunaModal';
-import type { UserRole } from '@/lib/auth/roles';
+import { getRoleLabel, type UserRole } from '@/lib/auth/roles';
 
-type Row = { id: string; nama: string; email: string; role: UserRole; aktif: boolean; createdAt: string; status: 'PROFIL' | 'MENUNGGU'; lastSignInAt: string | null };
+type Row = { id: string; nama: string; email: string; roles: UserRole[]; aktif: boolean; createdAt: string; status: 'PROFIL' | 'MENUNGGU'; lastSignInAt: string | null };
 
 const ROLE_BADGE: Record<UserRole, string> = {
   SUPERADMIN: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
-  PANITIA: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200',
+  ADMIN_SANTRI: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200',
+  ADMIN_DONATUR: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
   VIEWER: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 };
 const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : 'Belum pernah';
@@ -33,7 +34,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const patch = async (id: string, body: { role?: UserRole; aktif?: boolean }) => {
+  const patch = async (id: string, body: { aktif?: boolean }) => {
     setBusyId(id); setError(null);
     try {
       const res = await fetch(`/api/pengguna/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -54,13 +55,9 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
     } catch (e: any) { setError(e.message); } finally { setBusyId(null); }
   };
 
-  const select = 'h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50';
-
-  const RoleSelect = ({ r }: { r: Row }) => (
-    <select aria-label={`Peran ${r.nama}`} value={r.role} disabled={r.id === currentUserId || busyId === r.id}
-      onChange={e => patch(r.id, { role: e.target.value as UserRole })} className={select}>
-      <option value="SUPERADMIN">Superadmin</option><option value="PANITIA">Panitia</option><option value="VIEWER">Viewer</option>
-    </select>
+  // UI edit multi-peran menyusul di Task 5; untuk saat ini hanya menampilkan label.
+  const RoleLabel = ({ r }: { r: Row }) => (
+    <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">{r.roles.map(getRoleLabel).join(', ')}</span>
   );
   const AktifToggle = ({ r }: { r: Row }) => (
     <button type="button" aria-pressed={!r.aktif} aria-label={`${r.aktif ? 'Blokir' : 'Buka blokir'} ${r.nama}`}
@@ -104,7 +101,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
               <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800/60 last:border-0">
                 <td className="px-5 py-3 font-bold">{r.nama}{r.id === currentUserId && <span className="ml-2 text-[11px] font-semibold text-teal-600">(Anda)</span>}</td>
                 <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{r.email}</td>
-                <td className="px-5 py-3"><RoleSelect r={r} /></td>
+                <td className="px-5 py-3"><RoleLabel r={r} /></td>
                 <td className="px-5 py-3"><AktifToggle r={r} /></td>
                 <td className="px-5 py-3 text-slate-500">{fmtMasuk(r)}</td>
                 <td className="px-5 py-3 text-right"><HapusButton r={r} /></td>
@@ -122,9 +119,9 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0"><p className="font-bold truncate">{r.nama}{r.id === currentUserId && <span className="ml-2 text-[11px] font-semibold text-teal-600">(Anda)</span>}</p>
                 <p className="text-xs text-slate-500 truncate">{r.email}</p></div>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold inline-flex items-center gap-1 ${ROLE_BADGE[r.role]}`}><ShieldCheck size={12} weight="bold" />{r.role}</span>
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold inline-flex items-center gap-1 ${ROLE_BADGE[r.roles[0] ?? "VIEWER"]}`}><ShieldCheck size={12} weight="bold" />{r.roles.map(getRoleLabel).join(", ")}</span>
             </div>
-            <div className="flex flex-wrap items-center gap-2"><RoleSelect r={r} /><AktifToggle r={r} /><HapusButton r={r} /></div>
+            <div className="flex flex-wrap items-center gap-2"><RoleLabel r={r} /><AktifToggle r={r} /><HapusButton r={r} /></div>
             <p className="text-[11px] text-slate-500">Terakhir masuk: {fmtMasuk(r)}</p>
           </li>
         ))}

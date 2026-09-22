@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X, UserPlus, Check } from '@phosphor-icons/react';
 
 const ROLES = [
-  { value: 'PANITIA', label: 'Panitia Administrasi' },
+  { value: 'ADMIN_SANTRI', label: 'Admin Santri' },
   { value: 'VIEWER', label: 'Viewer (hanya lihat)' },
   { value: 'SUPERADMIN', label: 'Superadmin (penuh)' },
 ] as const;
@@ -11,7 +11,7 @@ const ROLES = [
 export function UndangPenggunaModal({ open, onClose, onInvited }: { open: boolean; onClose: () => void; onInvited: () => void }) {
   const [nama, setNama] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<string>('PANITIA');
+  const [role, setRole] = useState<string>('ADMIN_SANTRI');
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -19,7 +19,7 @@ export function UndangPenggunaModal({ open, onClose, onInvited }: { open: boolea
 
   useEffect(() => {
     if (!open) return;
-    setNama(''); setEmail(''); setRole('PANITIA'); setFields({}); setError(null);
+    setNama(''); setEmail(''); setRole('ADMIN_SANTRI'); setFields({}); setError(null);
     setTimeout(() => firstInput.current?.focus(), 30);
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);

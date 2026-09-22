@@ -1,37 +1,28 @@
-export type UserRole = 'SUPERADMIN' | 'PANITIA' | 'VIEWER';
+export type UserRole = 'SUPERADMIN' | 'ADMIN_SANTRI' | 'ADMIN_DONATUR' | 'VIEWER';
 
 export interface UserSession {
   id: string;
   username: string;
   nama: string;
-  role: UserRole;
+  roles: UserRole[];
 }
 
-export function canEditSantri(role: UserRole): boolean {
-  return role === 'SUPERADMIN' || role === 'PANITIA';
-}
+const has = (roles: UserRole[], ...wanted: UserRole[]) => roles.some(r => wanted.includes(r));
 
-export function canDeleteSantri(role: UserRole): boolean {
-  return role === 'SUPERADMIN';
-}
+export function canEditSantri(roles: UserRole[]): boolean { return has(roles, 'SUPERADMIN', 'ADMIN_SANTRI'); }
+export function canDeleteSantri(roles: UserRole[]): boolean { return has(roles, 'SUPERADMIN'); }
+export function canVerifyDocuments(roles: UserRole[]): boolean { return has(roles, 'SUPERADMIN', 'ADMIN_SANTRI'); }
+export function canManageUsers(roles: UserRole[]): boolean { return has(roles, 'SUPERADMIN'); }
+export function canManageDonatur(roles: UserRole[]): boolean { return has(roles, 'SUPERADMIN', 'ADMIN_DONATUR'); }
 
-export function canVerifyDocuments(role: UserRole): boolean {
-  return role === 'SUPERADMIN' || role === 'PANITIA';
-}
-
-export function canManageUsers(role: UserRole): boolean {
-  return role === 'SUPERADMIN';
-}
+export const ALL_ROLES: UserRole[] = ['SUPERADMIN', 'ADMIN_SANTRI', 'ADMIN_DONATUR', 'VIEWER'];
 
 export function getRoleLabel(role: UserRole): string {
   switch (role) {
-    case 'SUPERADMIN':
-      return 'Superadmin (Penuh)';
-    case 'PANITIA':
-      return 'Panitia Administrasi';
-    case 'VIEWER':
-      return 'Viewer / Wali Santri';
-    default:
-      return role;
+    case 'SUPERADMIN': return 'Superadmin (Penuh)';
+    case 'ADMIN_SANTRI': return 'Admin Santri';
+    case 'ADMIN_DONATUR': return 'Admin Donatur';
+    case 'VIEWER': return 'Viewer / Wali Santri';
+    default: return role;
   }
 }

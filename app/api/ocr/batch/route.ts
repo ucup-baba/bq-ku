@@ -73,7 +73,7 @@ async function optimizeAndUpload(
 
 export async function POST(req: NextRequest) {
   try {
-    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
+    const { supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
     const contentType = req.headers.get('content-type') || '';
 
     // SUPPORT 1: JSON Payload (fileUrls already uploaded to Supabase Storage - avoids Vercel 4.5MB limit)

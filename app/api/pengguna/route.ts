@@ -24,7 +24,7 @@ export async function GET() {
     const rows = [
       ...(profiles || []).map(p => ({ ...p, status: 'PROFIL' as const, lastSignInAt: last.get(p.id) ?? null })),
       ...(allowed || []).filter(a => !seen.has(a.email.toLowerCase()))
-        .map(a => ({ id: `allowed:${a.email}`, nama: a.nama, email: a.email, role: a.role, aktif: true, createdAt: a.createdAt, status: 'MENUNGGU' as const, lastSignInAt: null })),
+        .map(a => ({ id: `allowed:${a.email}`, nama: a.nama, email: a.email, roles: a.roles ?? [], aktif: true, createdAt: a.createdAt, status: 'MENUNGGU' as const, lastSignInAt: null })),
     ];
     return NextResponse.json({ success: true, data: rows });
   } catch (e: any) {

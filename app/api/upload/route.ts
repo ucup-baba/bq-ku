@@ -13,7 +13,7 @@ const execFileAsync = promisify(execFile);
 
 export async function POST(req: NextRequest) {
   try {
-    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
+    const { supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const tahunMasuk = formData.get('tahunMasuk') as string | null;
