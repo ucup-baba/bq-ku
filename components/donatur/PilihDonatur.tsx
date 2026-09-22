@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MagnifyingGlass, UserPlus, UserCircle, X } from '@phosphor-icons/react';
 import type { Sapaan, Donatur } from '@/lib/db/donatur-repo';
+import { tandaiDonaturBaru } from '@/lib/donatur/tandai-donatur-baru';
 
 export type PilihDonaturValue = {
   donaturId?: string;
@@ -38,12 +39,27 @@ export function PilihDonatur({ value, onChange, errors }: {
   // ringkasan terpilih. Direset saat donatur diganti/dikosongkan.
   const [donaturBaruTersimpan, setDonaturBaruTersimpan] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Menyimpan nama & donaturId "sebelumnya" (dari render terakhir efek ini
+  // berjalan) — dipakai tandaiDonaturBaru untuk membedakan transisi donatur
+  // BARU (nama sudah diketik sebelum id muncul) dari donatur LAMA yang
+  // datang lewat prefill "Donasi lagi" (nama & id terisi sekaligus).
+  const namaSebelumnyaRef = useRef(value.nama);
+  const donaturIdSebelumnyaRef = useRef(value.donaturId);
 
   useEffect(() => {
-    if (!value.donaturId) { setDonaturBaruTersimpan(false); return; }
-    if (modeBaru) setDonaturBaruTersimpan(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value.donaturId]);
+    if (tandaiDonaturBaru({
+      modeBaru,
+      namaSebelumnya: namaSebelumnyaRef.current,
+      donaturIdSebelumnya: donaturIdSebelumnyaRef.current,
+      donaturIdSekarang: value.donaturId,
+    })) {
+      setDonaturBaruTersimpan(true);
+    } else if (!value.donaturId) {
+      setDonaturBaruTersimpan(false);
+    }
+    donaturIdSebelumnyaRef.current = value.donaturId;
+    namaSebelumnyaRef.current = value.nama;
+  }, [value.donaturId, value.nama, modeBaru]);
 
   useEffect(() => {
     if (modeBaru || value.donaturId) { setHasil([]); return; }

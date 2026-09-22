@@ -71,6 +71,16 @@ export function FormSurat() {
 
   const [donatur, setDonatur] = useState<PilihDonaturValue>({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' });
   const [pesanDonaturAwal, setPesanDonaturAwal] = useState<string | null>(null);
+  // Ditandai true begitu pengguna berinteraksi manual dengan PilihDonatur
+  // (memilih donatur lain, membuka mode "Baru", dsb) SEBELUM prefill
+  // ?donaturId= selesai dimuat — mencegah hasil fetch yang datang belakangan
+  // menimpa pilihan pengguna yang sudah lebih baru.
+  const dipilihManualRef = useRef(false);
+
+  const ubahDonatur = (v: PilihDonaturValue) => {
+    dipilihManualRef.current = true;
+    setDonatur(v);
+  };
 
   // Datang dari tombol "Donasi lagi" (?donaturId=...) — muat data donatur
   // sekali lalu isi langsung sebagai donatur terpilih.
@@ -81,11 +91,11 @@ export function FormSurat() {
       try {
         const res = await fetch(`/api/donatur/${encodeURIComponent(donaturIdAwal)}`);
         const data = await res.json();
-        if (batal) return;
+        if (batal || dipilihManualRef.current) return;
         if (!res.ok || !data.data) { setPesanDonaturAwal('Donatur tidak ditemukan. Silakan pilih atau tambahkan donatur.'); return; }
         setDonatur({ donaturId: data.data.id, nama: data.data.nama, sapaan: data.data.sapaan, noWa: data.data.noWa || '' });
       } catch {
-        if (!batal) setPesanDonaturAwal('Gagal memuat data donatur. Silakan pilih atau tambahkan donatur.');
+        if (!batal && !dipilihManualRef.current) setPesanDonaturAwal('Gagal memuat data donatur. Silakan pilih atau tambahkan donatur.');
       }
     })();
     return () => { batal = true; };
@@ -250,7 +260,7 @@ export function FormSurat() {
         <div className="space-y-2">
           <span className="text-xs font-semibold">Donatur</span>
           {pesanDonaturAwal && <p className="text-xs text-amber-600">{pesanDonaturAwal}</p>}
-          <PilihDonatur value={donatur} onChange={setDonatur} errors={donaturFieldErrors} />
+          <PilihDonatur value={donatur} onChange={ubahDonatur} errors={donaturFieldErrors} />
           {fieldErrors.donaturId && <p className="text-xs text-rose-600">{fieldErrors.donaturId}</p>}
         </div>
 

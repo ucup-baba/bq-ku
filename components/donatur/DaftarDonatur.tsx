@@ -137,6 +137,11 @@ export function DaftarDonatur() {
   }, [q]);
 
   const tambahDonaturBaru = (d: Donatur) => {
+    // Bila ada kata kunci pencarian aktif, donatur baru mungkin tidak cocok
+    // dengannya — kosongkan agar daftar lengkap dimuat ulang dan donatur
+    // baru pasti terlihat, alih-alih disisipkan ke hasil pencarian yang
+    // sudah tersaring.
+    if (q.trim() !== '') { setQ(''); return; }
     setDonatur(prev => (prev ? [d, ...prev] : [d]));
   };
 
