@@ -1,0 +1,69 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { NextRequest } from 'next/server';
+
+const getUser = vi.fn();
+const maybeSingle = vi.fn();
+
+vi.mock('@supabase/ssr', () => ({
+  createServerClient: () => ({
+    auth: { getUser },
+    from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
+  }),
+}));
+
+import { proxy } from '@/proxy';
+
+beforeEach(() => {
+  getUser.mockReset();
+  maybeSingle.mockReset();
+});
+
+function req(path: string) {
+  return new NextRequest(new URL(path, 'http://localhost'));
+}
+
+function loggedIn(roles: string[], aktif = true) {
+  getUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.c' } } });
+  maybeSingle.mockResolvedValue({ data: { roles, aktif } });
+}
+
+describe('proxy: penjaga ruangan', () => {
+  it('ADMIN_SANTRI membuka /donatur → redirect ke /', async () => {
+    loggedIn(['ADMIN_SANTRI']);
+    const res = await proxy(req('/donatur'));
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get('location')!).pathname).toBe('/');
+  });
+
+  it('ADMIN_SANTRI memanggil /api/donatur/surat → 403 FORBIDDEN', async () => {
+    loggedIn(['ADMIN_SANTRI']);
+    const res = await proxy(req('/api/donatur/surat'));
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(body.code).toBe('FORBIDDEN');
+  });
+
+  it('ADMIN_DONATUR membuka /santri → redirect ke /donatur', async () => {
+    loggedIn(['ADMIN_DONATUR']);
+    const res = await proxy(req('/santri'));
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get('location')!).pathname).toBe('/donatur');
+  });
+
+  it('SUPERADMIN membuka /donatur → diteruskan, cookie bq_room=donatur diset', async () => {
+    loggedIn(['SUPERADMIN']);
+    const res = await proxy(req('/donatur'));
+    expect(res.headers.get('location')).toBeNull();
+    expect(res.cookies.get('bq_room')?.value).toBe('donatur');
+  });
+
+  it('pengguna tanpa peran membuka /donatur → redirect ke /, lalu / diteruskan tanpa loop', async () => {
+    loggedIn(['ADMIN_SANTRI'], false); // profil nonaktif → roles efektif kosong
+    const resDonatur = await proxy(req('/donatur'));
+    expect(resDonatur.status).toBe(307);
+    expect(new URL(resDonatur.headers.get('location')!).pathname).toBe('/');
+
+    const resHome = await proxy(req('/'));
+    expect(resHome.headers.get('location')).toBeNull();
+  });
+});
