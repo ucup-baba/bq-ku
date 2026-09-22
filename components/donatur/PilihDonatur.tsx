@@ -33,10 +33,20 @@ export function PilihDonatur({ value, onChange, errors }: {
   const [hasil, setHasil] = useState<Donatur[]>([]);
   const [mencari, setMencari] = useState(false);
   const [modeBaru, setModeBaru] = useState(!value.donaturId && value.nama === '');
+  // Ditandai true begitu donaturId muncul SAAT sedang mengisi form "donatur baru"
+  // (bukan dari memilih hasil pencarian) — dipakai untuk keterangan kecil di
+  // ringkasan terpilih. Direset saat donatur diganti/dikosongkan.
+  const [donaturBaruTersimpan, setDonaturBaruTersimpan] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (modeBaru) { setHasil([]); return; }
+    if (!value.donaturId) { setDonaturBaruTersimpan(false); return; }
+    if (modeBaru) setDonaturBaruTersimpan(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value.donaturId]);
+
+  useEffect(() => {
+    if (modeBaru || value.donaturId) { setHasil([]); return; }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setMencari(true);
@@ -51,7 +61,7 @@ export function PilihDonatur({ value, onChange, errors }: {
       }
     }, 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [q, modeBaru]);
+  }, [q, modeBaru, value.donaturId]);
 
   const pilihDonatur = (d: Donatur) => {
     onChange({ donaturId: d.id, nama: d.nama, sapaan: d.sapaan, noWa: d.noWa || '' });
@@ -68,6 +78,36 @@ export function PilihDonatur({ value, onChange, errors }: {
     setModeBaru(false);
     onChange({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' });
   };
+
+  const gantiDonatur = () => {
+    setModeBaru(false);
+    setDonaturBaruTersimpan(false);
+    onChange({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' });
+  };
+
+  // Begitu donaturId terisi — baik dari memilih hasil pencarian maupun dari
+  // donatur baru yang baru saja tersimpan lewat POST /api/donatur — tampilkan
+  // sebagai ringkasan "terpilih", bukan input yang masih bisa diedit. Bila
+  // masih bisa diedit, editan itu akan diam-diam diabaikan karena submit
+  // berikutnya tidak lagi memanggil POST /api/donatur (donaturId sudah ada).
+  if (value.donaturId) {
+    return (
+      <div className="flex items-center justify-between rounded-2xl border-2 border-[#0B5FA5] bg-[#0B5FA5]/5 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <UserCircle size={28} weight="duotone" className="text-[#0B5FA5]" />
+          <div>
+            <p className="font-bold">{value.nama}</p>
+            {value.noWa && <p className="text-xs text-slate-500">{value.noWa}</p>}
+            {donaturBaruTersimpan && <p className="text-xs text-[#0E9F54] font-semibold">Donatur baru sudah tersimpan</p>}
+          </div>
+        </div>
+        <button type="button" onClick={gantiDonatur}
+          aria-label="Ganti donatur" className="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-white dark:hover:bg-slate-800">
+          <X size={18} weight="bold" />
+        </button>
+      </div>
+    );
+  }
 
   if (modeBaru) {
     return (
@@ -122,23 +162,7 @@ export function PilihDonatur({ value, onChange, errors }: {
         </button>
       </div>
 
-      {value.donaturId && (
-        <div className="flex items-center justify-between rounded-2xl border-2 border-[#0B5FA5] bg-[#0B5FA5]/5 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <UserCircle size={28} weight="duotone" className="text-[#0B5FA5]" />
-            <div>
-              <p className="font-bold">{value.nama}</p>
-              {value.noWa && <p className="text-xs text-slate-500">{value.noWa}</p>}
-            </div>
-          </div>
-          <button type="button" onClick={() => onChange({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' })}
-            aria-label="Ganti donatur" className="w-11 h-11 flex items-center justify-center rounded-xl hover:bg-white dark:hover:bg-slate-800">
-            <X size={18} weight="bold" />
-          </button>
-        </div>
-      )}
-
-      {!value.donaturId && q.trim() !== '' && (
+      {q.trim() !== '' && (
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-200 dark:divide-slate-700 max-h-64 overflow-y-auto">
           {mencari && <p className="px-4 py-3 text-sm text-slate-500">Mencari…</p>}
           {!mencari && hasil.length === 0 && <p className="px-4 py-3 text-sm text-slate-500">Tidak ditemukan. Gunakan tombol "Baru" untuk menambah donatur.</p>}
