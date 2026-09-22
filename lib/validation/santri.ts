@@ -89,3 +89,8 @@ export const documentInputSchema = z.object({
   .transform(d => ({ ...d, storagePath: (d.storagePath || d.fileUrl)! }));
 
 export type SantriInputParsed = z.infer<typeof santriInputSchema>;
+
+/** Dipakai SantriForm sebelum kirim: hanya field inti agar pesan muncul dini. */
+export const santriClientSchema = santriBase
+  .pick({ namaLengkap: true, nik: true, noKk: true, nisn: true, tempatLahir: true, tanggalLahir: true, jenisKelamin: true, jenjang: true, kelas: true, sekolahSekarang: true, kontakWali: true })
+  .refine(kelasCocokJenjang, { path: ['kelas'], message: 'Kelas tidak sesuai jenjang (SMP 7–9, SMA/SMK 10–12)' });
