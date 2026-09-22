@@ -24,7 +24,16 @@ vi.mock('@/lib/db/donatur-repo', () => {
 
 const eqDelete = vi.fn().mockResolvedValue({ error: null });
 const deleteFn = vi.fn(() => ({ eq: eqDelete }));
-const fromFn = vi.fn(() => ({ delete: deleteFn }));
+
+const maybeSingleSurat = vi.fn().mockResolvedValue({ data: null, error: null });
+const eqSurat = vi.fn(() => ({ maybeSingle: maybeSingleSurat }));
+const selectSurat = vi.fn(() => ({ eq: eqSurat }));
+
+const fromFn = vi.fn((table: string) => {
+  if (table === 'surat') return { select: selectSurat };
+  if (table === 'donasi') return { delete: deleteFn };
+  throw new Error(`from() tak terduga untuk tabel: ${table}`);
+});
 
 const fakeUser = { id: 'user-1', email: 'a@b.c', nama: 'A', roles: ['ADMIN_DONATUR'] };
 const fakeSupabase = { from: fromFn };
@@ -59,6 +68,10 @@ beforeEach(() => {
   fromFn.mockClear();
   deleteFn.mockClear();
   eqDelete.mockClear();
+  selectSurat.mockClear();
+  eqSurat.mockClear();
+  maybeSingleSurat.mockReset();
+  maybeSingleSurat.mockResolvedValue({ data: null, error: null });
 });
 
 describe('POST /api/donatur/surat', () => {
@@ -116,5 +129,41 @@ describe('POST /api/donatur/surat', () => {
     expect(res.status).toBe(400);
     expect(createDonasi).not.toHaveBeenCalled();
     expect(createSurat).not.toHaveBeenCalled();
+  });
+
+  it('nomor sudah dipakai pada pemeriksaan awal -> 409 dan createDonasi tidak dipanggil', async () => {
+    maybeSingleSurat.mockResolvedValue({ data: { id: 'surat-existing' }, error: null });
+    peekNomorUrut.mockResolvedValue(9);
+
+    const res = await POST(makeReq({
+      donasi: donasiInput,
+      nomorSurat: '5/PBQ/IX/2026',
+      tanggalSurat: '2026-09-01',
+    }));
+    const json = await res.json();
+
+    expect(res.status).toBe(409);
+    expect(json.nomorUsulan).toBe('9/PBQ/IX/2026');
+    expect(createDonasi).not.toHaveBeenCalled();
+    expect(createSurat).not.toHaveBeenCalled();
+    expect(deleteFn).not.toHaveBeenCalled();
+  });
+
+  it('bumpNomorUrut melempar setelah surat tersimpan -> tetap 201', async () => {
+    const donasiRow = { id: 'donasi-3' };
+    const suratRow = { id: 'surat-3', donasiId: 'donasi-3', nomorSurat: '5/PBQ/IX/2026', tanggalSurat: '2026-09-01' };
+    createDonasi.mockResolvedValue(donasiRow);
+    createSurat.mockResolvedValue(suratRow);
+    bumpNomorUrut.mockRejectedValue(new Error('boom'));
+
+    const res = await POST(makeReq({
+      donasi: donasiInput,
+      nomorSurat: '5/PBQ/IX/2026',
+      tanggalSurat: '2026-09-01',
+    }));
+    const json = await res.json();
+
+    expect(res.status).toBe(201);
+    expect(json).toEqual({ success: true, data: suratRow });
   });
 });

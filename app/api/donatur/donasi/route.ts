@@ -3,12 +3,7 @@ import { requireRoom, authErrorResponse } from '@/lib/auth/session';
 import { listDonasi, createDonasi } from '@/lib/db/donatur-repo';
 import { donasiSchema } from '@/lib/validation/donatur';
 import { validationResponse } from '@/lib/validation/errors';
-
-const TANGGAL_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-function tanggalValid(v: string): boolean {
-  return TANGGAL_RE.test(v) && !Number.isNaN(Date.parse(v));
-}
+import { isTanggalIso, parseLimit } from '@/lib/validation/query';
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,15 +11,13 @@ export async function GET(req: NextRequest) {
     const p = new URL(req.url).searchParams;
     const dari = p.get('dari') || undefined;
     const sampai = p.get('sampai') || undefined;
-    if (dari && !tanggalValid(dari)) {
+    if (dari && !isTanggalIso(dari)) {
       return NextResponse.json({ error: 'Format tanggal harus YYYY-MM-DD' }, { status: 400 });
     }
-    if (sampai && !tanggalValid(sampai)) {
+    if (sampai && !isTanggalIso(sampai)) {
       return NextResponse.json({ error: 'Format tanggal harus YYYY-MM-DD' }, { status: 400 });
     }
-    const limitRaw = p.get('limit');
-    const limitNum = limitRaw ? Number.parseInt(limitRaw, 10) : NaN;
-    const limit = Number.isInteger(limitNum) && limitNum >= 1 && limitNum <= 500 ? limitNum : undefined;
+    const limit = parseLimit(p.get('limit'));
     const data = await listDonasi(supabase, {
       dari,
       sampai,

@@ -5,7 +5,7 @@ import { getSurat, markSuratTerkirim } from '@/lib/db/donatur-repo';
 import { validationResponse } from '@/lib/validation/errors';
 
 type Ctx = { params: Promise<{ id: string }> };
-const patchSchema = z.object({ terkirimWa: z.literal(true) });
+const patchSchema = z.object({ terkirimWa: z.literal(true) }).strict();
 
 export async function GET(_req: NextRequest, ctx: Ctx) {
   try {
