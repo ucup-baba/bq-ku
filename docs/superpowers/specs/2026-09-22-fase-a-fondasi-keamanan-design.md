@@ -104,6 +104,7 @@ Anon: tidak ada policy → nol akses. Jalur wali (`upload-mandiri`) memakai admi
 - Semua route yang sebelumnya `getPublicUrl` menyimpan **path** (`lib/utils/file-naming.ts` tetap menentukan namanya).
 - `GET /api/documents/[id]/url` → `createSignedUrl(path, 3600)`; `GET /api/santri/[id]/foto?jenis=formal|profil` untuk foto. Client memakai hook `useSignedUrl(docId)` yang meng-cache hingga 50 menit.
 - `DocumentPreviewModal`, `SantriPosterCv`, `SantriCard`, halaman `upload-mandiri` (yang menampilkan berkas sudah terunggah) beralih ke signed URL.
+- **Implementasi:** signed URL disematkan saat membaca (`attachSignedUrls` di repo, kolom `fileUrl`/`fotoFormalUrl`/`fotoProfilUrl` tetap ada di respons) dan URL dinormalisasi ke path saat menyimpan (`storagePathFromUrl`), sehingga komponen client besar tidak perlu diubah di fase ini; endpoint `/api/documents/[id]/url` tersedia untuk menyegarkan tautan.
 
 ## 5. A3 — Satu DB, Validasi, Test
 

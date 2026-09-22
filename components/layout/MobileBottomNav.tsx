@@ -11,6 +11,7 @@ import {
   Moon 
 } from '@phosphor-icons/react';
 import { useTheme } from '@/components/theme/ThemeProvider';
+import { UserMenu } from '@/components/auth/UserMenu';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
@@ -67,6 +68,12 @@ export function MobileBottomNav() {
           )}
           <span className="text-[10px] font-bold">{theme === 'dark' ? 'Terang' : 'Gelap'}</span>
         </button>
+
+        {/* Keluar */}
+        <div className="flex flex-col items-center gap-1 p-1.5 text-slate-500 dark:text-slate-400">
+          <UserMenu compact />
+          <span className="text-[10px] font-bold">Akun</span>
+        </div>
       </div>
     </nav>
   );

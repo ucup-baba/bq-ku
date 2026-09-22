@@ -12,13 +12,14 @@ import {
   GraduationCap
 } from '@phosphor-icons/react/dist/ssr';
 import { listSantri } from '@/lib/db/santri-repo';
+import { createServerSupabase } from '@/lib/supabase/server';
 import { SantriCard } from '@/components/directory/SantriCard';
 import { DoodleSparkle, DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
 
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const santriList = await listSantri();
+  const santriList = await listSantri(await createServerSupabase());
 
   const total = santriList.length;
   const ikhwanCount = santriList.filter(s => s.jenisKelamin === 'IKHWAN').length;

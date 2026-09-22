@@ -34,6 +34,7 @@ import { DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStick
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, checkNameMatch, formatNikDisplay, cleanNumericInput } from '@/lib/utils/formatters';
 import { DocumentGuardModal, DocumentMismatchData } from '@/components/modals/DocumentGuardModal';
+import { santriClientSchema, zodFieldErrors } from '@/lib/validation/santri';
 
 export interface SantriFormProps {
   initialData?: any;
@@ -78,6 +79,8 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   const [newSkillInput, setNewSkillInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [duplicateNik, setDuplicateNik] = useState<{ existingId: string } | null>(null);
   const [showOcrBox, setShowOcrBox] = useState(true);
   const [ocrAutoFilledNotice, setOcrAutoFilledNotice] = useState<string | null>(null);
   const [mismatchData, setMismatchData] = useState<DocumentMismatchData | null>(null);
@@ -684,6 +687,20 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage(null);
+    setDuplicateNik(null);
+
+    // Validasi awal di client (skema yang sama dengan server)
+    const check = santriClientSchema.safeParse(formData);
+    if (!check.success) {
+      const errs = zodFieldErrors(check.error);
+      setFieldErrors(errs);
+      const first = Object.keys(errs)[0];
+      setErrorMessage(`Periksa kembali: ${errs[first]}`);
+      document.querySelector<HTMLElement>(`[name="${first}"]`)?.focus();
+      setIsSubmitting(false);
+      return;
+    }
+    setFieldErrors({});
 
     try {
       const endpoint = isEditing ? `/api/santri/${initialData.id}` : '/api/santri';
@@ -696,6 +713,16 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
       });
 
       const data = await res.json();
+      if (res.status === 400 && data.fields) {
+        setFieldErrors(data.fields);
+        const first = Object.keys(data.fields)[0];
+        document.querySelector<HTMLElement>(`[name="${first}"]`)?.focus();
+        throw new Error(`Periksa kembali: ${data.fields[first]}`);
+      }
+      if (res.status === 409 && data.existingId) {
+        setDuplicateNik({ existingId: data.existingId });
+        throw new Error('NIK ini sudah terdaftar atas nama santri lain.');
+      }
       if (!res.ok || !data.success) {
         throw new Error(data.error || 'Gagal menyimpan data santri');
       }
@@ -1243,6 +1270,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               {ocrFilledFields.nik && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
+              name="nik"
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -1253,6 +1281,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               placeholder="3404 1455 0110 0001"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-mono tracking-wide focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
+            {fieldErrors.nik && <p className="text-xs text-rose-600 mt-1">{fieldErrors.nik}</p>}
           </div>
 
           <div>
@@ -1261,6 +1290,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               {ocrFilledFields.noKk && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
+              name="noKk"
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -1270,6 +1300,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               placeholder="3404 1423 1111 0001"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-mono tracking-wide focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
+            {fieldErrors.noKk && <p className="text-xs text-rose-600 mt-1">{fieldErrors.noKk}</p>}
           </div>
 
           <div>
@@ -1278,6 +1309,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               {ocrFilledFields.nisn && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
+              name="nisn"
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -1287,6 +1319,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               placeholder="0087123456"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-mono tracking-wide focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
+            {fieldErrors.nisn && <p className="text-xs text-rose-600 mt-1">{fieldErrors.nisn}</p>}
           </div>
 
           <div>
@@ -1319,12 +1352,14 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               })()}
             </div>
             <input
+              name="tanggalLahir"
               type="date"
               required
               value={formData.tanggalLahir}
               onChange={e => setFormData({ ...formData, tanggalLahir: e.target.value })}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
+            {fieldErrors.tanggalLahir && <p className="text-xs text-rose-600 mt-1">{fieldErrors.tanggalLahir}</p>}
           </div>
 
           <div>
@@ -1430,6 +1465,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               {ocrFilledFields.kelas && <span className="inline-flex items-center gap-1 text-[10px] font-bold text-lime-700 dark:text-lime-300 bg-lime-100 dark:bg-lime-950/60 px-1.5 py-0.5 rounded border border-lime-300/80 dark:border-lime-700"><Sparkle size={10} weight="fill" /> OCR</span>}
             </label>
             <input
+              name="kelas"
               type="text"
               required
               value={formData.kelas}
@@ -1437,6 +1473,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               placeholder={formData.jenjang === 'ALUMNI' ? 'Contoh: Lulus 2024 / Angkatan 6' : 'Contoh: 7A, 10 IPA'}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
+            {fieldErrors.kelas && <p className="text-xs text-rose-600 mt-1">{fieldErrors.kelas}</p>}
           </div>
 
           <div className="sm:col-span-2">
@@ -1598,6 +1635,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               )}
             </div>
             <input
+              name="kontakWali"
               type="tel"
               inputMode="tel"
               value={formData.kontakWali}
@@ -1605,6 +1643,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
               placeholder="08123456789"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:outline-none"
             />
+            {fieldErrors.kontakWali && <p className="text-xs text-rose-600 mt-1">{fieldErrors.kontakWali}</p>}
           </div>
 
           <div>
@@ -1740,8 +1779,13 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="p-4 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 rounded-2xl text-sm">
-          {errorMessage}
+        <div role="alert" className="p-4 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 rounded-2xl text-sm space-y-2">
+          <p>{errorMessage}</p>
+          {duplicateNik && (
+            <a href={`/santri/${duplicateNik.existingId}`} className="inline-flex items-center gap-1 font-bold text-teal-700 dark:text-teal-300 underline">
+              Buka data santri yang sudah ada →
+            </a>
+          )}
         </div>
       )}
 

@@ -1,26 +1,26 @@
-import { db } from './index';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { signPaths } from '@/lib/storage/signed';
+import { storagePathFromUrl } from '@/lib/storage/paths';
+
+export type StatusVerifikasi = 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
 
 export type SantriDocument = {
   id: string;
   santriId: string;
   kategori: string;
   nomorDokumen?: string | null;
+  storagePath: string;
+  /** Signed URL (1 jam); selalu disematkan oleh fungsi baca repo. */
   fileUrl: string;
   rawOcrText?: string | null;
-  extractedFields?: string | null; // JSON string
-  statusVerifikasi: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
+  extractedFields?: string | null;
+  statusVerifikasi: StatusVerifikasi;
   catatanVerifikasi?: string | null;
   createdAt?: string | null;
 };
 
 export type UploadToken = {
-  id: string;
-  santriId: string;
-  token: string;
-  expiresAt: string;
-  usedCount: number;
-  createdAt?: string | null;
+  id: string; santriId: string; token: string; expiresAt: string; usedCount: number; createdAt?: string | null;
 };
 
 export type Santri = {
@@ -46,7 +46,10 @@ export type Santri = {
   alamat?: string | null;
   ringkasanTentang?: string | null;
   riwayatTahfidz?: string | null;
-  keahlian?: string | null; // JSON string
+  keahlian?: string | null;
+  fotoFormalPath?: string | null;
+  fotoProfilPath?: string | null;
+  /** Signed URL, hanya di respons baca. */
   fotoFormalUrl?: string | null;
   fotoProfilUrl?: string | null;
   createdAt?: string | null;
@@ -54,7 +57,7 @@ export type Santri = {
   documents?: SantriDocument[];
 };
 
-export type SantriInput = Omit<Santri, 'id' | 'createdAt' | 'updatedAt' | 'documents'> & {
+export type SantriInput = Omit<Santri, 'id' | 'createdAt' | 'updatedAt' | 'documents' | 'fotoFormalUrl' | 'fotoProfilUrl' | 'keahlian'> & {
   keahlian?: string[] | string | null;
 };
 
@@ -62,374 +65,188 @@ export type DocumentInput = {
   santriId: string;
   kategori: string;
   nomorDokumen?: string | null;
-  fileUrl: string;
+  /** Boleh path, signed URL, atau public URL lama — dinormalisasi. */
+  storagePath: string;
   rawOcrText?: string | null;
-  extractedFields?: any;
-  statusVerifikasi?: 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
+  extractedFields?: unknown;
+  statusVerifikasi?: StatusVerifikasi;
   catatanVerifikasi?: string | null;
 };
 
 export type SantriFilter = {
-  query?: string;
-  q?: string;
+  query?: string; q?: string;
   jenisKelamin?: 'IKHWAN' | 'AKHWAT';
   jenjang?: 'SMP' | 'SMA' | 'SMK' | 'ALUMNI';
 };
 
+export class DuplicateNikError extends Error {
+  constructor(public existingId: string) { super('NIK sudah terdaftar'); this.name = 'DuplicateNikError'; }
+}
+
 const generateId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
+const keahlianToString = (k: SantriInput['keahlian']) => Array.isArray(k) ? JSON.stringify(k) : (k ?? null);
 
-export async function createSantri(input: SantriInput): Promise<Santri> {
-  const id = generateId();
-  const createdAt = now();
-  const updatedAt = createdAt;
-  
-  const keahlianStr = Array.isArray(input.keahlian) 
-    ? JSON.stringify(input.keahlian) 
-    : (input.keahlian || null);
-
-  const santriData: Santri = {
-    ...input,
-    id,
-    keahlian: keahlianStr,
-    createdAt,
-    updatedAt,
-    namaPanggilan: input.namaPanggilan ?? null,
-    noKk: input.noKk ?? null,
-    nisn: input.nisn ?? null,
-    asalSekolahSebelumnya: input.asalSekolahSebelumnya ?? null,
-    namaAyah: input.namaAyah ?? null,
-    namaIbu: input.namaIbu ?? null,
-    statusSosial: input.statusSosial ?? 'REGULER',
-    tahunMasuk: input.tahunMasuk ?? new Date().getFullYear(),
-    kontakWali: input.kontakWali ?? null,
-    pekerjaanOrtu: input.pekerjaanOrtu ?? null,
-    alamat: input.alamat ?? null,
-    ringkasanTentang: input.ringkasanTentang ?? null,
-    riwayatTahfidz: input.riwayatTahfidz ?? null,
-    fotoFormalUrl: input.fotoFormalUrl ?? null,
-    fotoProfilUrl: input.fotoProfilUrl ?? null,
-  };
-
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { data, error } = await supabase.from('santri').insert(santriData).select().single();
-    if (error) throw new Error(`Gagal menyimpan santri ke Supabase: ${error.message}`);
-    return (data || santriData) as Santri;
+async function attachSignedUrls(client: SupabaseClient, rows: Santri[]): Promise<Santri[]> {
+  const paths: string[] = [];
+  for (const s of rows) {
+    paths.push(s.fotoFormalPath || '', s.fotoProfilPath || '');
+    for (const d of s.documents || []) paths.push(d.storagePath);
   }
-
-  // SQLite Fallback
-  const stmt = db.prepare(`
-    INSERT INTO santri (
-      id, namaLengkap, namaPanggilan, nik, noKk, nisn, tempatLahir, tanggalLahir,
-      jenisKelamin, tahunMasuk, jenjang, kelas, sekolahSekarang, asalSekolahSebelumnya,
-      namaAyah, namaIbu, statusSosial, kontakWali, pekerjaanOrtu, alamat, ringkasanTentang,
-      riwayatTahfidz, keahlian, fotoFormalUrl, fotoProfilUrl, createdAt, updatedAt
-    ) VALUES (
-      @id, @namaLengkap, @namaPanggilan, @nik, @noKk, @nisn, @tempatLahir, @tanggalLahir,
-      @jenisKelamin, @tahunMasuk, @jenjang, @kelas, @sekolahSekarang, @asalSekolahSebelumnya,
-      @namaAyah, @namaIbu, @statusSosial, @kontakWali, @pekerjaanOrtu, @alamat, @ringkasanTentang,
-      @riwayatTahfidz, @keahlian, @fotoFormalUrl, @fotoProfilUrl, @createdAt, @updatedAt
-    )
-  `);
-
-  stmt.run(santriData);
-  return santriData as Santri;
-}
-
-export async function getSantriById(id: string): Promise<(Santri & { documents: SantriDocument[] }) | null> {
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { data: santri, error } = await supabase.from('santri').select('*').eq('id', id).maybeSingle();
-    if (error || !santri) return null;
-    const { data: docs } = await supabase.from('documents').select('*').eq('santriId', id);
-    return { ...santri, documents: docs || [] } as (Santri & { documents: SantriDocument[] });
-  }
-
-  // SQLite Fallback
-  const santri = db.prepare('SELECT * FROM santri WHERE id = ?').get(id) as Santri | undefined;
-  if (!santri) return null;
-
-  const documents = (await listDocumentsBySantri(id)) || [];
-  return { ...santri, documents };
-}
-
-export async function listSantri(filter?: SantriFilter): Promise<Santri[]> {
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    let q = supabase.from('santri').select('*, documents(*)');
-    const searchQuery = filter?.query || filter?.q;
-    if (searchQuery) {
-      q = q.or(`namaLengkap.ilike.%${searchQuery}%,nik.ilike.%${searchQuery}%`);
-    }
-    if (filter?.jenisKelamin) {
-      q = q.eq('jenisKelamin', filter.jenisKelamin);
-    }
-    if (filter?.jenjang) {
-      q = q.eq('jenjang', filter.jenjang);
-    }
-    const { data, error } = await q.order('createdAt', { ascending: false });
-    if (error) {
-      console.error('Supabase listSantri error:', error);
-      return [];
-    }
-    return (data || []) as Santri[];
-  }
-
-  // SQLite Fallback
-  let query = 'SELECT * FROM santri WHERE 1=1';
-  const params: any[] = [];
-
-  const searchQuery = filter?.query || filter?.q;
-  if (searchQuery) {
-    query += ' AND (namaLengkap LIKE ? OR nik LIKE ?)';
-    params.push(`%${searchQuery}%`, `%${searchQuery}%`);
-  }
-  if (filter?.jenisKelamin) {
-    query += ' AND jenisKelamin = ?';
-    params.push(filter.jenisKelamin);
-  }
-  if (filter?.jenjang) {
-    query += ' AND jenjang = ?';
-    params.push(filter.jenjang);
-  }
-
-  query += ' ORDER BY createdAt DESC';
-  const santriList = db.prepare(query).all(...params) as Santri[];
-  return santriList.map(s => ({
+  const map = await signPaths(client, paths);
+  return rows.map(s => ({
     ...s,
-    documents: (db.prepare('SELECT * FROM documents WHERE santriId = ?').all(s.id) as SantriDocument[]) || [],
+    fotoFormalUrl: s.fotoFormalPath ? map[s.fotoFormalPath] || null : null,
+    fotoProfilUrl: s.fotoProfilPath ? map[s.fotoProfilPath] || null : null,
+    documents: (s.documents || []).map(d => ({ ...d, fileUrl: map[d.storagePath] || '' })),
   }));
 }
 
-export async function updateSantri(id: string, input: Partial<SantriInput>): Promise<Santri> {
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const updatedPayload: any = {
-      ...input,
-      updatedAt: now(),
-    };
-    if (input.keahlian !== undefined) {
-      updatedPayload.keahlian = Array.isArray(input.keahlian) ? JSON.stringify(input.keahlian) : input.keahlian;
-    }
-    const { data, error } = await supabase.from('santri').update(updatedPayload).eq('id', id).select().single();
-    if (error) throw new Error(`Gagal memperbarui santri di Supabase: ${error.message}`);
-    return data as Santri;
-  }
-
-  // SQLite Fallback
-  const current = db.prepare('SELECT * FROM santri WHERE id = ?').get(id) as Santri | undefined;
-  if (!current) throw new Error('Santri not found');
-
-  const updated: Santri = {
-    ...current,
+export async function createSantri(client: SupabaseClient, input: SantriInput): Promise<Santri> {
+  const row = {
     ...input,
-    keahlian: Array.isArray(input.keahlian) ? JSON.stringify(input.keahlian) : (input.keahlian !== undefined ? input.keahlian : current.keahlian),
+    id: generateId(),
+    keahlian: keahlianToString(input.keahlian),
+    statusSosial: input.statusSosial ?? 'REGULER',
+    tahunMasuk: input.tahunMasuk ?? new Date().getFullYear(),
+    fotoFormalPath: input.fotoFormalPath ? storagePathFromUrl(input.fotoFormalPath) : null,
+    fotoProfilPath: input.fotoProfilPath ? storagePathFromUrl(input.fotoProfilPath) : null,
+    createdAt: now(),
     updatedAt: now(),
   };
-
-  const fields = Object.keys(updated).filter(k => k !== 'id');
-  const setClause = fields.map(f => `${f} = @${f}`).join(', ');
-
-  db.prepare(`UPDATE santri SET ${setClause} WHERE id = @id`).run(updated);
-  return updated;
-}
-
-export async function deleteSantri(id: string): Promise<boolean> {
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { error } = await supabase.from('santri').delete().eq('id', id);
-    return !error;
+  const { data, error } = await client.from('santri').insert(row).select().single();
+  if (error) {
+    if (error.code === '23505') {
+      const { data: ex } = await client.from('santri').select('id').eq('nik', input.nik).maybeSingle();
+      throw new DuplicateNikError(ex?.id || '');
+    }
+    throw new Error(`Gagal menyimpan santri: ${error.message}`);
   }
-
-  // SQLite Fallback
-  const info = db.prepare('DELETE FROM santri WHERE id = ?').run(id);
-  return info.changes > 0;
+  const [withUrls] = await attachSignedUrls(client, [{ ...(data as Santri), documents: [] }]);
+  return withUrls;
 }
 
-export async function saveDocument(input: DocumentInput): Promise<SantriDocument> {
-  const id = generateId();
-  const createdAt = now();
-  const statusVerifikasi = input.statusVerifikasi || 'PENDING';
-  const catatanVerifikasi = input.catatanVerifikasi ?? null;
+export async function getSantriById(client: SupabaseClient, id: string): Promise<(Santri & { documents: SantriDocument[] }) | null> {
+  const { data, error } = await client.from('santri').select('*, documents(*)').eq('id', id).maybeSingle();
+  if (error || !data) return null;
+  const [s] = await attachSignedUrls(client, [data as Santri]);
+  return s as Santri & { documents: SantriDocument[] };
+}
 
-  const extractedStr = typeof input.extractedFields === 'object' && input.extractedFields !== null
-    ? JSON.stringify(input.extractedFields)
-    : input.extractedFields;
+export async function listSantri(client: SupabaseClient, filter?: SantriFilter): Promise<Santri[]> {
+  let q = client.from('santri').select('*, documents(*)');
+  const search = filter?.query || filter?.q;
+  if (search) q = q.or(`namaLengkap.ilike.%${search}%,nik.ilike.%${search}%`);
+  if (filter?.jenisKelamin) q = q.eq('jenisKelamin', filter.jenisKelamin);
+  if (filter?.jenjang) q = q.eq('jenjang', filter.jenjang);
+  const { data, error } = await q.order('createdAt', { ascending: false });
+  if (error) throw new Error(`Gagal mengambil daftar santri: ${error.message}`);
+  return attachSignedUrls(client, (data || []) as Santri[]);
+}
 
-  const doc: SantriDocument = {
-    id,
-    santriId: input.santriId,
-    kategori: input.kategori,
+export async function updateSantri(client: SupabaseClient, id: string, patch: Partial<SantriInput>): Promise<Santri> {
+  const row: Record<string, unknown> = { ...patch, updatedAt: now() };
+  if (patch.keahlian !== undefined) row.keahlian = keahlianToString(patch.keahlian);
+  if (patch.fotoFormalPath !== undefined) row.fotoFormalPath = patch.fotoFormalPath ? storagePathFromUrl(patch.fotoFormalPath) : null;
+  if (patch.fotoProfilPath !== undefined) row.fotoProfilPath = patch.fotoProfilPath ? storagePathFromUrl(patch.fotoProfilPath) : null;
+  const { data, error } = await client.from('santri').update(row).eq('id', id).select('*, documents(*)').single();
+  if (error) {
+    if (error.code === '23505') {
+      const { data: ex } = await client.from('santri').select('id').eq('nik', patch.nik!).maybeSingle();
+      throw new DuplicateNikError(ex?.id || '');
+    }
+    throw new Error(`Gagal memperbarui santri: ${error.message}`);
+  }
+  const [s] = await attachSignedUrls(client, [data as Santri]);
+  return s;
+}
+
+export async function deleteSantri(client: SupabaseClient, id: string): Promise<boolean> {
+  const { data: docs } = await client.from('documents').select('storagePath').eq('santriId', id);
+  const { data: s } = await client.from('santri').select('fotoFormalPath, fotoProfilPath').eq('id', id).maybeSingle();
+  const { error, count } = await client.from('santri').delete({ count: 'exact' }).eq('id', id);
+  if (error) throw new Error(`Gagal menghapus santri: ${error.message}`);
+  const paths = [...(docs || []).map(d => d.storagePath), s?.fotoFormalPath, s?.fotoProfilPath].filter(Boolean) as string[];
+  if (paths.length) await client.storage.from(process.env.SUPABASE_STORAGE_BUCKET || 'berkas').remove(paths);
+  return (count ?? 0) > 0;
+}
+
+export async function saveDocument(client: SupabaseClient, input: DocumentInput): Promise<SantriDocument> {
+  const storagePath = storagePathFromUrl(input.storagePath);
+  const extracted = typeof input.extractedFields === 'object' && input.extractedFields !== null
+    ? JSON.stringify(input.extractedFields) : (input.extractedFields as string | null | undefined) ?? null;
+  const base = {
     nomorDokumen: input.nomorDokumen ?? null,
-    fileUrl: input.fileUrl,
+    storagePath,
     rawOcrText: input.rawOcrText ?? null,
-    extractedFields: extractedStr ?? null,
-    statusVerifikasi,
-    catatanVerifikasi,
-    createdAt
+    extractedFields: extracted,
+    statusVerifikasi: input.statusVerifikasi || 'PENDING',
+    catatanVerifikasi: input.catatanVerifikasi ?? null,
   };
+  const { data: existing } = await client.from('documents').select('id, storagePath')
+    .eq('santriId', input.santriId).eq('kategori', input.kategori).maybeSingle();
 
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { data: existing } = await supabase
-      .from('documents')
-      .select('id')
-      .eq('santriId', input.santriId)
-      .eq('kategori', input.kategori)
-      .maybeSingle();
-
-    if (existing) {
-      const { data, error } = await supabase
-        .from('documents')
-        .update({
-          fileUrl: input.fileUrl,
-          nomorDokumen: input.nomorDokumen ?? null,
-          rawOcrText: input.rawOcrText ?? null,
-          extractedFields: extractedStr ?? null,
-          statusVerifikasi,
-          catatanVerifikasi,
-        })
-        .eq('id', existing.id)
-        .select()
-        .single();
-      if (!error && data) return data as SantriDocument;
+  let saved: SantriDocument;
+  if (existing) {
+    const { data, error } = await client.from('documents').update(base).eq('id', existing.id).select().single();
+    if (error) throw new Error(`Gagal memperbarui dokumen: ${error.message}`);
+    saved = data as SantriDocument;
+    if (existing.storagePath && existing.storagePath !== storagePath) {
+      await client.storage.from(process.env.SUPABASE_STORAGE_BUCKET || 'berkas').remove([existing.storagePath]);
     }
-
-    const { data, error } = await supabase.from('documents').insert(doc).select().single();
-    if (error) throw new Error(`Gagal menyimpan dokumen ke Supabase: ${error.message}`);
-    return (data || doc) as SantriDocument;
+  } else {
+    const { data, error } = await client.from('documents')
+      .insert({ id: generateId(), santriId: input.santriId, kategori: input.kategori, createdAt: now(), ...base }).select().single();
+    if (error) throw new Error(`Gagal menyimpan dokumen: ${error.message}`);
+    saved = data as SantriDocument;
   }
-
-  // SQLite Fallback
-  const existingSqlite = db.prepare('SELECT id FROM documents WHERE santriId = ? AND kategori = ?').get(input.santriId, input.kategori) as { id: string } | undefined;
-  if (existingSqlite) {
-    db.prepare(`
-      UPDATE documents SET
-        fileUrl = @fileUrl,
-        nomorDokumen = @nomorDokumen,
-        rawOcrText = @rawOcrText,
-        extractedFields = @extractedFields,
-        statusVerifikasi = @statusVerifikasi,
-        catatanVerifikasi = @catatanVerifikasi
-      WHERE id = @id
-    `).run({
-      id: existingSqlite.id,
-      fileUrl: input.fileUrl,
-      nomorDokumen: input.nomorDokumen ?? null,
-      rawOcrText: input.rawOcrText ?? null,
-      extractedFields: extractedStr ?? null,
-      statusVerifikasi,
-      catatanVerifikasi,
-    });
-    return { ...doc, id: existingSqlite.id };
-  }
-
-  const stmt = db.prepare(`
-    INSERT INTO documents (
-      id, santriId, kategori, nomorDokumen, fileUrl, rawOcrText, extractedFields, statusVerifikasi, catatanVerifikasi, createdAt
-    ) VALUES (
-      @id, @santriId, @kategori, @nomorDokumen, @fileUrl, @rawOcrText, @extractedFields, @statusVerifikasi, @catatanVerifikasi, @createdAt
-    )
-  `);
-
-  stmt.run(doc);
-  return doc as SantriDocument;
+  const map = await signPaths(client, [saved.storagePath]);
+  return { ...saved, fileUrl: map[saved.storagePath] || '' };
 }
 
-export async function listDocumentsBySantri(santriId: string): Promise<SantriDocument[]> {
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { data, error } = await supabase.from('documents').select('*').eq('santriId', santriId);
-    if (error) return [];
-    return (data || []) as SantriDocument[];
-  }
-
-  // SQLite Fallback
-  return db.prepare('SELECT * FROM documents WHERE santriId = ?').all(santriId) as SantriDocument[];
+export async function getDocumentById(client: SupabaseClient, id: string): Promise<SantriDocument | null> {
+  const { data, error } = await client.from('documents').select('*').eq('id', id).maybeSingle();
+  if (error || !data) return null;
+  return data as SantriDocument;
 }
 
-export async function updateDocumentStatus(id: string, status: string, catatan?: string): Promise<boolean> {
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { error } = await supabase.from('documents').update({
-      statusVerifikasi: status,
-      catatanVerifikasi: catatan ?? null
-    }).eq('id', id);
-    return !error;
-  }
-
-  // SQLite Fallback
-  const stmt = db.prepare('UPDATE documents SET statusVerifikasi = ?, catatanVerifikasi = ? WHERE id = ?');
-  const info = stmt.run(status, catatan ?? null, id);
-  return info.changes > 0;
+export async function listDocumentsBySantri(client: SupabaseClient, santriId: string): Promise<SantriDocument[]> {
+  const { data, error } = await client.from('documents').select('*').eq('santriId', santriId);
+  if (error) return [];
+  const rows = (data || []) as SantriDocument[];
+  const map = await signPaths(client, rows.map(d => d.storagePath));
+  return rows.map(d => ({ ...d, fileUrl: map[d.storagePath] || '' }));
 }
 
-export async function deleteDocument(id: string): Promise<boolean> {
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { error } = await supabase.from('documents').delete().eq('id', id);
-    return !error;
-  }
-
-  // SQLite Fallback
-  const info = db.prepare('DELETE FROM documents WHERE id = ?').run(id);
-  return info.changes > 0;
+export async function updateDocumentStatus(client: SupabaseClient, id: string, status: StatusVerifikasi, catatan?: string): Promise<boolean> {
+  const { error } = await client.from('documents').update({ statusVerifikasi: status, catatanVerifikasi: catatan ?? null }).eq('id', id);
+  return !error;
 }
 
-export async function createUploadTokenRecord(santriId: string, token: string, expiresAt: string): Promise<UploadToken> {
-  const id = 'tok_' + Math.random().toString(36).substring(2, 9);
-  const createdAt = new Date().toISOString();
-  const record: UploadToken = {
-    id,
-    santriId,
-    token,
-    expiresAt,
-    usedCount: 0,
-    createdAt,
-  };
-
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { data, error } = await supabase.from('upload_tokens').insert(record).select().single();
-    if (error) {
-      console.error('Error creating upload token:', error);
-      throw new Error(error.message);
-    }
-    return (data || record) as UploadToken;
+export async function deleteDocument(client: SupabaseClient, id: string): Promise<boolean> {
+  const doc = await getDocumentById(client, id);
+  const { error } = await client.from('documents').delete().eq('id', id);
+  if (!error && doc?.storagePath) {
+    await client.storage.from(process.env.SUPABASE_STORAGE_BUCKET || 'berkas').remove([doc.storagePath]);
   }
-
-  // SQLite Fallback
-  const stmt = db.prepare(`
-    INSERT INTO upload_tokens (id, santriId, token, expiresAt, usedCount, createdAt)
-    VALUES (@id, @santriId, @token, @expiresAt, @usedCount, @createdAt)
-  `);
-  stmt.run(record);
-  return record;
+  return !error;
 }
 
-export async function getUploadTokenRecord(token: string): Promise<UploadToken | null> {
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { data, error } = await supabase.from('upload_tokens').select('*').eq('token', token).single();
-    if (error || !data) return null;
-    return data as UploadToken;
-  }
-
-  // SQLite Fallback
-  const row = db.prepare('SELECT * FROM upload_tokens WHERE token = ?').get(token);
-  return (row as UploadToken) || null;
+export async function createUploadTokenRecord(client: SupabaseClient, santriId: string, token: string, expiresAt: string): Promise<UploadToken> {
+  const record: UploadToken = { id: 'tok_' + generateId().slice(0, 8), santriId, token, expiresAt, usedCount: 0, createdAt: now() };
+  const { data, error } = await client.from('upload_tokens').insert(record).select().single();
+  if (error) throw new Error(`Gagal membuat token upload: ${error.message}`);
+  return data as UploadToken;
 }
 
-export async function incrementUploadTokenUsage(token: string): Promise<void> {
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const { data } = await supabase.from('upload_tokens').select('usedCount').eq('token', token).single();
-    const currentCount = data?.usedCount || 0;
-    await supabase.from('upload_tokens').update({ usedCount: currentCount + 1 }).eq('token', token);
-    return;
-  }
+export async function getUploadTokenRecord(client: SupabaseClient, token: string): Promise<UploadToken | null> {
+  const { data, error } = await client.from('upload_tokens').select('*').eq('token', token).maybeSingle();
+  if (error || !data) return null;
+  return data as UploadToken;
+}
 
-  // SQLite Fallback
-  db.prepare('UPDATE upload_tokens SET usedCount = usedCount + 1 WHERE token = ?').run(token);
+export async function incrementUploadTokenUsage(client: SupabaseClient, token: string): Promise<void> {
+  const rec = await getUploadTokenRecord(client, token);
+  if (!rec) return;
+  await client.from('upload_tokens').update({ usedCount: rec.usedCount + 1 }).eq('token', token);
 }

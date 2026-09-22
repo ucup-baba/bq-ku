@@ -14,16 +14,19 @@ import {
   FolderOpen
 } from '@phosphor-icons/react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
-import { DemoRoleSwitcher } from '@/components/auth/DemoRoleSwitcher';
+import { UserMenu } from '@/components/auth/UserMenu';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { DoodleSparkle } from '@/components/ui/DoodleStickers';
 
 export function DesktopSidebar() {
   const pathname = usePathname();
+  const { canManageUsers } = useAuth();
 
   const navItems = [
     { href: '/', label: 'Beranda / Ringkasan', icon: House },
     { href: '/santri', label: 'Direktori Santri', icon: Users },
     { href: '/tambah', label: 'Input Berkas & OCR', icon: UserPlus },
+    ...(canManageUsers ? [{ href: '/pengguna', label: 'Akun & Pengguna', icon: ShieldCheck }] : []),
   ];
 
   return (
@@ -76,12 +79,7 @@ export function DesktopSidebar() {
 
       {/* Footer Area: Role Switcher & Theme Toggle */}
       <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            Peran Akun:
-          </span>
-          <DemoRoleSwitcher />
-        </div>
+        <UserMenu />
 
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
@@ -98,7 +96,7 @@ export function DesktopSidebar() {
             </span>
           </div>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-            SQLite Local DB • Smart OCR Engine Siap
+            Supabase Cloud • Smart OCR Engine Siap
           </p>
         </div>
       </div>

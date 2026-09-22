@@ -1,11 +1,12 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { getSantriById } from '@/lib/db/santri-repo';
+import { createServerSupabase } from '@/lib/supabase/server';
 import { SantriPosterCv } from '@/components/profile/SantriPosterCv';
 
 export default async function SantriDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const santri = await getSantriById(id);
+  const santri = await getSantriById(await createServerSupabase(), id);
 
   if (!santri) {
     notFound();

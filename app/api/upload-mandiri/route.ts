@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { getUploadTokenRecord, incrementUploadTokenUsage, getSantriById, saveDocument } from '@/lib/db/santri-repo';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { createAdminSupabase } from '@/lib/supabase/admin';
+import { uploadToBucket } from '@/lib/storage/upload';
 import { generateStandardizedFileName } from '@/lib/utils/file-naming';
 import { processOcrImage } from '@/lib/ocr/engine';
 import { checkNameMatch } from '@/lib/utils/formatters';
@@ -9,6 +10,7 @@ import { checkNameMatch } from '@/lib/utils/formatters';
 // GET: Validate token & return santri information and existing documents
 export async function GET(req: NextRequest) {
   try {
+    const supabase = createAdminSupabase();
     const { searchParams } = new URL(req.url);
     const token = searchParams.get('token');
 
@@ -16,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Token tidak valid' }, { status: 400 });
     }
 
-    const tokenRecord = await getUploadTokenRecord(token);
+    const tokenRecord = await getUploadTokenRecord(supabase, token);
     if (!tokenRecord) {
       return NextResponse.json({ error: 'Tautan upload tidak ditemukan atau tidak valid' }, { status: 404 });
     }
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Tautan upload telah kedaluwarsa. Silakan minta tautan baru ke panitia.' }, { status: 410 });
     }
 
-    const santri = await getSantriById(tokenRecord.santriId);
+    const santri = await getSantriById(supabase, tokenRecord.santriId);
     if (!santri) {
       return NextResponse.json({ error: 'Data santri tidak ditemukan' }, { status: 404 });
     }
@@ -62,6 +64,7 @@ export async function GET(req: NextRequest) {
 // POST: Upload document from wali self-service link
 export async function POST(req: NextRequest) {
   try {
+    const supabase = createAdminSupabase();
     const formData = await req.formData();
     const token = formData.get('token') as string | null;
     const kategori = formData.get('kategori') as string | null;
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Data tidak lengkap (token, kategori, dan file wajib diisi)' }, { status: 400 });
     }
 
-    const tokenRecord = await getUploadTokenRecord(token);
+    const tokenRecord = await getUploadTokenRecord(supabase, token);
     if (!tokenRecord) {
       return NextResponse.json({ error: 'Tautan upload tidak valid' }, { status: 404 });
     }
@@ -81,7 +84,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Tautan upload telah kedaluwarsa' }, { status: 410 });
     }
 
-    const santri = await getSantriById(tokenRecord.santriId);
+    const santri = await getSantriById(supabase, tokenRecord.santriId);
     if (!santri) {
       return NextResponse.json({ error: 'Data santri tidak ditemukan' }, { status: 404 });
     }
@@ -120,26 +123,7 @@ export async function POST(req: NextRequest) {
       ext: targetExt,
     });
 
-    let fileUrl = `/uploads/${fileName}`;
-
-    // Upload to Supabase Storage
-    const supabase = getSupabaseServerClient();
-    if (supabase) {
-      const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'berkas';
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, finalBuffer, {
-          contentType: uploadMime,
-          upsert: true,
-        });
-
-      if (uploadError) {
-        throw new Error(`Gagal menyimpan berkas ke storage: ${uploadError.message}`);
-      }
-
-      const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
-      fileUrl = publicUrlData.publicUrl;
-    }
+    const { storagePath } = await uploadToBucket(supabase, fileName, finalBuffer, uploadMime);
 
     // Process OCR for verification
     let ocrResult: any = null;
@@ -166,11 +150,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Save document to database
-    const savedDoc = await saveDocument({
+    const savedDoc = await saveDocument(supabase, {
       santriId: santri.id,
       kategori,
       nomorDokumen: ocrResult?.data?.nomorDokumen || ocrResult?.data?.nik || null,
-      fileUrl,
+      storagePath,
       rawOcrText: ocrResult?.rawText || null,
       extractedFields: ocrResult?.data ? JSON.stringify(ocrResult.data) : null,
       statusVerifikasi: 'VERIFIED',
@@ -178,7 +162,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Increment usage
-    await incrementUploadTokenUsage(token);
+    await incrementUploadTokenUsage(supabase, token);
 
     return NextResponse.json({
       success: true,

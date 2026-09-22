@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSantriById, createUploadTokenRecord } from '@/lib/db/santri-repo';
+import { requireUser, authErrorResponse } from '@/lib/auth/session';
+import { env } from '@/lib/env';
 
 function generateToken(length = 12): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
@@ -14,6 +16,7 @@ function generateToken(length = 12): string {
 
 export async function POST(req: NextRequest) {
   try {
+    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
     const body = await req.json();
     const { santriId } = body;
 
@@ -22,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Verify santri exists
-    const santri = await getSantriById(santriId);
+    const santri = await getSantriById(supabase, santriId);
     if (!santri) {
       return NextResponse.json({ error: 'Santri tidak ditemukan' }, { status: 404 });
     }
@@ -31,9 +34,9 @@ export async function POST(req: NextRequest) {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
 
-    await createUploadTokenRecord(santriId, token, expiresAt.toISOString());
+    await createUploadTokenRecord(supabase, santriId, token, expiresAt.toISOString());
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://bq-ku.vercel.app';
+    const baseUrl = env.APP_URL;
     const uploadUrl = `${baseUrl}/upload-mandiri/${token}`;
 
     return NextResponse.json({
@@ -43,6 +46,7 @@ export async function POST(req: NextRequest) {
       expiresAt: expiresAt.toISOString(),
     });
   } catch (error: any) {
+    const authRes = authErrorResponse(error); if (authRes) return authRes;
     console.error('Upload token error:', error);
     return NextResponse.json({ error: 'Gagal membuat token upload: ' + error.message }, { status: 500 });
   }
