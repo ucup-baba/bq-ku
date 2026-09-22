@@ -33,7 +33,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
   const [ruangan, setRuangan] = useState<'semua' | Room>('semua');
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setEditRoleId(null);
     try {
       const res = await fetch('/api/pengguna');
       const data = await res.json();
@@ -114,7 +114,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
         ))}
         <button type="button" aria-label={`Ubah peran ${r.nama}`} disabled={diriSendiri || busy}
           onClick={() => bukaEditRole(r)}
-          className="h-8 w-8 rounded-full inline-flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-teal-600 hover:border-teal-300 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-teal-500">
+          className="h-11 w-11 rounded-full inline-flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-teal-600 hover:border-teal-300 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-teal-500">
           <PencilSimple size={14} weight="bold" />
         </button>
       </div>
@@ -152,7 +152,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
           {RUANGAN_FILTER.map(f => (
             <button key={f.value} type="button" onClick={() => setRuangan(f.value)}
               aria-pressed={ruangan === f.value}
-              className={`h-9 px-3 rounded-xl text-xs font-bold transition-colors ${ruangan === f.value ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+              className={`h-11 px-3 rounded-xl text-xs font-bold transition-colors ${ruangan === f.value ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
               {f.label}
             </button>
           ))}
