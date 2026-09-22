@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { signPaths } from '@/lib/storage/signed';
 import { storagePathFromUrl } from '@/lib/storage/paths';
+import { escapeOrFilterValue } from '@/lib/db/filters';
 
 export type StatusVerifikasi = 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
 
@@ -136,7 +137,8 @@ export async function getSantriById(client: SupabaseClient, id: string): Promise
 export async function listSantri(client: SupabaseClient, filter?: SantriFilter): Promise<Santri[]> {
   let q = client.from('santri').select('*, documents(*)');
   const search = filter?.query || filter?.q;
-  if (search) q = q.or(`namaLengkap.ilike.%${search}%,nik.ilike.%${search}%`);
+  const aman = search ? escapeOrFilterValue(search) : '';
+  if (aman) q = q.or(`namaLengkap.ilike.%${aman}%,nik.ilike.%${aman}%`);
   if (filter?.jenisKelamin) q = q.eq('jenisKelamin', filter.jenisKelamin);
   if (filter?.jenjang) q = q.eq('jenjang', filter.jenjang);
   const { data, error } = await q.order('createdAt', { ascending: false });

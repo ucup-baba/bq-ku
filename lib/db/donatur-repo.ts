@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DonaturInput, DonasiInput, SuratInput } from '@/lib/validation/donatur';
+import { escapeOrFilterValue } from '@/lib/db/filters';
 
 export type Sapaan = 'BAPAK' | 'IBU' | 'SDR' | 'SDRI' | 'BAPAK_IBU';
 export type JenisDonasi = 'ZAKAT' | 'INFAQ' | 'SHADAQAH' | 'LAINNYA';
@@ -37,7 +38,8 @@ const now = () => new Date().toISOString();
 
 export async function listDonatur(client: SupabaseClient, q?: string): Promise<Donatur[]> {
   let query = client.from('donatur').select('*').order('nama');
-  if (q) query = query.or(`nama.ilike.%${q}%,noWa.ilike.%${q}%`);
+  const aman = q ? escapeOrFilterValue(q) : '';
+  if (aman) query = query.or(`nama.ilike.%${aman}%,noWa.ilike.%${aman}%`);
   const { data, error } = await query;
   if (error) throw new Error(`Gagal memuat donatur: ${error.message}`);
   return (data || []) as Donatur[];
@@ -104,7 +106,8 @@ export async function nextNomorUrut(client: SupabaseClient, tahun: number, bulan
 }
 
 export async function bumpNomorUrut(client: SupabaseClient, tahun: number, bulan: number, urut: number): Promise<void> {
-  await client.rpc('bump_nomor_surat', { p_tahun: tahun, p_bulan: bulan, p_urut: urut });
+  const { error } = await client.rpc('bump_nomor_surat', { p_tahun: tahun, p_bulan: bulan, p_urut: urut });
+  if (error) throw new Error(`Gagal memperbarui nomor surat: ${error.message}`);
 }
 
 export async function createSurat(client: SupabaseClient, input: SuratInput, userId: string): Promise<Surat> {
