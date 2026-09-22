@@ -11,6 +11,8 @@ update public.allowed_emails
    set roles = array[case when role = 'PANITIA' then 'ADMIN_SANTRI' else role end]
  where roles is null;
 
+-- Kolom lama "role" sengaja TIDAK dinormalisasi: deploy produksi yang sedang berjalan masih membaca kolom itu dan mengharapkan nilai 'PANITIA'. Kolom "role" dihapus di migrasi terpisah setelah aplikasi versi baru live.
+
 alter table public.profiles alter column roles set default array['VIEWER'];
 alter table public.profiles alter column roles set not null;
 alter table public.allowed_emails alter column roles set default array['ADMIN_SANTRI'];
@@ -18,10 +20,12 @@ alter table public.allowed_emails alter column roles set not null;
 
 alter table public.profiles drop constraint if exists profiles_role_check;
 alter table public.allowed_emails drop constraint if exists allowed_emails_role_check;
+alter table public.profiles drop constraint if exists profiles_roles_valid;
+alter table public.allowed_emails drop constraint if exists allowed_emails_roles_valid;
 alter table public.profiles add constraint profiles_roles_valid
-  check (roles <@ array['SUPERADMIN','ADMIN_SANTRI','ADMIN_DONATUR','VIEWER'] and array_length(roles,1) >= 1);
+  check (roles <@ array['SUPERADMIN','ADMIN_SANTRI','ADMIN_DONATUR','VIEWER'] and cardinality(roles) >= 1);
 alter table public.allowed_emails add constraint allowed_emails_roles_valid
-  check (roles <@ array['SUPERADMIN','ADMIN_SANTRI','ADMIN_DONATUR','VIEWER'] and array_length(roles,1) >= 1);
+  check (roles <@ array['SUPERADMIN','ADMIN_SANTRI','ADMIN_DONATUR','VIEWER'] and cardinality(roles) >= 1);
 
 -- Kolom lama dipertahankan sementara agar deploy lama tidak rusak; diisi dari roles[1].
 alter table public.profiles alter column role drop not null;
@@ -83,6 +87,8 @@ begin
    where lower(email) = lower(new.email);
   return new;
 end $$;
+
+-- Policy bucket 'berkas' di 0001 memakai auth_role() = 'PANITIA' dan sengaja dibiarkan: auth_role() versi baru memetakan ADMIN_SANTRI -> 'PANITIA', jadi policy storage lama tetap bekerja.
 
 -- Policy santri/dokumen: ADMIN_SANTRI menggantikan PANITIA
 drop policy if exists "santri: tulis" on public.santri;
