@@ -49,3 +49,34 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     return authErrorResponse(e) ?? NextResponse.json({ error: 'Gagal memperbarui pengguna: ' + e.message }, { status: 500 });
   }
 }
+
+/** Hapus pengguna: entri izin, profil, dan akun Auth. Tidak bisa menghapus diri sendiri. */
+export async function DELETE(_req: NextRequest, ctx: Ctx) {
+  try {
+    const { user } = await requireUser(['SUPERADMIN']);
+    const { id } = await ctx.params;
+    const admin = createAdminSupabase();
+
+    if (id.startsWith('allowed:')) {
+      const email = decodeURIComponent(id.slice('allowed:'.length));
+      const { error } = await admin.from('allowed_emails').delete().eq('email', email);
+      if (error) throw error;
+      return NextResponse.json({ success: true, data: { email } });
+    }
+
+    if (id === user.id) {
+      return NextResponse.json({ error: 'Anda tidak dapat menghapus akun sendiri' }, { status: 400 });
+    }
+
+    const { data: profile } = await admin.from('profiles').select('email').eq('id', id).maybeSingle();
+    if (profile?.email) await admin.from('allowed_emails').delete().eq('email', profile.email);
+    const { error: pErr } = await admin.from('profiles').delete().eq('id', id);
+    if (pErr) throw pErr;
+    const { error: aErr } = await admin.auth.admin.deleteUser(id);
+    if (aErr) throw aErr;
+
+    return NextResponse.json({ success: true, data: { id } });
+  } catch (e: any) {
+    return authErrorResponse(e) ?? NextResponse.json({ error: 'Gagal menghapus pengguna: ' + e.message }, { status: 500 });
+  }
+}

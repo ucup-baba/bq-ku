@@ -26,7 +26,7 @@ export function DesktopSidebar() {
     { href: '/', label: 'Beranda / Ringkasan', icon: House },
     { href: '/santri', label: 'Direktori Santri', icon: Users },
     { href: '/tambah', label: 'Input Berkas & OCR', icon: UserPlus },
-    ...(canManageUsers ? [{ href: '/pengguna', label: 'Kelola Pengguna', icon: ShieldCheck }] : []),
+    ...(canManageUsers ? [{ href: '/pengguna', label: 'Akun & Pengguna', icon: ShieldCheck }] : []),
   ];
 
   return (
