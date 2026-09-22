@@ -4,7 +4,8 @@ Next.js 16 + Supabase (Auth, Postgres, Storage). Node 22.
 
 ## Setup
 1. `cp .env.example .env.local` lalu isi nilai Supabase & `NEXT_PUBLIC_APP_URL`.
-2. Jalankan `supabase/migrations/0001_init.sql` di **Supabase Dashboard → SQL Editor** (atau `supabase db push`). Migrasi ini mereset seluruh data.
+2. Jalankan `supabase/migrations/0001_init.sql` di **Supabase Dashboard → SQL Editor** (atau `supabase db push`). Migrasi ini mereset seluruh data tabel.
+   Berkas lama di bucket dikosongkan terpisah: `npm run empty-bucket` (Node 22).
 3. Di Supabase **Authentication → URL Configuration**: Site URL = `NEXT_PUBLIC_APP_URL`; tambahkan `…/auth/callback` ke Redirect URLs.
 4. Buat superadmin pertama:
    `node --env-file=.env.local scripts/seed-admin.mjs --email admin@contoh.id --nama "Admin" --password "kata-sandi-awal"`

@@ -12,7 +12,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed:admin": "node --env-file=.env.local scripts/seed-admin.mjs"
+    "seed:admin": "node --env-file=.env.local scripts/seed-admin.mjs",
+    "empty-bucket": "node --env-file=.env.local scripts/empty-bucket.mjs"
   },
   "keywords": [],
   "author": "",

@@ -8,7 +8,8 @@ drop table if exists public.users cascade;
 drop table if exists public.profiles cascade;
 drop function if exists public.auth_role() cascade;
 drop function if exists public.handle_new_user() cascade;
-delete from storage.objects where bucket_id = 'berkas';
+-- Berkas lama di bucket 'berkas' TIDAK bisa dihapus lewat SQL (storage.protect_delete).
+-- Kosongkan lewat: npm run empty-bucket  (atau Dashboard → Storage → berkas → pilih semua → Delete)
 
 -- ---------- PROFIL PENGGUNA ----------
 create table public.profiles (
