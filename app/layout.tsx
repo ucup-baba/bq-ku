@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans, Caveat } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AppShell } from "@/components/layout/AppShell";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionState } from "@/lib/auth/session";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -25,14 +25,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getSessionUser();
+  const { user, pending } = await getSessionState();
   return (
     <html lang="id" suppressHydrationWarning>
       <body
         className={`${plusJakartaSans.variable} ${caveat.variable} font-sans antialiased bg-background text-foreground`}
       >
         <ThemeProvider>
-          <AppShell user={user}>
+          <AppShell user={user} pending={pending}>
             {children}
           </AppShell>
         </ThemeProvider>

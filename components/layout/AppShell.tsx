@@ -3,9 +3,16 @@ import React from 'react';
 import { DesktopSidebar } from './DesktopSidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { AuthProvider } from '@/components/auth/AuthProvider';
-import type { SessionUser } from '@/lib/auth/session';
+import type { SessionUser, PendingUser } from '@/lib/auth/session';
+import { AkunBelumAktif } from '@/components/auth/AkunBelumAktif';
+import { useRouter } from 'next/navigation';
 
-export function AppShell({ user, children }: { user: SessionUser | null; children: React.ReactNode }) {
+export function AppShell({ user, pending, children }: { user: SessionUser | null; pending: PendingUser | null; children: React.ReactNode }) {
+  const router = useRouter();
+  if (!user && pending) {
+    const logout = async () => { await fetch('/api/auth/logout', { method: 'POST' }); router.push('/login'); router.refresh(); };
+    return <AuthProvider user={null}><AkunBelumAktif email={pending.email} onLogout={logout} /></AuthProvider>;
+  }
   if (!user) {
     // Halaman publik (login, reset, upload-mandiri): tanpa navigasi panitia
     return <AuthProvider user={null}><div className="min-h-screen bg-slate-50 dark:bg-slate-950">{children}</div></AuthProvider>;

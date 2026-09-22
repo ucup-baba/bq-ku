@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { X, UserPlus, PaperPlaneTilt } from '@phosphor-icons/react';
+import { X, UserPlus, Check } from '@phosphor-icons/react';
 
 const ROLES = [
   { value: 'PANITIA', label: 'Panitia Administrasi' },
@@ -52,23 +52,23 @@ export function UndangPenggunaModal({ open, onClose, onInvited }: { open: boolea
       <button type="button" aria-label="Tutup" onClick={onClose} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
       <form onSubmit={submit} className="relative w-full sm:max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 id="undang-title" className="flex items-center gap-2 font-extrabold text-lg"><UserPlus size={22} weight="duotone" className="text-teal-600" /> Undang pengguna</h2>
+          <h2 id="undang-title" className="flex items-center gap-2 font-extrabold text-lg"><UserPlus size={22} weight="duotone" className="text-teal-600" /> Tambah email yang diizinkan</h2>
           <button type="button" onClick={onClose} aria-label="Tutup" className="w-11 h-11 -mr-2 flex items-center justify-center rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"><X size={20} weight="bold" /></button>
         </div>
-        <p className="text-xs text-slate-500">Pengguna akan menerima email berisi tautan untuk mengatur kata sandi.</p>
+        <p className="text-xs text-slate-500">Pengguna masuk dengan akun Google beremail ini. Tidak ada email undangan yang dikirim.</p>
         {error && <p role="alert" className="text-sm text-rose-600 bg-rose-50 dark:bg-rose-900/20 rounded-xl px-3 py-2">{error}</p>}
         <label className="block space-y-1"><span className="text-xs font-semibold">Nama</span>
           <input ref={firstInput} value={nama} onChange={e => setNama(e.target.value)} required className={`${field} ${border('nama')}`} />
           {fields.nama && <span className="text-xs text-rose-600">{fields.nama}</span>}</label>
         <label className="block space-y-1"><span className="text-xs font-semibold">Email</span>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className={`${field} ${border('email')}`} />
+          <input type="email" placeholder="nama@gmail.com" value={email} onChange={e => setEmail(e.target.value)} required className={`${field} ${border('email')}`} />
           {fields.email && <span className="text-xs text-rose-600">{fields.email}</span>}</label>
         <label className="block space-y-1"><span className="text-xs font-semibold">Peran</span>
           <select value={role} onChange={e => setRole(e.target.value)} className={`${field} ${border('role')}`}>
             {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select></label>
         <button type="submit" disabled={busy} className="w-full py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold flex items-center justify-center gap-2">
-          <PaperPlaneTilt size={20} weight="bold" /> {busy ? 'Mengirim…' : 'Kirim undangan'}
+          <Check size={20} weight="bold" /> {busy ? 'Menyimpan…' : 'Simpan'}
         </button>
       </form>
     </div>

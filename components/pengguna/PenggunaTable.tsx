@@ -4,7 +4,7 @@ import { UserPlus, Power, ShieldCheck, ArrowsClockwise } from '@phosphor-icons/r
 import { UndangPenggunaModal } from './UndangPenggunaModal';
 import type { UserRole } from '@/lib/auth/roles';
 
-type Row = { id: string; nama: string; email: string; role: UserRole; aktif: boolean; createdAt: string; lastSignInAt: string | null };
+type Row = { id: string; nama: string; email: string; role: UserRole; aktif: boolean; createdAt: string; status: 'PROFIL' | 'MENUNGGU'; lastSignInAt: string | null };
 
 const ROLE_BADGE: Record<UserRole, string> = {
   SUPERADMIN: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
@@ -12,6 +12,7 @@ const ROLE_BADGE: Record<UserRole, string> = {
   VIEWER: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 };
 const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : 'Belum pernah';
+const fmtMasuk = (r: Row) => r.status === 'MENUNGGU' ? 'Menunggu masuk pertama via Google' : fmt(r.lastSignInAt);
 
 export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
   const [rows, setRows] = useState<Row[]>([]);
@@ -50,12 +51,12 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
     </select>
   );
   const AktifToggle = ({ r }: { r: Row }) => (
-    <button type="button" aria-pressed={r.aktif} aria-label={`${r.aktif ? 'Nonaktifkan' : 'Aktifkan'} ${r.nama}`}
+    <button type="button" aria-pressed={r.aktif} aria-label={`${r.status === 'MENUNGGU' ? 'Hapus izin' : r.aktif ? 'Nonaktifkan' : 'Aktifkan'} ${r.nama}`}
       disabled={r.id === currentUserId || busyId === r.id} onClick={() => patch(r.id, { aktif: !r.aktif })}
       className={`h-11 px-3 rounded-xl inline-flex items-center gap-2 text-sm font-bold border transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-teal-500 ${
         r.aktif ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:border-emerald-800'
                 : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
-      <Power size={16} weight="bold" /> {r.aktif ? 'Aktif' : 'Nonaktif'}
+      <Power size={16} weight="bold" /> {r.status === 'MENUNGGU' ? 'Diizinkan' : r.aktif ? 'Aktif' : 'Nonaktif'}
     </button>
   );
 
@@ -63,7 +64,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
     <section className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={() => setModal(true)} className="h-11 px-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold inline-flex items-center gap-2">
-          <UserPlus size={20} weight="bold" /> Undang pengguna
+          <UserPlus size={20} weight="bold" /> Tambah email
         </button>
         <button type="button" onClick={load} aria-label="Muat ulang" className="h-11 w-11 rounded-2xl border border-slate-200 dark:border-slate-700 inline-flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800">
           <ArrowsClockwise size={20} weight="bold" className={loading ? 'animate-spin' : ''} />
@@ -85,7 +86,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
                 <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{r.email}</td>
                 <td className="px-5 py-3"><RoleSelect r={r} /></td>
                 <td className="px-5 py-3"><AktifToggle r={r} /></td>
-                <td className="px-5 py-3 text-slate-500">{fmt(r.lastSignInAt)}</td>
+                <td className="px-5 py-3 text-slate-500">{fmtMasuk(r)}</td>
               </tr>
             ))}
             {!loading && rows.length === 0 && <tr><td colSpan={5} className="px-5 py-8 text-center text-slate-500">Belum ada pengguna.</td></tr>}
@@ -103,7 +104,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
               <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold inline-flex items-center gap-1 ${ROLE_BADGE[r.role]}`}><ShieldCheck size={12} weight="bold" />{r.role}</span>
             </div>
             <div className="flex items-center gap-2"><RoleSelect r={r} /><AktifToggle r={r} /></div>
-            <p className="text-[11px] text-slate-500">Terakhir masuk: {fmt(r.lastSignInAt)}</p>
+            <p className="text-[11px] text-slate-500">Terakhir masuk: {fmtMasuk(r)}</p>
           </li>
         ))}
       </ul>
