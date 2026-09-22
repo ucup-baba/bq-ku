@@ -16,7 +16,9 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
       <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
         <img src={assets.logo} width={132} height={132} />
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', fontFamily: 'Naskh', fontSize: 24, color: HIJAU }}>منظمة الحضانة بيت القوام</div>
+          {/* Baris Arab dipra-render sebagai PNG (lihat lib/surat/assets.ts) karena
+              Satori tidak mendukung bidi/shaping Arab. */}
+          <img src={assets.kopArab} width={242} height={26} style={{ objectFit: 'contain' }} />
           <div style={{ display: 'flex', fontSize: 44, fontWeight: 700, color: HIJAU, letterSpacing: -0.5 }}>PANTI ASUHAN</div>
           <div style={{ display: 'flex', fontSize: 44, fontWeight: 700, color: BIRU, letterSpacing: -0.5 }}>BAITUL QOWWAM</div>
           <div style={{ display: 'flex', fontSize: 16, color: '#333' }}>Izin operasional No. 466/0574/P2/2020 · akte notaris m. gunardi widyastuti no.02/2010</div>
@@ -68,7 +70,7 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 12 }}>
           <div style={{ display: 'flex', fontSize: 22 }}>Teriring Do’a</div>
           <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: HIJAU }}>JAZAKUMULLAHU KHAIRAN JAZAA</div>
-          <div style={{ display: 'flex', fontFamily: 'Naskh', fontSize: 28, marginTop: 4 }}>بارك الله فيما أعطيت وبارك الله فيما أبقيت وجعله لك طهورا</div>
+          <img src={assets.doaArab} width={525} height={30} style={{ objectFit: 'contain', marginTop: 4 }} />
           <div style={{ display: 'flex', fontSize: 20, fontStyle: 'italic', textAlign: 'center', marginTop: 8, maxWidth: 880 }}>
             “Semoga Allah memberi pahala dengan apa yang engkau berikan dan Allah memberkahi apa saja yang masih ada pada diri engkau dan semoga Allah menjadikannya suci bagi engkau” Aamiin...
           </div>

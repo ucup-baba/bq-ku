@@ -32,10 +32,15 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
       .upload(path, png, { contentType: 'image/png', upsert: true });
     if (!upErr && surat.storagePath !== path) await setSuratStoragePath(supabase, id, path);
 
+    // Nama berkas untuk header harus disaring dari karakter selain
+    // [A-Za-z0-9._-] agar tidak menyisipkan karakter berbahaya/tak terduga
+    // ke header HTTP (nomor surat bisa memuat '/', spasi, dll).
+    const namaBerkas = `${surat.nomorSurat.replace(/\//g, '-')}.png`.replace(/[^A-Za-z0-9._-]/g, '_');
+
     return new NextResponse(new Uint8Array(png), {
       headers: {
         'Content-Type': 'image/png',
-        'Content-Disposition': `inline; filename="${surat.nomorSurat.replace(/\//g, '-')}.png"`,
+        'Content-Disposition': `inline; filename="${namaBerkas}"`,
         'Cache-Control': 'private, max-age=60',
       },
     });
