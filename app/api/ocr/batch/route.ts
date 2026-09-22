@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser, authErrorResponse } from '@/lib/auth/session';
 import sharp from 'sharp';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { uploadToBucket } from '@/lib/storage/upload';
 import { generateStandardizedFileName } from '@/lib/utils/file-naming';
 import { classifyAndExtractDocument, classifyMultiPagePdf } from '@/lib/ocr/gemini-batch';
 import { matchBestFamilyMember } from '@/lib/utils/formatters';
@@ -12,13 +13,17 @@ export const maxDuration = 60; // Allow up to 60s for batch processing
 interface BatchResult {
   index: number;
   kategori: string;
+  /** Signed URL (1 jam) untuk preview/OCR di client */
   fileUrl: string;
+  /** Path di bucket; dipakai saat menyimpan dokumen */
+  storagePath?: string;
   fileName: string;
   extracted: any;
   error?: string;
 }
 
 async function optimizeAndUpload(
+  client: SupabaseClient,
   fileBuffer: Buffer,
   originalName: string,
   mimeType: string,
@@ -27,7 +32,7 @@ async function optimizeAndUpload(
   jenisKelamin: string | null,
   kategori: string,
   suffix?: string | null,
-): Promise<{ fileUrl: string; fileName: string; finalBuffer: Buffer; finalMime: string }> {
+): Promise<{ fileUrl: string; storagePath: string; fileName: string; finalBuffer: Buffer; finalMime: string }> {
   const isImage = mimeType.startsWith('image/');
   const isPdf = mimeType === 'application/pdf';
 
@@ -61,27 +66,9 @@ async function optimizeAndUpload(
     suffix,
   });
 
-  let fileUrl = `/uploads/${fileName}`;
+  const { storagePath, fileUrl } = await uploadToBucket(client, fileName, finalBuffer, finalMime);
 
-  const supabase = getSupabaseServerClient();
-  if (supabase) {
-    const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'berkas';
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, finalBuffer, {
-        contentType: finalMime,
-        upsert: true,
-      });
-
-    if (uploadError) {
-      throw new Error(`Gagal upload ke Storage: ${uploadError.message}`);
-    }
-
-    const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    fileUrl = publicUrlData.publicUrl;
-  }
-
-  return { fileUrl, fileName, finalBuffer, finalMime };
+  return { fileUrl, storagePath, fileName, finalBuffer, finalMime };
 }
 
 export async function POST(req: NextRequest) {
@@ -92,7 +79,8 @@ export async function POST(req: NextRequest) {
     // SUPPORT 1: JSON Payload (fileUrls already uploaded to Supabase Storage - avoids Vercel 4.5MB limit)
     if (contentType.includes('application/json')) {
       const body = await req.json();
-      const items = (body.items || []) as Array<{ fileUrl: string; fileName: string; kategori?: string }>;
+      const items = (body.items || []) as Array<{ fileUrl: string; storagePath?: string; fileName: string; kategori?: string }>;
+      const allowedOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
       const namaSantri = body.namaSantri as string | null;
       const tahunMasuk = body.tahunMasuk as string | null;
       const jenisKelamin = body.jenisKelamin as string | null;
@@ -106,6 +94,9 @@ export async function POST(req: NextRequest) {
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         try {
+          if (!allowedOrigin || !item.fileUrl.startsWith(allowedOrigin)) {
+            throw new Error('URL berkas tidak dikenal (bukan dari storage aplikasi)');
+          }
           const fetchRes = await fetch(item.fileUrl);
           if (!fetchRes.ok) {
             throw new Error(`Gagal mengunduh berkas dari URL: HTTP ${fetchRes.status}`);
@@ -121,6 +112,7 @@ export async function POST(req: NextRequest) {
                 index: i,
                 kategori: 'UNKNOWN',
                 fileUrl: item.fileUrl,
+                storagePath: item.storagePath,
                 fileName: item.fileName,
                 extracted: null,
                 error: 'Gagal mengklasifikasi dokumen PDF',
@@ -160,6 +152,7 @@ export async function POST(req: NextRequest) {
               }
 
               let pageFileUrl = item.fileUrl;
+              let pageStoragePath = item.storagePath;
               let pageFileName = item.fileName;
 
               // Upload individual 1-page PDF if split so preview opens ONLY this single page!
@@ -168,6 +161,7 @@ export async function POST(req: NextRequest) {
                 const pageSuffix = sameCategoryCount > 1 ? `hal${pdfResult.halaman}` : undefined;
                 try {
                   const uploadedPage = await optimizeAndUpload(
+                    supabase,
                     pdfResult.pageBuffer,
                     `${item.fileName.replace(/\.pdf$/i, '')}.pdf`,
                     'application/pdf',
@@ -178,6 +172,7 @@ export async function POST(req: NextRequest) {
                     pageSuffix,
                   );
                   pageFileUrl = uploadedPage.fileUrl;
+                  pageStoragePath = uploadedPage.storagePath;
                   pageFileName = uploadedPage.fileName;
                 } catch (uploadErr) {
                   console.warn(`[batch] Gagal upload halaman terpisah ${pdfResult.halaman}:`, uploadErr);
@@ -188,6 +183,7 @@ export async function POST(req: NextRequest) {
                 index: i,
                 kategori: pdfResult.kategori,
                 fileUrl: pageFileUrl,
+                storagePath: pageStoragePath,
                 fileName: pageFileName,
                 extracted: finalExtracted,
               });
@@ -201,6 +197,7 @@ export async function POST(req: NextRequest) {
                 index: i,
                 kategori: 'UNKNOWN',
                 fileUrl: item.fileUrl,
+                storagePath: item.storagePath,
                 fileName: item.fileName,
                 extracted: null,
                 error: 'Gagal mengklasifikasi dokumen gambar',
@@ -235,6 +232,7 @@ export async function POST(req: NextRequest) {
               index: i,
               kategori: result.kategori,
               fileUrl: item.fileUrl,
+              storagePath: item.storagePath,
               fileName: item.fileName,
               extracted: finalExtracted,
             });
@@ -244,6 +242,7 @@ export async function POST(req: NextRequest) {
             index: i,
             kategori: 'ERROR',
             fileUrl: item.fileUrl,
+            storagePath: item.storagePath,
             fileName: item.fileName,
             extracted: null,
             error: itemErr.message || 'Gagal memproses berkas',
@@ -334,6 +333,7 @@ export async function POST(req: NextRequest) {
             }
 
             let pageFileUrl = '';
+            let pageStoragePath: string | undefined;
             let pageFileName = file.name;
 
             if (pdfResult.pageBuffer) {
@@ -341,6 +341,7 @@ export async function POST(req: NextRequest) {
               const pageSuffix = sameCategoryCount > 1 ? `hal${pdfResult.halaman}` : undefined;
               try {
                 const pageUpload = await optimizeAndUpload(
+                  supabase,
                   pdfResult.pageBuffer,
                   `${file.name.replace(/\.pdf$/i, '')}.pdf`,
                   'application/pdf',
@@ -351,6 +352,7 @@ export async function POST(req: NextRequest) {
                   pageSuffix,
                 );
                 pageFileUrl = pageUpload.fileUrl;
+                pageStoragePath = pageUpload.storagePath;
                 pageFileName = pageUpload.fileName;
               } catch (uploadErr) {
                 console.warn(`[batch] Gagal upload halaman terpisah ${pdfResult.halaman}:`, uploadErr);
@@ -361,6 +363,7 @@ export async function POST(req: NextRequest) {
               index: i,
               kategori: pdfResult.kategori,
               fileUrl: pageFileUrl,
+              storagePath: pageStoragePath,
               fileName: pageFileName,
               extracted: finalExtracted,
             });
@@ -370,8 +373,8 @@ export async function POST(req: NextRequest) {
           const mimeType = file.type || 'image/jpeg';
 
           // Upload first (optimized)
-          const { fileUrl, fileName, finalBuffer, finalMime } = await optimizeAndUpload(
-            buffer, file.name, mimeType,
+          const { fileUrl, storagePath, fileName, finalBuffer, finalMime } = await optimizeAndUpload(
+            supabase, buffer, file.name, mimeType,
             namaSantri, tahunMasuk, jenisKelamin, 'AUTO',
           );
 
@@ -383,6 +386,7 @@ export async function POST(req: NextRequest) {
               index: i,
               kategori: 'UNKNOWN',
               fileUrl,
+              storagePath,
               fileName,
               extracted: null,
               error: 'Gagal mengklasifikasi dokumen',
@@ -419,6 +423,7 @@ export async function POST(req: NextRequest) {
             index: i,
             kategori: result.kategori,
             fileUrl,
+            storagePath,
             fileName,
             extracted: finalExtracted,
           });

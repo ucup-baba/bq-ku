@@ -26,6 +26,10 @@ export async function POST(req: NextRequest) {
       }
 
       if (fileUrl) {
+        const allowedOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        if (!allowedOrigin || !String(fileUrl).startsWith(allowedOrigin)) {
+          return NextResponse.json({ error: 'URL berkas tidak dikenal (bukan dari storage aplikasi)' }, { status: 400 });
+        }
         const result = await processOcrImage(fileUrl, kategori);
         return NextResponse.json({
           success: true,

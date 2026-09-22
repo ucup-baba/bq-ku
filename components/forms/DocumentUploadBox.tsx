@@ -20,7 +20,7 @@ import {
   LockKey,
   Camera
 } from '@phosphor-icons/react';
-import { supabase } from '@/lib/supabase/client';
+import { createBrowserSupabase } from '@/lib/supabase/client';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
 import { DoodleBadgeTape, DoodleSparkle } from '@/components/ui/DoodleStickers';
 import { matchBestFamilyMember } from '@/lib/utils/formatters';
@@ -141,13 +141,15 @@ export function DocumentUploadBox({
       let fileUrl = '';
 
       // Direct upload ke Supabase jika file > 4MB untuk menghindari limit 4.5MB Vercel
-      if (supabase && selectedFile.size > 4 * 1024 * 1024) {
+      if (selectedFile.size > 4 * 1024 * 1024) {
+        const supabase = createBrowserSupabase();
         const cleanName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         const pathName = `${Date.now()}_${cleanName}`;
         const { error: upErr } = await supabase.storage.from('berkas').upload(pathName, selectedFile, { upsert: true });
         if (upErr) throw new Error(`Gagal mengunggah berkas: ${upErr.message}`);
-        const { data: pUrl } = supabase.storage.from('berkas').getPublicUrl(pathName);
-        fileUrl = pUrl.publicUrl;
+        const { data: signed, error: signErr } = await supabase.storage.from('berkas').createSignedUrl(pathName, 3600);
+        if (signErr || !signed) throw new Error('Gagal membuat tautan berkas');
+        fileUrl = signed.signedUrl;
       } else {
         const uploadFormData = new FormData();
         uploadFormData.append('file', selectedFile);

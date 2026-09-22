@@ -1,4 +1,5 @@
 import path from 'path';
+import os from 'os';
 import fs from 'fs';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
@@ -30,7 +31,7 @@ export async function processOcrImage(
         }
       }
 
-      const tempUploadDir = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'public', 'uploads');
+      const tempUploadDir = os.tmpdir();
       if (!fs.existsSync(tempUploadDir)) {
         try { fs.mkdirSync(tempUploadDir, { recursive: true }); } catch (e) {}
       }
@@ -47,7 +48,7 @@ export async function processOcrImage(
             const buf = Buffer.from(arrBuf);
             const urlPath = new URL(imageBufferOrUrl).pathname;
             const ext = path.extname(urlPath).toLowerCase() || '.jpg';
-            const tempDir = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'public', 'uploads');
+            const tempDir = os.tmpdir();
             if (!fs.existsSync(tempDir)) {
               try { fs.mkdirSync(tempDir, { recursive: true }); } catch (e) {}
             }
@@ -103,7 +104,7 @@ export async function processOcrImage(
     if (imagePathToRecognize && fs.existsSync(imagePathToRecognize)) {
       const ext = path.extname(imagePathToRecognize).toLowerCase();
       if (ext === '.pdf') {
-        const outputDir = process.env.VERCEL ? '/tmp' : path.join(process.cwd(), 'public', 'uploads');
+        const outputDir = os.tmpdir();
         try {
           const { stdout: directText } = await execFileAsync('pdftotext', [imagePathToRecognize, '-']);
           if (directText && directText.trim().length > 50) {

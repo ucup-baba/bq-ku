@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser, authErrorResponse } from '@/lib/auth/session';
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import sharp from 'sharp';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { generateStandardizedFileName } from '@/lib/utils/file-naming';
-import { getSupabaseServerClient } from '@/lib/supabase/server';
+import { uploadToBucket } from '@/lib/storage/upload';
 
 const execFileAsync = promisify(execFile);
 
@@ -28,16 +29,6 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer();
     const originalBuffer = Buffer.from(bytes);
     const originalSize = originalBuffer.length;
-
-    // Pastikan direktori public/uploads ada jika di lingkungan lokal
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    try {
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-    } catch (e) {
-      // Abaikan jika read-only di platform serverless (seperti Vercel)
-    }
 
     const originalExt = path.extname(file.name).toLowerCase() || '.jpg';
     const isImage = /\.(jpg|jpeg|png|webp|avif|tiff)$/i.test(originalExt) || (file.type && file.type.startsWith('image/'));
@@ -83,7 +74,7 @@ export async function POST(req: NextRequest) {
     else if (isPdf) {
       targetExt = '.pdf';
       const tempId = Date.now();
-      const tempDir = process.env.VERCEL ? '/tmp' : (fs.existsSync(uploadDir) ? uploadDir : '/tmp');
+      const tempDir = os.tmpdir();
       const tempIn = path.join(tempDir, `_temp_in_${tempId}.pdf`);
       const tempOut = path.join(tempDir, `_temp_out_${tempId}.pdf`);
 
@@ -118,7 +109,6 @@ export async function POST(req: NextRequest) {
     }
 
     // 3. Standarisasi Penamaan File: tahunmasuk_gender_nama_ketfile.ext
-    const canCheckLocalDir = fs.existsSync(uploadDir);
     const fileName = generateStandardizedFileName({
       tahunMasuk,
       jenisKelamin,
@@ -126,34 +116,11 @@ export async function POST(req: NextRequest) {
       kategori,
       originalFileName: file.name,
       ext: targetExt,
-    }, canCheckLocalDir ? uploadDir : undefined);
+    });
 
     const mimeType = isImage ? 'image/webp' : (isPdf ? 'application/pdf' : (file.type || 'application/octet-stream'));
-    let fileUrl = `/uploads/${fileName}`;
-
-    // 4. Upload ke Supabase Storage jika sudah dikonfigurasi, atau simpan lokal sebagai fallback
-    const supabase = getSupabaseServerClient();
-    if (supabase) {
-      const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'berkas';
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, finalBuffer, {
-          contentType: mimeType,
-          upsert: true,
-        });
-
-      if (uploadError) {
-        console.error('Supabase storage upload error:', uploadError);
-        throw new Error(`Gagal upload ke Supabase Storage: ${uploadError.message}`);
-      }
-
-      const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
-      fileUrl = publicUrlData.publicUrl;
-    } else {
-      // Local fallback
-      const filePath = path.join(uploadDir, fileName);
-      fs.writeFileSync(filePath, finalBuffer);
-    }
+    // 4. Unggah ke bucket private & buat signed URL (1 jam) untuk preview/OCR di client
+    const { storagePath, fileUrl } = await uploadToBucket(supabase, fileName, finalBuffer, mimeType);
 
     const compressedSize = finalBuffer.length;
     const savingsPercent = originalSize > compressedSize 
@@ -162,6 +129,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      storagePath,
       fileUrl,
       fileName,
       originalSize,

@@ -20,7 +20,7 @@ import {
   LockKey,
   Camera
 } from '@phosphor-icons/react';
-import { supabase } from '@/lib/supabase/client';
+import { createBrowserSupabase } from '@/lib/supabase/client';
 import { ExtractedDocumentData } from '@/lib/ocr/parser';
 import { checkNameMatch, toTitleCase } from '@/lib/utils/formatters';
 
@@ -28,6 +28,7 @@ export interface BatchItemResult {
   index: number;
   kategori: string;
   fileUrl: string;
+  storagePath?: string;
   fileName: string;
   extracted: ExtractedDocumentData | null;
   error?: string;
@@ -118,10 +119,11 @@ export function BatchScanModal({
     try {
       let resultsData: any[] = [];
 
-      // Strategi 1: Jika client Supabase tersedia, unggah langsung ke Supabase Cloud Storage
-      // Ini 100% menghindari batasan payload 4.5MB Vercel (mendukung file hingga 50MB)
-      if (supabase) {
-        const uploadedItems: Array<{ fileUrl: string; fileName: string }> = [];
+      // Unggah langsung ke Supabase Storage (bucket private, sesi user) lalu kirim signed URL ke server.
+      // Menghindari batasan payload 4.5MB Vercel (mendukung file hingga 50MB)
+      {
+        const supabase = createBrowserSupabase();
+        const uploadedItems: Array<{ fileUrl: string; storagePath: string; fileName: string }> = [];
 
         for (let i = 0; i < selectedFiles.length; i++) {
           const file = selectedFiles[i];
@@ -138,9 +140,11 @@ export function BatchScanModal({
             throw new Error(`Gagal mengunggah ${file.name} ke storage: ${uploadError.message}`);
           }
 
-          const { data: pUrl } = supabase.storage.from('berkas').getPublicUrl(pathName);
+          const { data: signed, error: signErr } = await supabase.storage.from('berkas').createSignedUrl(pathName, 3600);
+          if (signErr || !signed) throw new Error(`Gagal membuat tautan berkas ${file.name}`);
           uploadedItems.push({
-            fileUrl: pUrl.publicUrl,
+            fileUrl: signed.signedUrl,
+            storagePath: pathName,
             fileName: file.name,
           });
         }
@@ -167,35 +171,6 @@ export function BatchScanModal({
             throw new Error('Ukuran berkas melebihi batas server (maks 4.5 MB). Silakan gunakan file yang lebih kecil.');
           }
           throw new Error(resText || `Gagal memproses batch OCR (Status ${res.status})`);
-        }
-
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Gagal memproses batch scan.');
-        }
-
-        resultsData = json.results;
-      } else {
-        // Strategi 2: Fallback multipart/form-data
-        const formData = new FormData();
-        selectedFiles.forEach(f => formData.append('files', f));
-        if (targetNamaSantri) formData.append('namaSantri', targetNamaSantri);
-        if (tahunMasuk) formData.append('tahunMasuk', String(tahunMasuk));
-        if (jenisKelamin) formData.append('jenisKelamin', jenisKelamin);
-
-        const res = await fetch('/api/ocr/batch', {
-          method: 'POST',
-          body: formData,
-        });
-
-        const resText = await res.text();
-        let json;
-        try {
-          json = JSON.parse(resText);
-        } catch {
-          if (res.status === 413 || resText.includes('Request Entity Too Large')) {
-            throw new Error('Ukuran berkas terlalu besar untuk dikirim sekaligus (maks 4.5 MB). Silakan gunakan file yang lebih ringkas atau unggah satu per satu.');
-          }
-          throw new Error(resText || `Gagal memproses batch scan (Status ${res.status})`);
         }
 
         if (!res.ok || !json.success) {
