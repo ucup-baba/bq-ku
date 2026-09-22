@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { FloppyDisk, Warning, ArrowClockwise } from '@phosphor-icons/react';
 import { terbilang, formatRupiah } from '@/lib/utils/terbilang';
 import { formatDateIndonesian, toTitleCase } from '@/lib/utils/formatters';
@@ -66,8 +66,31 @@ const field = 'w-full px-4 py-3 rounded-2xl border bg-white dark:bg-slate-900 fo
 
 export function FormSurat() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const donaturIdAwal = searchParams.get('donaturId');
 
   const [donatur, setDonatur] = useState<PilihDonaturValue>({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' });
+  const [pesanDonaturAwal, setPesanDonaturAwal] = useState<string | null>(null);
+
+  // Datang dari tombol "Donasi lagi" (?donaturId=...) — muat data donatur
+  // sekali lalu isi langsung sebagai donatur terpilih.
+  useEffect(() => {
+    if (!donaturIdAwal) return;
+    let batal = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/donatur/${encodeURIComponent(donaturIdAwal)}`);
+        const data = await res.json();
+        if (batal) return;
+        if (!res.ok || !data.data) { setPesanDonaturAwal('Donatur tidak ditemukan. Silakan pilih atau tambahkan donatur.'); return; }
+        setDonatur({ donaturId: data.data.id, nama: data.data.nama, sapaan: data.data.sapaan, noWa: data.data.noWa || '' });
+      } catch {
+        if (!batal) setPesanDonaturAwal('Gagal memuat data donatur. Silakan pilih atau tambahkan donatur.');
+      }
+    })();
+    return () => { batal = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [donaturIdAwal]);
   const [jenis, setJenis] = useState<JenisDonasi>('INFAQ');
   const [bentuk, setBentuk] = useState<'UANG' | 'BARANG'>('UANG');
   const [nominal, setNominal] = useState(0);
@@ -226,6 +249,7 @@ export function FormSurat() {
 
         <div className="space-y-2">
           <span className="text-xs font-semibold">Donatur</span>
+          {pesanDonaturAwal && <p className="text-xs text-amber-600">{pesanDonaturAwal}</p>}
           <PilihDonatur value={donatur} onChange={setDonatur} errors={donaturFieldErrors} />
           {fieldErrors.donaturId && <p className="text-xs text-rose-600">{fieldErrors.donaturId}</p>}
         </div>
