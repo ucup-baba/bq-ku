@@ -19,3 +19,12 @@ export function roomOfPath(pathname: string): Room {
     ? 'donatur'
     : 'santri';
 }
+
+/** Tentukan tujuan setelah login: ruangan terakhir bila masih berhak, jika tidak ruangan pertama yang dimiliki. */
+export function resolveLandingPath(roles: UserRole[], lastRoom: string | null): string | null {
+  const rooms = roomsFor(roles);
+  if (rooms.length === 0) return null;
+  const last = lastRoom as Room | null;
+  if (last && rooms.includes(last)) return ROOM_HOME[last];
+  return ROOM_HOME[rooms[0]];
+}

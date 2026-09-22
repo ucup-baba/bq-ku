@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { roomsFor, roomOfPath, ROOM_HOME } from '@/lib/auth/rooms';
+import { roomsFor, roomOfPath, ROOM_HOME, resolveLandingPath } from '@/lib/auth/rooms';
 
 describe('ruangan', () => {
   it('memetakan peran ke ruangan', () => {
@@ -19,5 +19,22 @@ describe('ruangan', () => {
   it('punya beranda tiap ruangan', () => {
     expect(ROOM_HOME.santri).toBe('/');
     expect(ROOM_HOME.donatur).toBe('/donatur');
+  });
+});
+
+describe('resolveLandingPath', () => {
+  it('mengarahkan ke satu-satunya ruangan yang dimiliki', () => {
+    expect(resolveLandingPath(['ADMIN_DONATUR'], null)).toBe('/donatur');
+    expect(resolveLandingPath(['ADMIN_SANTRI'], null)).toBe('/');
+  });
+  it('menghormati ruangan terakhir bila punya dua', () => {
+    expect(resolveLandingPath(['SUPERADMIN'], 'donatur')).toBe('/donatur');
+    expect(resolveLandingPath(['SUPERADMIN'], null)).toBe('/');
+  });
+  it('mengabaikan cookie yang tidak berhak', () => {
+    expect(resolveLandingPath(['ADMIN_SANTRI'], 'donatur')).toBe('/');
+  });
+  it('null bila tidak punya ruangan', () => {
+    expect(resolveLandingPath([], null)).toBeNull();
   });
 });

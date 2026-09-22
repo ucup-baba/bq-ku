@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { isPublicPath } from '@/lib/auth/public-paths';
+import { roomsFor, roomOfPath, ROOM_HOME, ROOM_COOKIE } from '@/lib/auth/rooms';
+import type { UserRole } from '@/lib/auth/roles';
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -35,6 +37,29 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone(); url.pathname = '/'; url.search = '';
     return NextResponse.redirect(url);
   }
+
+  if (user && !isPublicPath(pathname)) {
+    const { data: profile } = await supabase
+      .from('profiles').select('roles, aktif').eq('id', user.id).maybeSingle();
+    const roles = (profile?.aktif ? profile.roles : []) as UserRole[] | undefined ?? [];
+    const rooms = roomsFor(roles);
+    const target = roomOfPath(pathname);
+
+    if (roles.length > 0 && !rooms.includes(target)) {
+      if (pathname.startsWith('/api/')) {
+        return NextResponse.json(
+          { error: 'Anda tidak memiliki akses ke ruangan ini', code: 'FORBIDDEN' },
+          { status: 403 },
+        );
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = ROOM_HOME[rooms[0] ?? 'santri'];
+      url.search = '';
+      return NextResponse.redirect(url);
+    }
+    if (rooms.includes(target)) response.cookies.set(ROOM_COOKIE, target, { path: '/', maxAge: 60 * 60 * 24 * 30, sameSite: 'lax' });
+  }
+
   return response;
 }
 
