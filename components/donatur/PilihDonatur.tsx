@@ -18,9 +18,17 @@ const OPSI_SAPAAN: Array<{ value: Sapaan; label: string }> = [
   { value: 'BAPAK_IBU', label: 'Bapak/Ibu' },
 ];
 
-const field = 'w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B5FA5] min-h-11';
+const field = 'w-full px-4 py-3 rounded-2xl border bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B5FA5] min-h-11';
+const borderNormal = 'border-slate-200 dark:border-slate-700';
+const borderError = 'border-rose-400';
 
-export function PilihDonatur({ value, onChange }: { value: PilihDonaturValue; onChange: (value: PilihDonaturValue) => void }) {
+export type PilihDonaturErrors = { nama?: string; sapaan?: string; noWa?: string };
+
+export function PilihDonatur({ value, onChange, errors }: {
+  value: PilihDonaturValue;
+  onChange: (value: PilihDonaturValue) => void;
+  errors?: PilihDonaturErrors;
+}) {
   const [q, setQ] = useState('');
   const [hasil, setHasil] = useState<Donatur[]>([]);
   const [mencari, setMencari] = useState(false);
@@ -73,17 +81,23 @@ export function PilihDonatur({ value, onChange }: { value: PilihDonaturValue; on
         </div>
         <label className="block space-y-1">
           <span className="text-xs font-semibold">Nama donatur</span>
-          <input value={value.nama} onChange={e => onChange({ ...value, nama: e.target.value })} className={field} placeholder="Nama lengkap" />
+          <input value={value.nama} onChange={e => onChange({ ...value, nama: e.target.value })}
+            className={`${field} ${errors?.nama ? borderError : borderNormal}`} placeholder="Nama lengkap" />
+          {errors?.nama && <span className="block text-xs text-rose-600">{errors.nama}</span>}
         </label>
         <label className="block space-y-1">
           <span className="text-xs font-semibold">Sapaan</span>
-          <select value={value.sapaan} onChange={e => onChange({ ...value, sapaan: e.target.value as Sapaan })} className={field}>
+          <select value={value.sapaan} onChange={e => onChange({ ...value, sapaan: e.target.value as Sapaan })}
+            className={`${field} ${errors?.sapaan ? borderError : borderNormal}`}>
             {OPSI_SAPAAN.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
+          {errors?.sapaan && <span className="block text-xs text-rose-600">{errors.sapaan}</span>}
         </label>
         <label className="block space-y-1">
           <span className="text-xs font-semibold">No. WhatsApp (opsional)</span>
-          <input value={value.noWa} onChange={e => onChange({ ...value, noWa: e.target.value })} inputMode="tel" className={field} placeholder="08xxxxxxxxxx" />
+          <input value={value.noWa} onChange={e => onChange({ ...value, noWa: e.target.value })} inputMode="tel"
+            className={`${field} ${errors?.noWa ? borderError : borderNormal}`} placeholder="08xxxxxxxxxx" />
+          {errors?.noWa && <span className="block text-xs text-rose-600">{errors.noWa}</span>}
         </label>
       </div>
     );
@@ -99,7 +113,7 @@ export function PilihDonatur({ value, onChange }: { value: PilihDonaturValue; on
             onChange={e => setQ(e.target.value)}
             placeholder="Cari nama atau no. WhatsApp donatur"
             aria-label="Cari donatur"
-            className={`${field} pl-10`}
+            className={`${field} ${borderNormal} pl-10`}
           />
         </div>
         <button type="button" onClick={bukaModeBaru} aria-label="Donatur baru"

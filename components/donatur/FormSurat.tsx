@@ -28,6 +28,29 @@ export function hitungPratinjau(s: FormState): SuratData {
   };
 }
 
+const FIELD_DONATUR_DIKENAL = new Set(['nama', 'sapaan', 'noWa']);
+const FIELD_SURAT_DIKENAL = new Set(['jenis', 'tanggal', 'nominal', 'deskripsiBarang', 'nomorSurat', 'tanggalSurat', 'donaturId', 'keterangan']);
+
+/**
+ * Melepas prefix "donasi." dari kunci error field surat, dan mengumpulkan
+ * kunci yang tidak bisa dipetakan ke field mana pun (mis. "donasi" dari
+ * refine di level body) ke pesan umum.
+ */
+export function petakanErrorField(fields: Record<string, string>): { field: Record<string, string>; umum: string | null } {
+  const field: Record<string, string> = {};
+  let umum: string | null = null;
+  for (const [k, v] of Object.entries(fields)) {
+    if (k === 'donasi') {
+      umum = umum ?? v;
+    } else if (k.startsWith('donasi.')) {
+      field[k.slice('donasi.'.length)] = v;
+    } else {
+      field[k] = v;
+    }
+  }
+  return { field, umum };
+}
+
 const OPSI_JENIS: Array<{ value: JenisDonasi; label: string }> = [
   { value: 'ZAKAT', label: 'Zakat' },
   { value: 'INFAQ', label: 'Infaq' },
@@ -59,6 +82,7 @@ export function FormSurat() {
   const [nomorDiedit, setNomorDiedit] = useState(false);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [donaturFieldErrors, setDonaturFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [nomorUsulan, setNomorUsulan] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -109,6 +133,7 @@ export function FormSurat() {
     setError(null);
     setNomorUsulan(null);
     setFieldErrors({});
+    setDonaturFieldErrors({});
     try {
       let donaturId = donatur.donaturId;
       if (!donaturId) {
@@ -117,9 +142,19 @@ export function FormSurat() {
           body: JSON.stringify({ nama: donatur.nama, sapaan: donatur.sapaan, noWa: donatur.noWa || undefined }),
         });
         const dataDonatur = await resDonatur.json();
-        if (resDonatur.status === 400 && dataDonatur.fields) { setFieldErrors(dataDonatur.fields); return; }
+        if (resDonatur.status === 400 && dataDonatur.fields) {
+          setDonaturFieldErrors(dataDonatur.fields);
+          const tidakDikenal = Object.keys(dataDonatur.fields).some(k => !FIELD_DONATUR_DIKENAL.has(k));
+          if (tidakDikenal) setError('Periksa kembali isian donatur.');
+          return;
+        }
         if (!resDonatur.ok) { setError(dataDonatur.error || 'Gagal menyimpan donatur.'); return; }
+        // Simpan id donatur yang baru dibuat SEGERA — jika langkah berikutnya
+        // (POST surat) gagal (409/400) dan pengguna menekan Simpan lagi,
+        // donatur ini harus dipakai ulang, bukan dibuat dobel (tidak ada
+        // unique constraint di database untuk nama donatur).
         donaturId = dataDonatur.data.id;
+        setDonatur(d => ({ ...d, donaturId }));
       }
 
       const body = {
@@ -145,11 +180,10 @@ export function FormSurat() {
         return;
       }
       if (res.status === 400 && data.fields) {
-        const mapped: Record<string, string> = {};
-        for (const [k, v] of Object.entries<string>(data.fields)) {
-          mapped[k.startsWith('donasi.') ? k.slice('donasi.'.length) : k] = v;
-        }
-        setFieldErrors(mapped);
+        const { field, umum } = petakanErrorField(data.fields);
+        setFieldErrors(field);
+        const tidakDikenal = Object.keys(field).some(k => !FIELD_SURAT_DIKENAL.has(k));
+        if (umum || tidakDikenal) setError(umum || 'Periksa kembali isian.');
         return;
       }
       if (!res.ok) { setError(data.error || 'Gagal membuat surat.'); return; }
@@ -192,8 +226,7 @@ export function FormSurat() {
 
         <div className="space-y-2">
           <span className="text-xs font-semibold">Donatur</span>
-          <PilihDonatur value={donatur} onChange={setDonatur} />
-          {fieldErrors.nama && <p className="text-xs text-rose-600">{fieldErrors.nama}</p>}
+          <PilihDonatur value={donatur} onChange={setDonatur} errors={donaturFieldErrors} />
           {fieldErrors.donaturId && <p className="text-xs text-rose-600">{fieldErrors.donaturId}</p>}
         </div>
 

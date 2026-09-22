@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hitungPratinjau } from '@/components/donatur/FormSurat';
+import { hitungPratinjau, petakanErrorField } from '@/components/donatur/FormSurat';
 
 describe('hitungPratinjau', () => {
   it('menyusun data pratinjau donasi uang tanpa memanggil server', () => {
@@ -16,5 +16,25 @@ describe('hitungPratinjau', () => {
       deskripsiBarang: '50 kg beras', tanggalSurat: '2026-09-21', nomorSurat: '272/PBQ/IX/2026', keterangan: '',
     });
     expect(p.barisNilai).toEqual({ tipe: 'BARANG', deskripsi: '50 kg beras' });
+  });
+});
+
+describe('petakanErrorField', () => {
+  it('melepas prefix "donasi." dari kunci field', () => {
+    const { field, umum } = petakanErrorField({ 'donasi.nominal': 'x' });
+    expect(field.nominal).toBe('x');
+    expect(umum).toBeNull();
+  });
+
+  it('membiarkan kunci tanpa prefix apa adanya', () => {
+    const { field, umum } = petakanErrorField({ noWa: 'y' });
+    expect(field.noWa).toBe('y');
+    expect(umum).toBeNull();
+  });
+
+  it('mengumpulkan kunci "donasi" (tanpa titik) ke pesan umum', () => {
+    const { field, umum } = petakanErrorField({ donasi: 'z' });
+    expect(field.donasi).toBeUndefined();
+    expect(umum).toBe('z');
   });
 });
