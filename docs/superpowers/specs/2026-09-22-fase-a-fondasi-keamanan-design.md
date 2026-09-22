@@ -85,7 +85,7 @@ Matriks hak akses (memakai fungsi di `lib/auth/roles.ts` yang sudah ada):
 
 ### 4.1 Migrasi versi
 - Folder `supabase/migrations/0001_init.sql` berisi seluruh skema (santri, documents, profiles, upload_tokens, fungsi, trigger, policy, bucket). `supabase-setup.sql` dihapus.
-- Diterapkan ke proyek Supabase lewat MCP `apply_migration` (atau `supabase db push` oleh pemilik). Karena reset total: migrasi diawali `DROP TABLE IF EXISTS ... CASCADE` untuk tabel lama dan `DELETE FROM storage.objects WHERE bucket_id='berkas'`.
+- Proyek Supabase produksi (`zmltgsayohzbgdhewkfs`) tidak dapat diakses dari sesi agen; migrasi **diterapkan oleh pemilik proyek** lewat SQL Editor dashboard atau `supabase db push`. Bucket `berkas` juga diubah ke private oleh migrasi (`UPDATE storage.buckets SET public=false`). Agen menyiapkan file dan instruksi di README. Karena reset total: migrasi diawali `DROP TABLE IF EXISTS ... CASCADE` untuk tabel lama dan `DELETE FROM storage.objects WHERE bucket_id='berkas'`.
 - Skema `santri` dan `documents` sama dengan `lib/db/schema.sql` sekarang, dengan perubahan: `documents.fileUrl` → `storagePath` (text NOT NULL); `santri.nik` mendapat `UNIQUE`; `santri.fotoFormalUrl`/`fotoProfilUrl` → `fotoFormalPath`/`fotoProfilPath`; kolom waktu memakai `timestamptz DEFAULT now()`.
 
 ### 4.2 RLS
