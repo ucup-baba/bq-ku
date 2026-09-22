@@ -37,3 +37,7 @@ data/*.db-*
 !/public/uploads/.gitkeep
 .vercel
 .env*
+
+# agent working files
+/.superpowers/
+/.claude/skills/

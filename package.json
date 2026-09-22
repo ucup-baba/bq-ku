@@ -1,7 +1,7 @@
 {
-  "name": "bq-qu",
+  "name": "bq-ku",
   "version": "1.0.0",
-  "description": "",
+  "description": "Sistem Administrasi Berkas Santri & Digital CV Profiler — Baitul Qowwam",
   "main": "index.js",
   "directories": {
     "doc": "docs"
@@ -16,6 +16,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=22 <23"
+  },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
     "@supabase/supabase-js": "^2.116.0",
