@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireUser, authErrorResponse } from '@/lib/auth/session';
 import sharp from 'sharp';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { generateStandardizedFileName } from '@/lib/utils/file-naming';
@@ -85,6 +86,7 @@ async function optimizeAndUpload(
 
 export async function POST(req: NextRequest) {
   try {
+    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
     const contentType = req.headers.get('content-type') || '';
 
     // SUPPORT 1: JSON Payload (fileUrls already uploaded to Supabase Storage - avoids Vercel 4.5MB limit)
@@ -440,6 +442,7 @@ export async function POST(req: NextRequest) {
       results,
     });
   } catch (error: any) {
+    const authRes = authErrorResponse(error); if (authRes) return authRes;
     console.error('Batch OCR error:', error);
     return NextResponse.json({ error: 'Gagal memproses batch OCR: ' + error.message }, { status: 500 });
   }

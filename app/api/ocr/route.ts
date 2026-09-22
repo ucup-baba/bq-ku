@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireUser, authErrorResponse } from '@/lib/auth/session';
 import { processOcrImage } from '@/lib/ocr/engine';
 import { parseOcrText } from '@/lib/ocr/parser';
 
 export async function POST(req: NextRequest) {
   try {
+    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
     const contentType = req.headers.get('content-type') || '';
 
     if (contentType.includes('application/json')) {
@@ -58,6 +60,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ error: 'Format permintaan tidak didukung' }, { status: 400 });
   } catch (error: any) {
+    const authRes = authErrorResponse(error); if (authRes) return authRes;
     console.error('OCR processing error:', error);
     return NextResponse.json({ error: 'Gagal memproses OCR: ' + error.message }, { status: 500 });
   }
