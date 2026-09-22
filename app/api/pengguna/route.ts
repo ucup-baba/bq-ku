@@ -38,11 +38,11 @@ export async function POST(req: NextRequest) {
     await requireUser(['SUPERADMIN']);
     const parsed = invitePenggunaSchema.safeParse(await req.json());
     if (!parsed.success) return validationResponse(parsed.error);
-    const { nama, email, role } = parsed.data;
+    const { nama, email, roles } = parsed.data;
     const admin = createAdminSupabase();
-    const { error } = await admin.from('allowed_emails').upsert({ email, nama, role });
+    const { error } = await admin.from('allowed_emails').upsert({ email, nama, roles, role: roles[0] });
     if (error) throw error;
-    return NextResponse.json({ success: true, data: { email, nama, role } }, { status: 201 });
+    return NextResponse.json({ success: true, data: { email, nama, roles } }, { status: 201 });
   } catch (e: any) {
     return authErrorResponse(e) ?? NextResponse.json({ error: 'Gagal menambah email: ' + e.message }, { status: 500 });
   }

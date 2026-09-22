@@ -13,7 +13,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     const { id } = await ctx.params;
     const parsed = updatePenggunaSchema.safeParse(await req.json());
     if (!parsed.success) return validationResponse(parsed.error);
-    const { role, aktif } = parsed.data;
+    const { roles, aktif } = parsed.data;
     const admin = createAdminSupabase();
 
     if (id.startsWith('allowed:')) {
@@ -23,23 +23,23 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
         if (error) throw error;
         return NextResponse.json({ success: true, data: { email, dihapus: true } });
       }
-      const { data, error } = await admin.from('allowed_emails').update({ role }).eq('email', email).select().single();
+      const { data, error } = await admin.from('allowed_emails').update({ roles, role: roles?.[0] }).eq('email', email).select().single();
       if (error) throw error;
       return NextResponse.json({ success: true, data });
     }
 
-    if (id === user.id && (aktif === false || (role && role !== 'SUPERADMIN'))) {
+    if (id === user.id && (aktif === false || (roles && !roles.includes('SUPERADMIN')))) {
       return NextResponse.json({ error: 'Anda tidak dapat menonaktifkan atau menurunkan akun sendiri' }, { status: 400 });
     }
     const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
-    if (role !== undefined) patch.role = role;
+    if (roles !== undefined) { patch.roles = roles; patch.role = roles[0]; }
     if (aktif !== undefined) patch.aktif = aktif;
     const { data, error } = await admin.from('profiles').update(patch).eq('id', id).select().single();
     if (error) throw error;
     // Sinkronkan daftar izin agar konsisten jika akun masuk ulang
-    if (role !== undefined) await admin.from('allowed_emails').update({ role }).eq('email', data.email);
+    if (roles !== undefined) await admin.from('allowed_emails').update({ roles, role: roles[0] }).eq('email', data.email);
     if (aktif === false) await admin.from('allowed_emails').delete().eq('email', data.email);
-    if (aktif === true) await admin.from('allowed_emails').upsert({ email: data.email, nama: data.nama, role: data.role });
+    if (aktif === true) await admin.from('allowed_emails').upsert({ email: data.email, nama: data.nama, roles: data.roles, role: data.role });
     // Lapisan kedua di sisi Auth
     if (aktif !== undefined) {
       await admin.auth.admin.updateUserById(id, { ban_duration: aktif ? 'none' : '876000h' }).catch(() => {});
