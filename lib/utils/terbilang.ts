@@ -33,12 +33,12 @@ function keKata(n: number): string {
 /** Bilangan Indonesia dalam huruf, mis. 2500000 -> "Dua Juta Lima Ratus Ribu". */
 export function terbilang(n: number): string {
   if (!Number.isFinite(n) || n < 0) throw new Error('Terbilang hanya untuk bilangan bulat non-negatif');
-  const bulat = Math.floor(n);
+  const bulat = Math.round(n);
   if (bulat === 0) return 'Nol';
   return keKata(bulat).replace(/\s+/g, ' ').trim();
 }
 
 /** 2500000 -> "2.500.000" */
 export function formatRupiah(n: number): string {
-  return new Intl.NumberFormat('id-ID').format(Math.floor(n));
+  return new Intl.NumberFormat('id-ID').format(Math.round(n));
 }
