@@ -57,14 +57,29 @@ async function buildSuratFonts() {
 
 // Membaca berkas & mentranskode WebP pada setiap request itu mahal; kedua
 // hasil dimemoisasi tingkat modul sehingga hanya dikerjakan sekali per
-// instans server (mengikuti pola lain di repo ini).
+// instans server (mengikuti pola lain di repo ini). Bila pembacaan gagal
+// (mis. I/O sementara saat cold start), promise yang ditolak DIBUANG dari
+// cache agar percobaan berikutnya membaca ulang berkas alih-alih terus
+// mengembalikan galat yang sama sampai server di-restart.
 let assetsPromise: Promise<SuratAssets> | null = null;
 let fontsPromise: ReturnType<typeof buildSuratFonts> | null = null;
 
 export function loadSuratAssets(): Promise<SuratAssets> {
-  return (assetsPromise ??= buildSuratAssets());
+  if (!assetsPromise) {
+    assetsPromise = buildSuratAssets().catch((e) => {
+      assetsPromise = null;
+      throw e;
+    });
+  }
+  return assetsPromise;
 }
 
-export function loadSuratFonts() {
-  return (fontsPromise ??= buildSuratFonts());
+export function loadSuratFonts(): ReturnType<typeof buildSuratFonts> {
+  if (!fontsPromise) {
+    fontsPromise = buildSuratFonts().catch((e) => {
+      fontsPromise = null;
+      throw e;
+    });
+  }
+  return fontsPromise;
 }
