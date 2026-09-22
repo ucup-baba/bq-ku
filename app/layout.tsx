@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Caveat } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { AppShell } from "@/components/layout/AppShell";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { PendingGate } from "@/components/auth/PendingGate";
 import { getSessionState } from "@/lib/auth/session";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -32,9 +33,9 @@ export default async function RootLayout({
         className={`${plusJakartaSans.variable} ${caveat.variable} font-sans antialiased bg-background text-foreground`}
       >
         <ThemeProvider>
-          <AppShell user={user} pending={pending}>
-            {children}
-          </AppShell>
+          <AuthProvider user={user}>
+            {pending ? <PendingGate email={pending.email} /> : children}
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
