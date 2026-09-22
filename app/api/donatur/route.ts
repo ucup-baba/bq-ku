@@ -10,7 +10,10 @@ export async function GET(req: NextRequest) {
     const q = new URL(req.url).searchParams.get('q') || undefined;
     return NextResponse.json({ success: true, data: await listDonatur(supabase, q) });
   } catch (e: any) {
-    return authErrorResponse(e) ?? NextResponse.json({ error: 'Gagal memuat donatur: ' + e.message }, { status: 500 });
+    const authRes = authErrorResponse(e);
+    if (authRes) return authRes;
+    console.error('List donatur error:', e);
+    return NextResponse.json({ error: 'Gagal memuat donatur' }, { status: 500 });
   }
 }
 
@@ -21,6 +24,9 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return validationResponse(parsed.error);
     return NextResponse.json({ success: true, data: await createDonatur(supabase, parsed.data) }, { status: 201 });
   } catch (e: any) {
-    return authErrorResponse(e) ?? NextResponse.json({ error: 'Gagal menyimpan donatur: ' + e.message }, { status: 500 });
+    const authRes = authErrorResponse(e);
+    if (authRes) return authRes;
+    console.error('Create donatur error:', e);
+    return NextResponse.json({ error: 'Gagal menyimpan donatur' }, { status: 500 });
   }
 }

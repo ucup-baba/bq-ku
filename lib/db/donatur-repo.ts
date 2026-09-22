@@ -105,6 +105,14 @@ export async function nextNomorUrut(client: SupabaseClient, tahun: number, bulan
   return data as number;
 }
 
+/** Hanya mengintip nomor urut berikutnya tanpa menaikkan counter di database. */
+export async function peekNomorUrut(client: SupabaseClient, tahun: number, bulan: number): Promise<number> {
+  const { data, error } = await client.from('nomor_surat_counter')
+    .select('urutanTerakhir').eq('tahun', tahun).eq('bulan', bulan).maybeSingle();
+  if (error) throw new Error(`Gagal mengambil nomor surat: ${error.message}`);
+  return (data?.urutanTerakhir ?? 0) + 1;
+}
+
 export async function bumpNomorUrut(client: SupabaseClient, tahun: number, bulan: number, urut: number): Promise<void> {
   const { error } = await client.rpc('bump_nomor_surat', { p_tahun: tahun, p_bulan: bulan, p_urut: urut });
   if (error) throw new Error(`Gagal memperbarui nomor surat: ${error.message}`);
