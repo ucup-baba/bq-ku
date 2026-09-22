@@ -10,8 +10,8 @@ export type SantriDocument = {
   kategori: string;
   nomorDokumen?: string | null;
   storagePath: string;
-  /** Signed URL (1 jam), hanya ada di respons baca. */
-  fileUrl?: string;
+  /** Signed URL (1 jam); selalu disematkan oleh fungsi baca repo. */
+  fileUrl: string;
   rawOcrText?: string | null;
   extractedFields?: string | null;
   statusVerifikasi: StatusVerifikasi;
@@ -57,7 +57,7 @@ export type Santri = {
   documents?: SantriDocument[];
 };
 
-export type SantriInput = Omit<Santri, 'id' | 'createdAt' | 'updatedAt' | 'documents' | 'fotoFormalUrl' | 'fotoProfilUrl'> & {
+export type SantriInput = Omit<Santri, 'id' | 'createdAt' | 'updatedAt' | 'documents' | 'fotoFormalUrl' | 'fotoProfilUrl' | 'keahlian'> & {
   keahlian?: string[] | string | null;
 };
 

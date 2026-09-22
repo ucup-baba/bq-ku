@@ -1,11 +1,12 @@
 import React from 'react';
 import { listSantri } from '@/lib/db/santri-repo';
+import { createAdminSupabase } from '@/lib/supabase/admin';
 import { SantriDirectory } from '@/components/directory/SantriDirectory';
 
 export const revalidate = 0;
 
 export default async function SantriPage() {
-  const santriList = await listSantri();
+  const santriList = await listSantri(createAdminSupabase());
 
   return (
     <div className="py-2">
