@@ -13,10 +13,13 @@ export function LoginForm() {
 
   const signIn = async () => {
     setBusy(true); setError(null);
+    // Tujuan setelah masuk dititipkan lewat cookie: URL callback harus persis sama
+    // dengan entri Redirect URLs di Supabase (query string ikut dicocokkan).
     const next = params.get('next') || '/';
+    document.cookie = `bq_next=${encodeURIComponent(next.startsWith('/') ? next : '/')}; path=/; max-age=600; samesite=lax`;
     const { error } = await createBrowserSupabase().auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next.startsWith('/') ? next : '/')}` },
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) { setBusy(false); setError('Tidak dapat menghubungi Google. Coba lagi.'); }
   };
