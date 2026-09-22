@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Caveat } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AppShell } from "@/components/layout/AppShell";
+import { getSessionUser } from "@/lib/auth/session";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -19,18 +20,19 @@ export const metadata: Metadata = {
   description: "Sistem Administrasi Berkas Santri & Digital CV Profiler",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getSessionUser();
   return (
     <html lang="id" suppressHydrationWarning>
       <body
         className={`${plusJakartaSans.variable} ${caveat.variable} font-sans antialiased bg-background text-foreground`}
       >
         <ThemeProvider>
-          <AppShell>
+          <AppShell user={user}>
             {children}
           </AppShell>
         </ThemeProvider>
