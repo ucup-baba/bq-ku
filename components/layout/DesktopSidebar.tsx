@@ -96,7 +96,7 @@ export function DesktopSidebar() {
             </span>
           </div>
           <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
-            SQLite Local DB • Smart OCR Engine Siap
+            Supabase Cloud • Smart OCR Engine Siap
           </p>
         </div>
       </div>
