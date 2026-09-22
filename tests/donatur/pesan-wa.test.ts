@@ -20,4 +20,15 @@ describe('pesan WhatsApp', () => {
   it('waWebLink mengabaikan nomor kosong', () => {
     expect(waWebLink(null, 'halo')).toBeNull();
   });
+  it('pesanUcapan aman dipakai sebagai teks waWebLink (baris baru & apostrof ter-encode)', () => {
+    const teks = pesanUcapan('Bapak Pradana', '271/PBQ/IX/2026');
+    const link = waWebLink('628123456789', teks)!;
+    expect(link).not.toBeNull();
+    expect(link).not.toContain('\n');
+    expect(link).not.toContain("'");
+    expect(link).toContain('%0A');
+    expect(link).toContain('%27');
+    const query = link.split('&text=')[1];
+    expect(decodeURIComponent(query)).toBe(teks);
+  });
 });

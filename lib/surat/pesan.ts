@@ -11,14 +11,24 @@ export function pesanUcapan(namaLengkapDenganSapaan: string, nomorSurat: string)
   ].join('\n');
 }
 
+/**
+ * encodeURIComponent tidak meng-escape apostrof (') karena termasuk karakter
+ * "unreserved" menurut spesifikasinya — tapi teks ucapan kita memuatnya
+ * ("Assalamu'alaikum"). Escape manual supaya query string selalu aman
+ * disalin/dibuka ulang tanpa karakter mentah yang bisa membingungkan parser.
+ */
+function encodeTeksWa(pesan: string): string {
+  return encodeURIComponent(pesan).replace(/'/g, '%27');
+}
+
 /** Tautan wa.me (dipakai di HP tanpa WhatsApp Web). */
 export function waLink(noWa: string | null | undefined, pesan: string): string | null {
   if (!noWa) return null;
-  return `https://wa.me/${noWa}?text=${encodeURIComponent(pesan)}`;
+  return `https://wa.me/${noWa}?text=${encodeTeksWa(pesan)}`;
 }
 
 /** Tautan WhatsApp Web (dipakai di desktop), dibangun langsung tanpa bergantung pada waLink. */
 export function waWebLink(noWa: string | null | undefined, pesan: string): string | null {
   if (!noWa) return null;
-  return `https://web.whatsapp.com/send?phone=${noWa}&text=${encodeURIComponent(pesan)}`;
+  return `https://web.whatsapp.com/send?phone=${noWa}&text=${encodeTeksWa(pesan)}`;
 }
