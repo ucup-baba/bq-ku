@@ -147,7 +147,7 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
       {/* NB */}
       <div style={{ display: 'flex', flexDirection: 'column', marginTop: 'auto', fontSize: 18, color: '#333' }}>
         <div style={{ display: 'flex' }}>NB :</div>
-        <div style={{ display: 'flex' }}>No.Telpon : 08121 5520 406 dan 0813 7297 3706</div>
+        <div style={{ display: 'flex' }}>No.Telpon : +62 858-8866-6369</div>
         <div style={{ display: 'flex' }}>No. Rek : BSI 0307075359</div>
         <div style={{ display: 'flex' }}>A.n Agus T. QQ. Baitul Qowwam</div>
       </div>

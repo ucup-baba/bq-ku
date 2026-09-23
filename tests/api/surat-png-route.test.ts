@@ -58,8 +58,8 @@ describe('GET /api/donatur/surat/[id]/png', () => {
     expect(res.status).toBe(200);
     expect(upload).not.toHaveBeenCalled(); // unggah baru jalan setelah respons terkirim
     await jalankanAfter();
-    expect(upload.mock.calls[0][0]).toBe('surat/2026/5-PBQ-IX-2026-v4.png');
-    expect(setSuratStoragePath).toHaveBeenCalledWith(fakeSupabase, 'surat-1', 'surat/2026/5-PBQ-IX-2026-v4.png');
+    expect(upload.mock.calls[0][0]).toBe('surat/2026/5-PBQ-IX-2026-v5.png');
+    expect(setSuratStoragePath).toHaveBeenCalledWith(fakeSupabase, 'surat-1', 'surat/2026/5-PBQ-IX-2026-v5.png');
     expect(errSpy).not.toHaveBeenCalled();
   });
 
@@ -85,7 +85,7 @@ describe('GET /api/donatur/surat/[id]/png', () => {
   });
 
   it('PNG versi terbaru sudah di storage -> dikirim dari storage tanpa render ulang', async () => {
-    getSurat.mockResolvedValue({ ...surat, storagePath: 'surat/2026/5-PBQ-IX-2026-v4.png' });
+    getSurat.mockResolvedValue({ ...surat, storagePath: 'surat/2026/5-PBQ-IX-2026-v5.png' });
     download.mockResolvedValue({ data: new Blob([new Uint8Array([1, 2, 3])]), error: null });
     const res = await GET({} as any, ctx);
     expect(res.status).toBe(200);
