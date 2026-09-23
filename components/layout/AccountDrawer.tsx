@@ -2,23 +2,14 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { 
-  X, 
-  SignOut, 
-  ShieldCheck, 
-  Sun, 
-  Moon, 
-  CaretRight, 
-  UserCircle, 
-  CheckCircle,
-  Sparkle,
-  WarningCircle,
-  EnvelopeSimple,
-  IdentificationBadge
-} from '@phosphor-icons/react';
+import { X, SignOut, Sun, Moon, CaretRight, WarningCircle, EnvelopeSimple, IdentificationBadge } from '@phosphor-icons/react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { getRoleLabel } from '@/lib/auth/roles';
+import { Kartu } from '@/components/ui/Kartu';
+import { IkonUbin } from '@/components/ui/IkonUbin';
+import { InisialUbin } from '@/components/ui/InisialUbin';
+import { TombolIkon } from '@/components/ui/Tombol';
 
 export interface AccountDrawerProps {
   isOpen: boolean;
@@ -43,174 +34,87 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
     }
   };
 
-  // Ambil inisial nama pengguna
-  const getInitials = (name?: string) => {
-    if (!name) return 'U';
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
-  };
+  const superadmin = roles.includes('SUPERADMIN');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
-      {/* Backdrop overlay dengan blur halus */}
-      <div 
-        className="fixed inset-0 bg-slate-900/60 dark:bg-black/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6" role="dialog" aria-modal="true" aria-label="Menu akun">
+      <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm dark:bg-black/70" onClick={onClose} aria-hidden="true" />
 
-      {/* Sheet Content (Slide Up dari Bawah) */}
-      <div className="relative w-full max-w-lg md:max-w-md bg-bq-surface rounded-t-[32px] md:rounded-[32px] shadow-2xl border-t md:border border-bq-garis z-50 p-6 space-y-5 max-h-[90vh] overflow-y-auto animate-halaman">
-        
-        {/* Drag handle & close header */}
-        <div className="flex items-center justify-between">
-          <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto -mr-2" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
-            aria-label="Tutup"
-          >
-            <X size={16} weight="bold" />
-          </button>
-        </div>
+      <div className="animate-halaman relative z-50 max-h-[90vh] w-full max-w-lg space-y-5 overflow-y-auto rounded-t-[32px] border-t border-bq-garis bg-bq-surface p-6 pt-3 shadow-2xl md:max-w-md md:rounded-[32px] md:border">
+        {/* Pegangan tarik di tengah, tombol tutup di pojok */}
+        <div aria-hidden="true" className="mx-auto h-1.5 w-12 rounded-full bg-slate-300 dark:bg-slate-600" />
+        <TombolIkon ikon={X} label="Tutup" ukuran="sm" varian="polos" onClick={onClose} className="absolute right-4 top-3" />
 
-        {/* User Identity Card */}
-        <div className="p-4 rounded-3xl bg-gradient-to-br from-slate-50 to-teal-50/40 dark:from-slate-800/80 dark:to-teal-950/20 border border-teal-100 dark:border-teal-900/40 shadow-sm flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 text-white font-black text-xl flex items-center justify-center shadow-md shrink-0">
-            {getInitials(user?.nama)}
-          </div>
+        <Kartu className="flex items-center gap-4 p-4">
+          <InisialUbin nama={user?.nama || 'Pengguna'} indeks={1} className="h-14 w-14 rounded-2xl text-lg" />
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100 truncate">
-                {user?.nama || 'Pengguna BQ-Ku'}
-              </h3>
-            </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 truncate flex items-center gap-1.5 mt-0.5">
-              <EnvelopeSimple size={13} />
-              <span>{user?.email || 'email@baitulqowwam.sch.id'}</span>
+            <h3 className="truncate text-base font-extrabold text-bq-tinta">{user?.nama || 'Pengguna BQ-ku'}</h3>
+            <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-bq-redup">
+              <EnvelopeSimple size={13} aria-hidden="true" />
+              <span className="truncate">{user?.email}</span>
             </p>
-            <div className="mt-2">
-              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold tracking-wide uppercase shadow-xs ${
-                roles.includes('SUPERADMIN')
-                  ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
-                  : roles.includes('ADMIN_SANTRI') || roles.includes('ADMIN_DONATUR')
-                  ? 'bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-700'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'
-              }`}>
-                <ShieldCheck size={12} weight="fill" />
-                <span>{roles.map(getRoleLabel).join(' · ')}</span>
-              </span>
-            </div>
+            <span className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${superadmin ? 'bg-emerald-50 text-[#0E9F54] dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-sky-50 text-[#0B5FA5] dark:bg-sky-950/40 dark:text-sky-300'}`}>
+              {roles.map(getRoleLabel).join(' · ')}
+            </span>
           </div>
-        </div>
+        </Kartu>
 
-        {/* Menu Navigasi & Pintasan Akun */}
         <div className="space-y-2.5">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 block">
-            Akses & Pengaturan
-          </span>
+          <span className="block px-1 text-xs font-extrabold uppercase tracking-wider text-bq-redup">Akses &amp; pengaturan</span>
 
-          {/* Khusus Super Admin: Akses Kelola Pengguna */}
           {canManageUsers && (
-            <Link
-              href="/pengguna"
-              onClick={onClose}
-              className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 hover:border-teal-400 dark:hover:border-teal-600 shadow-sm transition-all group cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 flex items-center justify-center shrink-0">
-                  <IdentificationBadge size={22} weight="duotone" />
-                </div>
-                <div>
-                  <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                    Kelola Akun & Pengguna
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Undang email panitia & kelola izin akses
-                  </p>
-                </div>
-              </div>
-              <CaretRight size={16} weight="bold" className="text-slate-400 group-hover:text-teal-600 group-hover:translate-x-0.5 transition-all" />
+            <Link href="/pengguna" onClick={onClose} className="goyang-saat-hover flex items-center justify-between rounded-2xl border border-bq-garis p-3.5 transition-colors hover:border-bq-biru">
+              <span className="flex items-center gap-3">
+                <IkonUbin ikon={IdentificationBadge} warna="ungu" />
+                <span>
+                  <span className="block text-sm font-bold text-bq-tinta">Kelola akun &amp; pengguna</span>
+                  <span className="block text-xs text-bq-redup">Izinkan email panitia &amp; atur peran</span>
+                </span>
+              </span>
+              <CaretRight size={16} weight="bold" className="text-bq-redup" aria-hidden="true" />
             </Link>
           )}
 
-          {/* Pengaturan Tema Tampilan */}
-          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center shrink-0">
-                {theme === 'dark' ? (
-                  <Moon size={22} weight="duotone" className="text-amber-400" />
-                ) : (
-                  <Sun size={22} weight="duotone" className="text-amber-500" />
-                )}
-              </div>
-              <div>
-                <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
-                  Tema Tampilan
-                </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {theme === 'dark' ? 'Mode Gelap Aktif' : 'Mode Terang Aktif'}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 text-xs font-extrabold border border-slate-200 dark:border-slate-600 shadow-xs transition-all cursor-pointer"
-            >
-              Ganti {theme === 'dark' ? 'Terang' : 'Gelap'}
+          <div className="flex items-center justify-between rounded-2xl border border-bq-garis p-3.5">
+            <span className="flex items-center gap-3">
+              <IkonUbin ikon={theme === 'dark' ? Moon : Sun} warna="jingga" />
+              <span>
+                <span className="block text-sm font-bold text-bq-tinta">Tema tampilan</span>
+                <span className="block text-xs text-bq-redup">{theme === 'dark' ? 'Mode gelap aktif' : 'Mode terang aktif'}</span>
+              </span>
+            </span>
+            <button type="button" onClick={toggleTheme}
+              className="tekan rounded-xl border border-bq-garis px-3.5 py-2 text-xs font-bold text-bq-tinta hover:bg-slate-100 dark:hover:bg-slate-800">
+              Ganti {theme === 'dark' ? 'terang' : 'gelap'}
             </button>
           </div>
-
-          
         </div>
 
-        {/* Section Keluar Akun dengan Konfirmasi Aman */}
-        <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="border-t border-bq-garis pt-2">
           {!showLogoutConfirm ? (
-            <button
-              type="button"
-              onClick={() => setShowLogoutConfirm(true)}
-              className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 font-extrabold text-xs border border-rose-200 dark:border-rose-900/60 transition-all cursor-pointer shadow-xs active:scale-[0.99]"
-            >
-              <SignOut size={18} weight="bold" />
-              <span>Keluar dari Akun</span>
+            <button type="button" onClick={() => setShowLogoutConfirm(true)}
+              className="tekan flex w-full items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3.5 text-sm font-bold text-rose-600 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">
+              <SignOut size={18} weight="bold" aria-hidden="true" /> Keluar dari akun
             </button>
           ) : (
-            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-center space-y-3 animate-in fade-in duration-200">
-              <div className="flex items-center justify-center gap-2 text-rose-700 dark:text-rose-300 font-bold text-xs">
-                <WarningCircle size={18} weight="fill" className="text-rose-500" />
-                <span>Yakin ingin keluar dari akun BQ-Ku?</span>
-              </div>
-              <p className="text-xs text-rose-600/90 dark:text-rose-400 leading-tight">
-                Anda harus login kembali dengan akun Google terdaftar untuk mengakses aplikasi.
+            <div className="space-y-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center dark:border-rose-800 dark:bg-rose-950/60">
+              <p className="flex items-center justify-center gap-2 text-sm font-bold text-rose-700 dark:text-rose-300">
+                <WarningCircle size={18} weight="fill" aria-hidden="true" /> Yakin ingin keluar?
               </p>
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowLogoutConfirm(false)}
-                  disabled={isLoggingOut}
-                  className="py-2.5 px-3 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs border border-slate-200 dark:border-slate-700 hover:bg-slate-50 transition-colors cursor-pointer"
-                >
+              <p className="text-xs text-rose-600/90 dark:text-rose-400">Anda perlu masuk lagi dengan akun Google yang terdaftar.</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setShowLogoutConfirm(false)} disabled={isLoggingOut}
+                  className="rounded-xl border border-bq-garis bg-bq-surface px-3 py-2.5 text-xs font-bold text-bq-tinta">
                   Batal
                 </button>
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-sm transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  {isLoggingOut ? 'Mengeluarkan...' : 'Ya, Keluar'}
+                <button type="button" onClick={handleLogout} disabled={isLoggingOut}
+                  className="rounded-xl bg-rose-600 px-3 py-2.5 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50">
+                  {isLoggingOut ? 'Mengeluarkan…' : 'Ya, keluar'}
                 </button>
               </div>
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

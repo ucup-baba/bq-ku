@@ -12,7 +12,7 @@ const BUAT_SURAT: ItemMenu = { href: '/donatur/surat/baru', label: 'Buat Surat',
 
 const BERANDA_SANTRI: ItemMenu = { href: '/', label: 'Beranda', labelPendek: 'Beranda', ikon: 'beranda', warna: 'hijau' };
 const DIREKTORI: ItemMenu = { href: '/santri', label: 'Direktori Santri', labelPendek: 'Direktori', ikon: 'direktori', warna: 'biru' };
-const INPUT_BERKAS: ItemMenu = { href: '/tambah', label: 'Input Berkas', labelPendek: 'Berkas', ikon: 'berkas', warna: 'jingga' };
+const INPUT_BERKAS: ItemMenu = { href: '/tambah', label: 'Santri baru', labelPendek: 'Santri', ikon: 'berkas', warna: 'jingga' };
 const TAMBAH_BERKAS: ItemMenu = { ...INPUT_BERKAS, ikon: 'tambah', warna: 'hijau' };
 const PENGGUNA: ItemMenu = { href: '/pengguna', label: 'Akun & Pengguna', labelPendek: 'Pengguna', ikon: 'pengguna', warna: 'ungu' };
 
@@ -48,7 +48,7 @@ export function itemAktif(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(href + '/');
 }
 
-/** Buat Surat di HP adalah layar satu tugas dengan tombol Simpan menempel di bawah (spec §5.2). */
+/** Layar satu tugas (Buat Surat, wizard santri) punya tombol aksi menempel di bawah sendiri. */
 export function sembunyikanNavHp(pathname: string): boolean {
-  return pathname === '/donatur/surat/baru';
+  return pathname === '/donatur/surat/baru' || pathname === '/tambah' || /^\/santri\/[^/]+\/edit$/.test(pathname);
 }

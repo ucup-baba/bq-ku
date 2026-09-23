@@ -67,8 +67,15 @@ describe('itemAktif', () => {
 });
 
 describe('sembunyikanNavHp', () => {
-  it('hanya di halaman Buat Surat', () => {
+  it('di Buat Surat dan wizard santri saja', () => {
     expect(sembunyikanNavHp('/donatur/surat/baru')).toBe(true);
     expect(sembunyikanNavHp('/donatur/surat')).toBe(false);
+    expect(sembunyikanNavHp('/tambah')).toBe(true);
+    expect(sembunyikanNavHp('/santri/abc/edit')).toBe(true);
+    expect(sembunyikanNavHp('/santri/abc')).toBe(false);
+  });
+  it('label Ruang Santri: Santri baru', () => {
+    expect(menuRail('santri', dua).find(i => i.href === '/tambah')?.label).toBe('Santri baru');
+    expect(slotHp('santri', dua)[2]).toMatchObject({ item: { labelPendek: 'Santri' } });
   });
 });
