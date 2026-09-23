@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabase } from '@/lib/supabase/server';
@@ -14,33 +15,53 @@ export class AuthError extends Error {
   }
 }
 
-export async function getSessionUser(): Promise<SessionUser | null> {
-  const supabase = await createServerSupabase();
-  return getSessionUserWith(supabase);
-}
-
-async function getSessionUserWith(supabase: SupabaseClient): Promise<SessionUser | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from('profiles').select('nama, roles, aktif').eq('id', user.id).maybeSingle();
-  if (!profile || !profile.aktif) return null;
-  return { id: user.id, email: user.email || '', nama: profile.nama, roles: (profile.roles ?? []) as UserRole[] };
-}
-
-/** Untuk layout: user aktif, user menunggu aktivasi, atau null. */
-export async function getSessionState(): Promise<{ user: SessionUser | null; pending: PendingUser | null }> {
+/**
+ * Pengecekan sesi tunggal yang di-cache per siklus render request (React cache).
+ * Menghilangkan pemanggilan berulang ke auth.getUser() dan query profiles.
+ */
+const getCachedSessionState = cache(async (): Promise<{ user: SessionUser | null; pending: PendingUser | null }> => {
   const supabase = await createServerSupabase();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { user: null, pending: null };
-  const active = await getSessionUserWith(supabase);
-  if (active) return { user: active, pending: null };
-  return { user: null, pending: { id: user.id, email: user.email || '', aktif: false } };
-}
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('nama, roles, aktif')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profile && profile.aktif) {
+    return {
+      user: {
+        id: user.id,
+        email: user.email || '',
+        nama: profile.nama,
+        roles: (profile.roles ?? []) as UserRole[],
+      },
+      pending: null,
+    };
+  }
+
+  return {
+    user: null,
+    pending: { id: user.id, email: user.email || '', aktif: false },
+  };
+});
+
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
+  const { user } = await getCachedSessionState();
+  return user;
+});
+
+/** Untuk layout: user aktif, user menunggu aktivasi, atau null. */
+export const getSessionState = cache(async (): Promise<{ user: SessionUser | null; pending: PendingUser | null }> => {
+  return getCachedSessionState();
+});
 
 /** Dipanggil di awal setiap route handler terproteksi. Mengembalikan klien ber-RLS milik user. */
 export async function requireUser(roles?: UserRole[]): Promise<{ user: SessionUser; supabase: SupabaseClient }> {
   const supabase = await createServerSupabase();
-  const user = await getSessionUserWith(supabase);
+  const user = await getSessionUser();
   if (!user) throw new AuthError(401, 'UNAUTHENTICATED', 'Silakan masuk terlebih dahulu');
   if (roles && !roles.some(r => user.roles.includes(r))) throw new AuthError(403, 'FORBIDDEN', 'Anda tidak memiliki hak akses untuk tindakan ini');
   return { user, supabase };
