@@ -8,10 +8,15 @@ import type { RingkasanSantri } from '@/lib/santri/ringkasan';
 
 function KartuAngka({ ikon, warna, doodle, nilai, label }: { ikon: Icon; warna: WarnaUbin; doodle?: JenisDoodle; nilai: React.ReactNode; label: string }) {
   return (
-    <div className={kelasKartu('biasa', 'goyang-saat-hover h-full p-3.5 md:p-4')}>
-      <IkonUbin ikon={ikon} warna={warna} ukuran="sm" doodle={doodle} />
-      <p className="mt-3 text-2xl font-black tabular-nums text-bq-tinta">{nilai}</p>
-      <p className="truncate text-xs font-semibold text-bq-redup">{label}</p>
+    <div className={kelasKartu('biasa', 'goyang-saat-hover h-full p-2.5 md:p-4')}>
+      {/* HP: satu baris (ikon · angka/label) agar ringkas; md+: bertumpuk */}
+      <div className="flex items-center gap-2.5 md:block">
+        <IkonUbin ikon={ikon} warna={warna} ukuran="sm" doodle={doodle} />
+        <div className="min-w-0 md:mt-3">
+          <p className="text-xl font-black leading-tight tabular-nums text-bq-tinta md:text-2xl">{nilai}</p>
+          <p className="truncate text-xs font-semibold text-bq-redup">{label}</p>
+        </div>
+      </div>
     </div>
   );
 }

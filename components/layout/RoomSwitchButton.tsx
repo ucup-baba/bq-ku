@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { IkonUbin } from '@/components/ui/IkonUbin';
 import { ROOM_HOME, ROOM_LABEL, roomOfPath, type Room } from '@/lib/auth/rooms';
 
-export function RoomSwitchButton({ variant, labelClassName }: { variant: 'nav' | 'rail'; labelClassName?: string }) {
+export function RoomSwitchButton({ variant, labelClassName, className }: { variant: 'nav' | 'rail' | 'ikon'; labelClassName?: string; className?: string }) {
   const { rooms } = useAuth();
   const pathname = usePathname();
   if (rooms.length < 2) return null;
@@ -15,6 +15,13 @@ export function RoomSwitchButton({ variant, labelClassName }: { variant: 'nav' |
   const target: Room = current === 'santri' ? 'donatur' : 'santri';
   const label = ROOM_LABEL[target];
 
+  if (variant === 'ikon') {
+    return (
+      <Link href={ROOM_HOME[target]} aria-label={`Pindah ke ${label}`} title={`Pindah ke ${label}`} className={className}>
+        <ArrowsLeftRight size={24} weight="bold" aria-hidden="true" />
+      </Link>
+    );
+  }
   if (variant === 'nav') {
     return (
       <Link href={ROOM_HOME[target]} aria-label={`Pindah ke ${label}`}

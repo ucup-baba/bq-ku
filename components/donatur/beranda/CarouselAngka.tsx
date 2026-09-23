@@ -9,16 +9,21 @@ import { labelJenis } from '@/lib/donatur/riwayat';
 import type { PorsiAkad } from '@/lib/donatur/beranda';
 import type { Ringkasan } from '@/lib/donatur/ringkasan';
 
-const kelasIsi = 'goyang-saat-hover block h-full p-3.5 transition-transform duration-200 hover:-translate-y-0.5 md:p-4';
+const kelasIsi = 'goyang-saat-hover block h-full p-2.5 transition-transform duration-200 hover:-translate-y-0.5 md:p-4';
 
 function KartuAngka({ ikon, warna, doodle, nilai, label, href }: {
   ikon: Icon; warna: WarnaUbin; doodle?: JenisDoodle; nilai: React.ReactNode; label: string; href?: string;
 }) {
   const isi = (
     <>
-      <IkonUbin ikon={ikon} warna={warna} ukuran="sm" doodle={doodle} />
-      <p className="mt-3 text-2xl font-black tabular-nums text-bq-tinta">{nilai}</p>
-      <p className="truncate text-xs font-semibold text-bq-redup">{label}</p>
+      {/* HP: satu baris (ikon · angka/label) agar ringkas; md+: bertumpuk */}
+      <div className="flex items-center gap-2.5 md:block">
+        <IkonUbin ikon={ikon} warna={warna} ukuran="sm" doodle={doodle} />
+        <div className="min-w-0 md:mt-3">
+          <p className="text-xl font-black leading-tight tabular-nums text-bq-tinta md:text-2xl">{nilai}</p>
+          <p className="truncate text-xs font-semibold text-bq-redup">{label}</p>
+        </div>
+      </div>
     </>
   );
   return href
@@ -32,7 +37,7 @@ const WARNA_AKAD: Record<string, string> = {
 
 function KartuAkad({ akad }: { akad: PorsiAkad[] }) {
   return (
-    <div className={kelasKartu('biasa', 'h-full space-y-2 p-3.5 md:p-4')}>
+    <div className={kelasKartu('biasa', 'h-full space-y-1.5 p-2.5 md:space-y-2 md:p-4')}>
       <p className="text-xs font-bold text-bq-tinta">Komposisi akad</p>
       <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
         {akad.map(a => <span key={a.jenis} className={WARNA_AKAD[a.jenis] ?? 'bg-slate-400'} style={{ width: `${Math.max(a.persen, 2)}%` }} />)}
@@ -41,8 +46,8 @@ function KartuAkad({ akad }: { akad: PorsiAkad[] }) {
         ? <p className="text-xs text-bq-redup">Belum ada data.</p>
         : (
           <ul className="space-y-0.5">
-            {akad.slice(0, 3).map(a => (
-              <li key={a.jenis} className="flex items-center justify-between gap-2 text-xs">
+            {akad.slice(0, 3).map((a, i) => (
+              <li key={a.jenis} className={`${i >= 2 ? 'hidden md:flex' : 'flex'} items-center justify-between gap-2 text-xs`}>
                 <span className="flex min-w-0 items-center gap-1.5 truncate text-bq-redup">
                   <span aria-hidden="true" className={`h-2 w-2 shrink-0 rounded-full ${WARNA_AKAD[a.jenis] ?? 'bg-slate-400'}`} />
                   {labelJenis(a.jenis)}

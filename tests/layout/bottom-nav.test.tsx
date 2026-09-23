@@ -16,14 +16,23 @@ import { BottomNav } from '@/components/layout/BottomNav';
 describe('BottomNav', () => {
   beforeEach(() => { s.path = '/donatur'; s.rooms = ['santri', 'donatur']; });
 
-  it('5 item: Beranda aktif, tombol tengah Buat Surat tanpa teks "+"', () => {
+  it('5 item tanpa label teks: Beranda aktif, tombol tengah Buat Surat, takik di posisi Beranda', () => {
     const h = renderToStaticMarkup(<BottomNav room="donatur" />);
     expect(h.match(/<li/g)).toHaveLength(5);
-    expect(h).toMatch(/href="\/donatur" aria-current="page"/);
+    expect(h).toMatch(/href="\/donatur" aria-label="Beranda"[^>]*aria-current="page"/);
     expect(h).toContain('aria-label="Buat Surat"');
+    expect(h).toContain('aria-label="Pindah ke Ruang Santri"');
+    expect(h).toContain('--takik-x:10%');
+    expect(h).toContain('--fab-x:50%');
     expect(h).not.toMatch(/>\s*\+/);
-    expect(h).toContain('Pindah');
-    expect(h).not.toMatch(/text-\[1[01]px\]/);
+    expect(h).not.toMatch(/>(Beranda|Donatur|Surat|Pindah|Akun)</);
+  });
+
+  it('halaman di luar menu utama: lingkaran aktif disembunyikan (jari-jari takik 0)', () => {
+    s.path = '/donatur/surat/abc';
+    const h = renderToStaticMarkup(<BottomNav room="donatur" />);
+    expect(h).toContain('--takik-r:0px');
+    expect(h).not.toContain('aria-current="page"');
   });
 
   it('satu ruangan: Pindah diganti Daftar Surat', () => {
