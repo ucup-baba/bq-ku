@@ -256,142 +256,212 @@ export function FormSurat() {
   const border = (k: string) => fieldErrors[k] ? 'border-rose-400' : 'border-slate-200 dark:border-slate-700';
 
   return (
-    <div className="grid lg:grid-cols-2 gap-6 items-start">
-      <form onSubmit={submit} className="space-y-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6">
+    <div className="grid lg:grid-cols-12 gap-6 items-start">
+      {/* Kolom Kiri: Formulir 3 Tahap (7 Kolom) */}
+      <form onSubmit={submit} className="lg:col-span-7 space-y-6">
         {error && (
-          <div role="alert" className="text-sm text-rose-600 bg-rose-50 dark:bg-rose-900/20 rounded-xl px-3 py-2 flex items-start gap-2">
+          <div role="alert" className="text-sm text-rose-600 bg-rose-50 dark:bg-rose-900/20 rounded-2xl p-4 flex items-start gap-2 border border-rose-200 dark:border-rose-900/40 shadow-xs">
             <Warning size={18} weight="bold" className="shrink-0 mt-0.5" />
-            <div className="space-y-2">
-              <p>{error}</p>
+            <div className="space-y-1">
+              <p className="font-bold">{error}</p>
               {nomorUsulan && (
                 <button type="button" onClick={pakaiNomorUsulan}
-                  className="text-xs font-bold underline underline-offset-2">
-                  Pakai nomor {nomorUsulan}
+                  className="text-xs font-bold underline underline-offset-2 hover:text-rose-800">
+                  Pakai nomor usulan otomatis: {nomorUsulan}
                 </button>
               )}
             </div>
           </div>
         )}
 
-        <div className="space-y-2">
-          <span className="text-xs font-semibold">Donatur</span>
-          {pesanDonaturAwal && <p className="text-xs text-amber-600">{pesanDonaturAwal}</p>}
-          <PilihDonatur value={donatur} onChange={ubahDonatur} errors={donaturFieldErrors} />
-          {fieldErrors.donaturId && <p className="text-xs text-rose-600">{fieldErrors.donaturId}</p>}
-        </div>
+        {/* LANGKAH 1: IDENTITAS DONATUR */}
+        <div className="rounded-[26px] border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4 shadow-xs">
+          <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <span className="w-7 h-7 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-[#0B5FA5] font-black text-xs flex items-center justify-center">
+              1
+            </span>
+            <div>
+              <h2 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                Identitas Donatur
+              </h2>
+              <p className="text-[11px] text-slate-400">Pilih donatur terdaftar atau daftarkan baru.</p>
+            </div>
+          </div>
 
-        <label className="block space-y-1">
-          <span className="text-xs font-semibold">Jenis donasi</span>
-          <select value={jenis} onChange={e => setJenis(e.target.value as JenisDonasi)} className={`${field} ${border('jenis')}`}>
-            {OPSI_JENIS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
-          {fieldErrors.jenis && <p className="text-xs text-rose-600">{fieldErrors.jenis}</p>}
-        </label>
-
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block space-y-1">
-            <span className="text-xs font-semibold">Bentuk</span>
-            <select value={bentuk} onChange={e => setBentuk(e.target.value as 'UANG' | 'BARANG')} className={field}>
-              <option value="UANG">Uang</option>
-              <option value="BARANG">Barang</option>
-            </select>
-          </label>
-          <label className="block space-y-1">
-            <span className="text-xs font-semibold">Tanggal donasi</span>
-            <input type="date" value={tanggalDonasi} onChange={e => setTanggalDonasi(e.target.value)} className={`${field} ${border('tanggal')}`} />
-            {fieldErrors.tanggal && <p className="text-xs text-rose-600">{fieldErrors.tanggal}</p>}
-          </label>
-        </div>
-
-        {bentuk === 'UANG' ? (
-          <label className="block space-y-1">
-            <span className="text-xs font-semibold">Nominal (Rp)</span>
-            <input
-              inputMode="numeric"
-              value={nominalTeks}
-              onChange={e => ubahNominal(e.target.value)}
-              placeholder="0"
-              className={`${field} ${border('nominal')}`}
-            />
-            <span className="block text-xs text-slate-500 italic">Terbilang: {terbilang(nominal || 0)} Rupiah</span>
-            {fieldErrors.nominal && <p className="text-xs text-rose-600">{fieldErrors.nominal}</p>}
-          </label>
-        ) : (
-          <label className="block space-y-1">
-            <span className="text-xs font-semibold">Deskripsi barang</span>
-            <input
-              value={deskripsiBarang}
-              onChange={e => setDeskripsiBarang(e.target.value)}
-              placeholder="mis. 50 kg beras"
-              className={`${field} ${border('deskripsiBarang')}`}
-            />
-            {fieldErrors.deskripsiBarang && <p className="text-xs text-rose-600">{fieldErrors.deskripsiBarang}</p>}
-          </label>
-        )}
-
-        <label className="block space-y-1">
-          <span className="text-xs font-semibold">Keterangan (opsional)</span>
-          <input value={keterangan} onChange={e => setKeterangan(e.target.value)} className={field} />
-        </label>
-
-        <label className="block space-y-1">
-          <span className="text-xs font-semibold">Tanggal surat</span>
-          <input type="date" value={tanggalSurat} onChange={e => setTanggalSurat(e.target.value)} className={`${field} ${border('tanggalSurat')}`} />
-          {fieldErrors.tanggalSurat && <p className="text-xs text-rose-600">{fieldErrors.tanggalSurat}</p>}
-        </label>
-
-        <label className="block space-y-1">
-          <span className="text-xs font-semibold">Nomor surat</span>
-          <input
-            value={nomorSurat}
-            onChange={e => { setNomorSurat(e.target.value); setNomorDiedit(true); }}
-            className={`${field} ${border('nomorSurat')}`}
-          />
-          {fieldErrors.nomorSurat && <p className="text-xs text-rose-600">{fieldErrors.nomorSurat}</p>}
-          {nomorDiedit && nomorOtomatis && nomorOtomatis !== nomorSurat && (
-            <button type="button" onClick={pakaiNomorOtomatis}
-              className="mt-1 flex items-center gap-1 text-xs font-bold text-[#0B5FA5] underline underline-offset-2">
-              <ArrowClockwise size={14} weight="bold" /> Pakai nomor otomatis {nomorOtomatis}
-            </button>
-          )}
-        </label>
-
-        <div className="space-y-2">
-          <span className="text-xs font-semibold">Gaya tulisan tangan</span>
-          <div role="radiogroup" aria-label="Gaya tulisan tangan" className="grid grid-cols-2 gap-3">
-            {(['KALAM', 'PATRICK'] as const).map((g) => {
-              const aktif = gayaTulisan === g;
-              return (
-                <button
-                  key={g}
-                  type="button"
-                  role="radio"
-                  aria-checked={aktif}
-                  tabIndex={aktif ? 0 : -1}
-                  onClick={() => setGayaTulisan(g)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-                      e.preventDefault();
-                      setGayaTulisan(g === 'KALAM' ? 'PATRICK' : 'KALAM');
-                    }
-                  }}
-                  className={`min-h-11 rounded-2xl border-2 px-4 py-3 flex flex-col items-center gap-1 transition-colors ${aktif ? 'border-[#0B5FA5] bg-[#0B5FA5]/5' : 'border-slate-200 dark:border-slate-700'}`}
-                >
-                  <span className="text-xs font-semibold text-slate-500">{g === 'KALAM' ? 'Kalam' : 'Patrick Hand'}</span>
-                  <span className={`${KELAS_FONT_GAYA[g]} text-2xl text-[#1d3b8f]`}>Pradana 2.500.000</span>
-                </button>
-              );
-            })}
+          <div className="space-y-2">
+            {pesanDonaturAwal && <p className="text-xs text-amber-600">{pesanDonaturAwal}</p>}
+            <PilihDonatur value={donatur} onChange={ubahDonatur} errors={donaturFieldErrors} />
+            {fieldErrors.donaturId && <p className="text-xs text-rose-600">{fieldErrors.donaturId}</p>}
           </div>
         </div>
 
-        <button type="submit" disabled={busy}
-          className="w-full h-12 rounded-2xl bg-[#0E9F54] hover:bg-[#0c8747] disabled:opacity-60 text-white font-bold flex items-center justify-center gap-2">
-          <FloppyDisk size={20} weight="bold" /> {busy ? 'Menyimpan…' : 'Simpan & Buat Surat'}
+        {/* LANGKAH 2: RINCIAN & AKAD DONASI */}
+        <div className="rounded-[26px] border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4 shadow-xs">
+          <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <span className="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-[#0E9F54] font-black text-xs flex items-center justify-center">
+              2
+            </span>
+            <div>
+              <h2 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                Rincian &amp; Akad Donasi
+              </h2>
+              <p className="text-[11px] text-slate-400">Tentukan jenis penerimaan dan nilai sumbangan.</p>
+            </div>
+          </div>
+
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Jenis / Akad Donasi</span>
+            <select value={jenis} onChange={e => setJenis(e.target.value as JenisDonasi)} className={`${field} ${border('jenis')}`}>
+              {OPSI_JENIS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+            {fieldErrors.jenis && <p className="text-xs text-rose-600">{fieldErrors.jenis}</p>}
+          </label>
+
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Bentuk Donasi</span>
+              <select value={bentuk} onChange={e => setBentuk(e.target.value as 'UANG' | 'BARANG')} className={field}>
+                <option value="UANG">Uang Tunai / Transfer</option>
+                <option value="BARANG">Barang / Logistik</option>
+              </select>
+            </label>
+            <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Tanggal Penerimaan</span>
+              <input type="date" value={tanggalDonasi} onChange={e => setTanggalDonasi(e.target.value)} className={`${field} ${border('tanggal')}`} />
+              {fieldErrors.tanggal && <p className="text-xs text-rose-600">{fieldErrors.tanggal}</p>}
+            </label>
+          </div>
+
+          {bentuk === 'UANG' ? (
+            <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Nominal Uang (Rp)</span>
+              <input
+                inputMode="numeric"
+                value={nominalTeks}
+                onChange={e => ubahNominal(e.target.value)}
+                placeholder="0"
+                className={`${field} ${border('nominal')} font-bold text-base`}
+              />
+              <span className="block text-xs text-slate-500 italic mt-1 bg-slate-50 dark:bg-slate-800/60 p-2 rounded-xl border border-slate-100 dark:border-slate-800">
+                Terbilang: <strong>{terbilang(nominal || 0)} Rupiah</strong>
+              </span>
+              {fieldErrors.nominal && <p className="text-xs text-rose-600">{fieldErrors.nominal}</p>}
+            </label>
+          ) : (
+            <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Deskripsi Barang</span>
+              <input
+                value={deskripsiBarang}
+                onChange={e => setDeskripsiBarang(e.target.value)}
+                placeholder="mis. 50 kg beras, 20 mushaf Al-Qur'an"
+                className={`${field} ${border('deskripsiBarang')}`}
+              />
+              {fieldErrors.deskripsiBarang && <p className="text-xs text-rose-600">{fieldErrors.deskripsiBarang}</p>}
+            </label>
+          )}
+
+          <label className="block space-y-1">
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Peruntukan / Keterangan (opsional)</span>
+            <input
+              value={keterangan}
+              onChange={e => setKeterangan(e.target.value)}
+              placeholder="mis. Operasional santri penghafal Al-Qur'an"
+              className={field}
+            />
+          </label>
+        </div>
+
+        {/* LANGKAH 3: FORMAT & TANGGAL SURAT */}
+        <div className="rounded-[26px] border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4 shadow-xs">
+          <div className="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <span className="w-7 h-7 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 font-black text-xs flex items-center justify-center">
+              3
+            </span>
+            <div>
+              <h2 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white">
+                Format Surat &amp; Gaya Tulisan
+              </h2>
+              <p className="text-[11px] text-slate-400">Pengaturan nomor surat dan tampilan tulisan tangan.</p>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3">
+            <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Tanggal Surat</span>
+              <input type="date" value={tanggalSurat} onChange={e => setTanggalSurat(e.target.value)} className={`${field} ${border('tanggalSurat')}`} />
+              {fieldErrors.tanggalSurat && <p className="text-xs text-rose-600">{fieldErrors.tanggalSurat}</p>}
+            </label>
+
+            <label className="block space-y-1">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Nomor Surat Resmi</span>
+              <input
+                value={nomorSurat}
+                onChange={e => { setNomorSurat(e.target.value); setNomorDiedit(true); }}
+                className={`${field} ${border('nomorSurat')} font-mono`}
+              />
+              {fieldErrors.nomorSurat && <p className="text-xs text-rose-600">{fieldErrors.nomorSurat}</p>}
+              {nomorDiedit && nomorOtomatis && nomorOtomatis !== nomorSurat && (
+                <button type="button" onClick={pakaiNomorOtomatis}
+                  className="mt-1 flex items-center gap-1 text-xs font-bold text-[#0B5FA5] underline underline-offset-2">
+                  <ArrowClockwise size={14} weight="bold" /> Pakai nomor otomatis: {nomorOtomatis}
+                </button>
+              )}
+            </label>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Pilih Gaya Font Tulisan Tangan</span>
+            <div role="radiogroup" aria-label="Gaya tulisan tangan" className="grid grid-cols-2 gap-3">
+              {(['KALAM', 'PATRICK'] as const).map((g) => {
+                const aktif = gayaTulisan === g;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    role="radio"
+                    aria-checked={aktif}
+                    tabIndex={aktif ? 0 : -1}
+                    onClick={() => setGayaTulisan(g)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                        e.preventDefault();
+                        setGayaTulisan(g === 'KALAM' ? 'PATRICK' : 'KALAM');
+                      }
+                    }}
+                    className={`min-h-12 rounded-2xl border-2 px-4 py-3 flex flex-col items-center gap-1 transition-all ${
+                      aktif
+                        ? 'border-[#0B5FA5] bg-blue-50/50 dark:bg-blue-950/30 shadow-xs'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                    }`}
+                  >
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                      {g === 'KALAM' ? 'Kalam (Tegas)' : 'Patrick Hand (Luwes)'}
+                    </span>
+                    <span className={`${KELAS_FONT_GAYA[g]} text-2xl text-[#1a3891] dark:text-[#6ba1ff]`}>
+                      {donatur.nama || 'Pradana 2.500.000'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* TOMBOL SIMPAN & BUAT SURAT */}
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full h-14 rounded-2xl bg-[#0E9F54] hover:bg-[#0c8747] disabled:opacity-60 text-white font-extrabold text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all hover:shadow-xl"
+        >
+          <FloppyDisk size={22} weight="bold" />
+          <span>{busy ? 'Menyimpan & Membuat Surat…' : 'Simpan & Buat Surat Sekarang'}</span>
         </button>
       </form>
 
-      <PratinjauSurat data={pratinjau} />
+      {/* Kolom Kanan: Pratinjau Kertas Realistis Sticky (5 Kolom) */}
+      <div className="lg:col-span-5 lg:sticky lg:top-6">
+        <PratinjauSurat data={pratinjau} />
+      </div>
     </div>
   );
 }

@@ -40,13 +40,17 @@ export class NomorSuratDipakaiError extends Error {
 const id = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 
-export async function listDonatur(client: SupabaseClient, q?: string): Promise<Donatur[]> {
-  let query = client.from('donatur').select('*').order('nama');
+export type DonaturWithDonasi = Donatur & {
+  donasi?: Array<{ id: string; nominal: number | null; bentuk: BentukDonasi; tanggal: string }>;
+};
+
+export async function listDonatur(client: SupabaseClient, q?: string): Promise<DonaturWithDonasi[]> {
+  let query = client.from('donatur').select('*, donasi(id, nominal, bentuk, tanggal)').order('nama');
   const aman = q ? escapeOrFilterValue(q) : '';
   if (aman) query = query.or(`nama.ilike.%${aman}%,noWa.ilike.%${aman}%`);
   const { data, error } = await query;
   if (error) throw new Error(`Gagal memuat donatur: ${error.message}`);
-  return (data || []) as Donatur[];
+  return (data || []) as DonaturWithDonasi[];
 }
 
 export async function getDonatur(client: SupabaseClient, donaturId: string): Promise<(Donatur & { donasi: Donasi[] }) | null> {
