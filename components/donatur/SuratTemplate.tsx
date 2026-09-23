@@ -1,97 +1,145 @@
 import type { SuratData } from '@/lib/surat/data';
-import { labelSapaan } from '@/lib/surat/data';
 import type { SuratAssets } from '@/lib/surat/assets';
+import type { GayaTulisan } from '@/lib/db/donatur-repo';
 
-const HIJAU = '#0E9F54';
-const BIRU = '#0B5FA5';
+const TINTA = '#1d3b8f';
+const TEKS = '#111';
+const FS = 24;
+
+/** Nama font Satori + faktor pembesaran per gaya tulisan tangan (isian harus
+ * sedikit lebih besar dari teks cetak agar terbaca). */
+function fontIsian(gaya: GayaTulisan): { fontFamily: string; scale: number } {
+  return gaya === 'PATRICK' ? { fontFamily: 'Patrick', scale: 1.35 } : { fontFamily: 'Kalam', scale: 1.3 };
+}
 
 export function SuratTemplate({ data, assets }: { data: SuratData; assets: SuratAssets }) {
-  const garis = (isi: string) => (
-    <div style={{ display: 'flex', borderBottom: '2px dashed #555', minWidth: 420, paddingBottom: 2, fontSize: 26, fontWeight: 700 }}>{isi}</div>
+  const { fontFamily: fontTangan, scale } = fontIsian(data.gayaTulisan);
+  const fsIsian = Math.round(FS * scale);
+
+  // Satori (mesin next/og) hanya mengenal border-style "solid"/"dashed" —
+  // "dotted" ditolak ("Invalid value for CSS property borderBottomStyle").
+  /** Isian tulisan tangan: tinta biru, duduk di atas garis putus-putus. */
+  const isian = (isi: string, minWidth = 320, align: 'flex-start' | 'center' = 'flex-start') => (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: align,
+        fontFamily: fontTangan,
+        color: TINTA,
+        fontSize: fsIsian,
+        lineHeight: 1,
+        borderBottom: '2px dashed #444',
+        minWidth,
+        paddingBottom: 3,
+      }}
+    >
+      {isi}
+    </div>
   );
 
   return (
-    <div style={{ width: 1240, height: 1754, display: 'flex', flexDirection: 'column', backgroundColor: '#fff', color: '#111', fontFamily: 'Jakarta', padding: '56px 72px' }}>
-      {/* KOP */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-        <img src={assets.logo} width={132} height={132} />
+    <div style={{ width: 1240, height: 1754, display: 'flex', flexDirection: 'column', backgroundColor: '#fff', color: TEKS, fontFamily: 'Arimo', padding: '48px 80px' }}>
+      {/* KOP — ekspor CorelDRAW asli, lengkap (logo, tulisan Arab, nama panti, akte/izin/alamat, garis hijau bawah) */}
+      <img src={assets.kop} width={1080} height={229} style={{ objectFit: 'contain' }} />
+
+      {/* Badan surat, dengan watermark logo samar di belakang */}
+      <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', marginTop: 28 }}>
+        {/* Satori tidak mendukung z-index ("z-index is currently not
+            supported") — urutan tumpuk mengikuti urutan DOM: elemen ini
+            dirender lebih dulu (di belakang), badan surat di bawah (setelah)
+            dirender di atasnya. */}
+        <img
+          src={assets.logo}
+          width={600}
+          height={600}
+          style={{ position: 'absolute', left: 240, top: 380, opacity: 0.07 }}
+        />
+
         <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {/* Baris Arab dipra-render sebagai PNG (lihat lib/surat/assets.ts) karena
-              Satori tidak mendukung bidi/shaping Arab. */}
-          <img src={assets.kopArab} width={242} height={26} style={{ objectFit: 'contain' }} />
-          <div style={{ display: 'flex', fontSize: 44, fontWeight: 700, color: HIJAU, letterSpacing: -0.5 }}>PANTI ASUHAN</div>
-          <div style={{ display: 'flex', fontSize: 44, fontWeight: 700, color: BIRU, letterSpacing: -0.5 }}>BAITUL QOWWAM</div>
-          <div style={{ display: 'flex', fontSize: 16, color: '#333' }}>Izin operasional No. 466/0574/P2/2020 · akte notaris m. gunardi widyastuti no.02/2010</div>
-          <div style={{ display: 'flex', fontSize: 16, color: '#333' }}>Plumbon Mororejo Tempel Sleman Yogyakarta 55552</div>
-        </div>
-      </div>
-      <div style={{ display: 'flex', height: 4, backgroundColor: HIJAU, margin: '18px 0 28px' }} />
-
-      {/* Nomor & tanggal */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 24 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ display: 'flex' }}>No&nbsp;&nbsp;: {data.nomorSurat}</div>
-          <div style={{ display: 'flex' }}>Hal&nbsp;: Ucapan Terima Kasih</div>
-        </div>
-        <div style={{ display: 'flex' }}>Tempel, {data.tanggalTeks}</div>
-      </div>
-
-      {/* Tujuan */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 36, fontSize: 24 }}>
-        <div style={{ display: 'flex' }}>Kepada Yth.</div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ display: 'flex' }}>{labelSapaan(data.sapaan)} :</div>
-          {garis(data.namaDonatur)}
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ display: 'flex' }}>Di</div>
-          {garis('Tempat')}
-        </div>
-      </div>
-
-      {/* Isi */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginTop: 36, fontSize: 24, lineHeight: 1.5 }}>
-        <div style={{ display: 'flex' }}>Assalammu’alaikum Wr. Wb</div>
-        <div style={{ display: 'flex' }}>
-          Dengan surat ini kami mengucapkan banyak terima kasih kepada {labelSapaan(data.sapaan)} {data.namaDonatur} atas penyaluran zakat/infaq/shadaqah kepada Panti Asuhan BAITUL QOWWAM, sebesar:
-        </div>
-
-        {data.barisNilai.tipe === 'UANG' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingLeft: 60 }}>
-            <div style={{ display: 'flex', gap: 12 }}><div style={{ display: 'flex', width: 140 }}>Rp.</div>{garis(data.barisNilai.rupiah)}</div>
-            <div style={{ display: 'flex', gap: 12 }}><div style={{ display: 'flex', width: 140 }}>Terbilang</div>{garis(`${data.barisNilai.terbilang} Rupiah`)}</div>
+          {/* Nomor & tanggal */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', fontSize: FS }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
+                <div style={{ display: 'flex' }}>No&nbsp;&nbsp;:</div>
+                {isian(data.nomorUrut, 74, 'center')}
+                <div style={{ display: 'flex' }}>/PBQ/</div>
+                {isian(data.nomorBulanRomawi, 64, 'center')}
+                <div style={{ display: 'flex' }}>/20</div>
+                {isian(data.nomorTahunDuaDigit, 52, 'center')}
+              </div>
+              <div style={{ display: 'flex' }}>Hal&nbsp;: Ucapan Terima Kasih</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
+              <div style={{ display: 'flex' }}>Tempel,</div>
+              {isian(data.tanggalTeks, 340)}
+            </div>
           </div>
-        ) : (
-          <div style={{ display: 'flex', gap: 12, paddingLeft: 60 }}>
-            <div style={{ display: 'flex', width: 140 }}>Berupa</div>{garis(data.barisNilai.deskripsi)}
-          </div>
-        )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, marginTop: 12 }}>
-          <div style={{ display: 'flex', fontSize: 22 }}>Teriring Do’a</div>
-          <div style={{ display: 'flex', fontSize: 30, fontWeight: 700, color: HIJAU }}>JAZAKUMULLAHU KHAIRAN JAZAA</div>
-          <img src={assets.doaArab} width={525} height={30} style={{ objectFit: 'contain', marginTop: 4 }} />
-          <div style={{ display: 'flex', fontSize: 20, fontStyle: 'italic', textAlign: 'center', marginTop: 8, maxWidth: 880 }}>
-            “Semoga Allah memberi pahala dengan apa yang engkau berikan dan Allah memberkahi apa saja yang masih ada pada diri engkau dan semoga Allah menjadikannya suci bagi engkau” Aamiin...
+          {/* Tujuan */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 34, fontSize: FS }}>
+            <div style={{ display: 'flex' }}>Kepada Yth.</div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
+              <div style={{ display: 'flex' }}>Bapak/Ibu/Sdr :</div>
+              {isian(data.namaDonatur, 400)}
+            </div>
+            <div style={{ display: 'flex', paddingLeft: 4 }}>{isian('Tempat', 900)}</div>
           </div>
-        </div>
 
-        <div style={{ display: 'flex' }}>
-          Dana yang kami terima dialokasikan untuk penyelenggaraan Panti Asuhan Baitul Qowwam. Demikian surat ini kami sampaikan, atas perhatian dan kepercayaannya kami ucapkan banyak terima kasih.
-        </div>
-        <div style={{ display: 'flex' }}>Wassalammu’alaikum Wr. Wb</div>
-      </div>
+          {/* Isi */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginTop: 34, fontSize: FS, lineHeight: 1.5 }}>
+            <div style={{ display: 'flex' }}>Assalammu’alaikum Wr. Wb</div>
+            <div style={{ display: 'flex' }}>
+              Dengan surat ini kami mengucapkan banyak terima kasih kepada Bapak/Ibu/Sdr. atas penyaluran zakat/infaq/shadaqah kepada Panti Asuhan BAITUL QOWWAM, sebesar:
+            </div>
 
-      {/* Tanda tangan */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', width: 420 }}>
-          <div style={{ display: 'flex', fontSize: 22 }}>Pengurus Panti Asuhan</div>
-          <div style={{ display: 'flex', fontSize: 22 }}>Baitul Qowwam</div>
-          <div style={{ display: 'flex', position: 'relative', height: 150, width: 380, alignItems: 'center', justifyContent: 'center' }}>
-            <img src={assets.stempel} width={210} height={210} style={{ position: 'absolute', left: 20, top: -20, opacity: 0.9 }} />
-            <img src={assets.ttd} width={150} height={150} style={{ position: 'absolute', left: 150, top: -6 }} />
+            {data.barisNilai.tipe === 'UANG' ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingLeft: 60 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                  <div style={{ display: 'flex', width: 150 }}>Rp.</div>
+                  <div style={{ display: 'flex' }}>:</div>
+                  {isian(data.barisNilai.rupiah, 360)}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                  <div style={{ display: 'flex', width: 150 }}>Terbilang</div>
+                  <div style={{ display: 'flex' }}>:</div>
+                  {isian(`${data.barisNilai.terbilang} Rupiah`, 740)}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, paddingLeft: 60 }}>
+                <div style={{ display: 'flex', width: 150 }}>Berupa</div>
+                <div style={{ display: 'flex' }}>:</div>
+                {isian(data.barisNilai.deskripsi, 740)}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 10 }}>
+              <div style={{ display: 'flex', fontSize: 22 }}>Teriring Do’a</div>
+              <div style={{ display: 'flex', fontFamily: 'Bebas', fontSize: 38, color: TEKS, letterSpacing: 1 }}>JAZAKUMULLAHU KHAIRAN JAZAA</div>
+              <img src={assets.doaCdr} width={680} height={41} style={{ objectFit: 'contain', marginTop: 6 }} />
+              <div style={{ display: 'flex', fontSize: 20, fontFamily: 'Arimo', fontStyle: 'italic', textAlign: 'center', marginTop: 10, maxWidth: 900 }}>
+                “Semoga Allah memberi pahala dengan apa yang engkau berikan dan Allah memberkahi apa saja yang masih ada pada diri engkau dan semoga Allah menjadikannya suci bagi engkau” Aamiin...
+              </div>
+            </div>
+
+            <div style={{ display: 'flex' }}>
+              Dana yang kami terima dialokasikan untuk penyelenggaraan Panti Asuhan Baitul Qowwam. Demikian surat ini kami sampaikan, atas perhatian dan kepercayaannya kami ucapkan banyak terima kasih.
+            </div>
+            <div style={{ display: 'flex' }}>Wassalammu’alaikum Wr. Wb</div>
           </div>
-          <div style={{ display: 'flex', fontSize: 24, fontWeight: 700, borderTop: '1px solid #111', paddingTop: 6 }}>Dr. H. Agus Triyanta</div>
+
+          {/* Tanda tangan */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 420 }}>
+              <div style={{ display: 'flex', fontSize: 22 }}>Pengurus Panti Asuhan</div>
+              <div style={{ display: 'flex', fontSize: 22 }}>Baitul Qowwam</div>
+              <div style={{ display: 'flex', position: 'relative', height: 150, width: 380, alignItems: 'center', justifyContent: 'center' }}>
+                <img src={assets.stempel} width={210} height={210} style={{ position: 'absolute', left: 20, top: -20, opacity: 0.9 }} />
+                <img src={assets.ttd} width={150} height={150} style={{ position: 'absolute', left: 150, top: -6 }} />
+              </div>
+              <div style={{ display: 'flex', fontSize: 24, fontWeight: 700 }}>Dr. H. Agus Triyanta</div>
+            </div>
+          </div>
         </div>
       </div>
 

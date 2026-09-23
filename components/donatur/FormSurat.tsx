@@ -4,20 +4,33 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { FloppyDisk, Warning, ArrowClockwise } from '@phosphor-icons/react';
 import { terbilang, formatRupiah } from '@/lib/utils/terbilang';
 import { formatDateIndonesian, toTitleCase } from '@/lib/utils/formatters';
+import { parseNomorSurat, bulanRomawi } from '@/lib/utils/nomor-surat';
 import type { SuratData } from '@/lib/surat/data';
-import type { Sapaan, JenisDonasi } from '@/lib/db/donatur-repo';
+import type { Sapaan, JenisDonasi, GayaTulisan } from '@/lib/db/donatur-repo';
 import { PilihDonatur, type PilihDonaturValue } from '@/components/donatur/PilihDonatur';
-import { PratinjauSurat } from '@/components/donatur/PratinjauSurat';
+import { PratinjauSurat, KELAS_FONT_GAYA } from '@/components/donatur/PratinjauSurat';
 
 export type FormState = {
   nama: string; sapaan: Sapaan; bentuk: 'UANG' | 'BARANG'; nominal: number;
   deskripsiBarang: string; tanggalSurat: string; nomorSurat: string; keterangan: string;
+  gayaTulisan: GayaTulisan;
 };
+
+/** Memecah nomor surat untuk pratinjau; string kosong bila format belum lengkap/valid (masih diketik). */
+function pecahNomorUntukPratinjau(nomor: string): { urut: string; bulan: string; tahun: string } {
+  const p = parseNomorSurat(nomor);
+  if (!p) return { urut: '', bulan: '', tahun: '' };
+  return { urut: String(p.urut), bulan: bulanRomawi(p.bulan), tahun: String(p.tahun % 100).padStart(2, '0') };
+}
 
 /** Menyusun data pratinjau tanpa memanggil server. */
 export function hitungPratinjau(s: FormState): SuratData {
+  const nomor = pecahNomorUntukPratinjau(s.nomorSurat);
   return {
     nomorSurat: s.nomorSurat,
+    nomorUrut: nomor.urut,
+    nomorBulanRomawi: nomor.bulan,
+    nomorTahunDuaDigit: nomor.tahun,
     tanggalTeks: formatDateIndonesian(s.tanggalSurat),
     sapaan: s.sapaan,
     namaDonatur: toTitleCase(s.nama || ''),
@@ -25,6 +38,7 @@ export function hitungPratinjau(s: FormState): SuratData {
       ? { tipe: 'UANG', rupiah: formatRupiah(s.nominal || 0), terbilang: terbilang(s.nominal || 0) }
       : { tipe: 'BARANG', deskripsi: s.deskripsiBarang || '-' },
     keterangan: s.keterangan || null,
+    gayaTulisan: s.gayaTulisan,
   };
 }
 
@@ -113,6 +127,7 @@ export function FormSurat() {
   const [nomorSurat, setNomorSurat] = useState('');
   const [nomorOtomatis, setNomorOtomatis] = useState('');
   const [nomorDiedit, setNomorDiedit] = useState(false);
+  const [gayaTulisan, setGayaTulisan] = useState<GayaTulisan>('KALAM');
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [donaturFieldErrors, setDonaturFieldErrors] = useState<Record<string, string>>({});
@@ -149,7 +164,7 @@ export function FormSurat() {
 
   const state: FormState = {
     nama: donatur.nama, sapaan: donatur.sapaan, bentuk, nominal,
-    deskripsiBarang, tanggalSurat, nomorSurat, keterangan,
+    deskripsiBarang, tanggalSurat, nomorSurat, keterangan, gayaTulisan,
   };
   const pratinjau = hitungPratinjau(state);
 
@@ -201,6 +216,7 @@ export function FormSurat() {
         },
         nomorSurat,
         tanggalSurat,
+        gayaTulisan,
       };
       const res = await fetch('/api/donatur/surat', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -339,6 +355,35 @@ export function FormSurat() {
             </button>
           )}
         </label>
+
+        <div className="space-y-2">
+          <span className="text-xs font-semibold">Gaya tulisan tangan</span>
+          <div role="radiogroup" aria-label="Gaya tulisan tangan" className="grid grid-cols-2 gap-3">
+            {(['KALAM', 'PATRICK'] as const).map((g) => {
+              const aktif = gayaTulisan === g;
+              return (
+                <button
+                  key={g}
+                  type="button"
+                  role="radio"
+                  aria-checked={aktif}
+                  tabIndex={aktif ? 0 : -1}
+                  onClick={() => setGayaTulisan(g)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+                      e.preventDefault();
+                      setGayaTulisan(g === 'KALAM' ? 'PATRICK' : 'KALAM');
+                    }
+                  }}
+                  className={`min-h-11 rounded-2xl border-2 px-4 py-3 flex flex-col items-center gap-1 transition-colors ${aktif ? 'border-[#0B5FA5] bg-[#0B5FA5]/5' : 'border-slate-200 dark:border-slate-700'}`}
+                >
+                  <span className="text-xs font-semibold text-slate-500">{g === 'KALAM' ? 'Kalam' : 'Patrick Hand'}</span>
+                  <span className={`${KELAS_FONT_GAYA[g]} text-2xl text-[#1d3b8f]`}>Pradana 2.500.000</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <button type="submit" disabled={busy}
           className="w-full h-12 rounded-2xl bg-[#0E9F54] hover:bg-[#0c8747] disabled:opacity-60 text-white font-bold flex items-center justify-center gap-2">

@@ -22,4 +22,22 @@ describe('buildSuratData', () => {
     const barang = { ...dasar, donasi: { ...dasar.donasi, bentuk: 'BARANG', nominal: null, deskripsiBarang: '50 kg beras' } };
     expect(buildSuratData(barang as any).barisNilai).toEqual({ tipe: 'BARANG', deskripsi: '50 kg beras' });
   });
+
+  it('memecah nomor surat menjadi urut, bulan romawi, dan dua digit tahun', () => {
+    const d = buildSuratData(dasar);
+    expect(d.nomorUrut).toBe('271');
+    expect(d.nomorBulanRomawi).toBe('IX');
+    expect(d.nomorTahunDuaDigit).toBe('26');
+  });
+
+  it('mengisi gayaTulisan dari kolom surat', () => {
+    const d = buildSuratData({ ...dasar, gayaTulisan: 'PATRICK' } as any);
+    expect(d.gayaTulisan).toBe('PATRICK');
+  });
+
+  it('gayaTulisan default KALAM bila kolom null/undefined', () => {
+    expect(buildSuratData({ ...dasar, gayaTulisan: null } as any).gayaTulisan).toBe('KALAM');
+    expect(buildSuratData({ ...dasar, gayaTulisan: undefined } as any).gayaTulisan).toBe('KALAM');
+    expect(buildSuratData(dasar).gayaTulisan).toBe('KALAM');
+  });
 });

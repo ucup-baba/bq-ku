@@ -7,13 +7,13 @@ export type SuratAssets = {
   logo: string;
   stempel: string;
   ttd: string;
-  /** PNG statis "منظمة الحضانة بيت القوام" pra-render dengan Pango/HarfBuzz (lihat scripts/render-arab.mjs). */
-  kopArab: string;
-  /** PNG statis baris doa Arab pra-render dengan Pango/HarfBuzz (lihat scripts/render-arab.mjs). */
-  doaArab: string;
+  /** Kop lengkap (logo berwarna, tulisan Arab, nama panti, akte/izin/alamat, garis hijau bawah) — hasil ekspor CorelDRAW asli. */
+  kop: string;
+  /** Baris doa Arab kaligrafi — hasil ekspor CorelDRAW asli. */
+  doaCdr: string;
 };
 
-// Aset surat (TTD, stempel, logo, baris Arab) sengaja TIDAK berada di public/
+// Aset surat (TTD, stempel, logo, kop, doa) sengaja TIDAK berada di public/
 // agar tidak bisa diunduh siapa pun tanpa login. Hanya dibaca di server;
 // Next men-trace folder ini secara otomatis ke bundle rute PNG karena
 // dibaca lewat fs.readFile dengan path statis (bukan dinamis) di atas.
@@ -34,31 +34,40 @@ const asPngDataUriFromWebp = async (nama: string) => {
 };
 
 async function buildSuratAssets(): Promise<SuratAssets> {
-  const [logo, stempel, ttd, kopArab, doaArab] = await Promise.all([
+  const [logo, stempel, ttd, kop, doaCdr] = await Promise.all([
     asPngDataUriFromWebp('logo.webp'),
     asPngDataUriFromWebp('stempel.webp'),
     asDataUri('ttd.png', 'image/png'),
-    // Satori tidak mendukung bidi/shaping Arab (kata terbalik, huruf lafaz
-    // "الله" pecah), jadi kedua baris Arab dipra-render menjadi PNG statis
-    // oleh scripts/render-arab.mjs dan dimuat di sini sebagai <img> biasa.
-    asDataUri('kop-arab.png', 'image/png'),
-    asDataUri('doa-arab.png', 'image/png'),
+    // Kop & doa sudah berupa PNG hasil ekspor CorelDRAW asli (lihat AGENTS.md
+    // pengurus), dimuat apa adanya sebagai <img>.
+    asDataUri('kop.png', 'image/png'),
+    asDataUri('doa-cdr.png', 'image/png'),
   ]);
-  return { logo, stempel, ttd, kopArab, doaArab };
+  return { logo, stempel, ttd, kop, doaCdr };
 }
 
-// Hanya font Latin: baris Arab sudah berupa PNG pra-render (kop-arab.png,
-// doa-arab.png), jadi font Naskh tidak perlu dimuat ke Satori. Berkas
-// NotoNaskhArabic-Regular.ttf tetap di repo untuk scripts/render-arab.mjs.
+// Font Latin untuk badan surat (Arimo — pengganti Arial, ukuran huruf
+// identik), judul "JAZAKUMULLAHU..." (Bebas), dan isian tulisan tangan yang
+// bisa dipilih per surat (Kalam / Patrick Hand). Baris Arab sudah berupa PNG
+// pra-render (kop.png, doa-cdr.png) sehingga font Arab tidak perlu dimuat.
 async function buildSuratFonts() {
-  const read = (f: string) => fs.readFile(path.join(process.cwd(), 'public', 'fonts', f));
-  const [reg, bold] = await Promise.all([
-    read('PlusJakartaSans-Regular.ttf'),
-    read('PlusJakartaSans-Bold.ttf'),
+  const dir = path.join(process.cwd(), 'assets', 'surat', 'fonts');
+  const read = (f: string) => fs.readFile(path.join(dir, f));
+  const [arimoReg, arimoBold, arimoItalic, bebas, kalam, patrick] = await Promise.all([
+    read('Arimo-Regular.ttf'),
+    read('Arimo-Bold.ttf'),
+    read('Arimo-Italic.ttf'),
+    read('BebasNeue-Regular.ttf'),
+    read('Kalam-Regular.ttf'),
+    read('PatrickHand-Regular.ttf'),
   ]);
   return [
-    { name: 'Jakarta', data: reg, weight: 400 as const, style: 'normal' as const },
-    { name: 'Jakarta', data: bold, weight: 700 as const, style: 'normal' as const },
+    { name: 'Arimo', data: arimoReg, weight: 400 as const, style: 'normal' as const },
+    { name: 'Arimo', data: arimoBold, weight: 700 as const, style: 'normal' as const },
+    { name: 'Arimo', data: arimoItalic, weight: 400 as const, style: 'italic' as const },
+    { name: 'Bebas', data: bebas, weight: 400 as const, style: 'normal' as const },
+    { name: 'Kalam', data: kalam, weight: 400 as const, style: 'normal' as const },
+    { name: 'Patrick', data: patrick, weight: 400 as const, style: 'normal' as const },
   ];
 }
 

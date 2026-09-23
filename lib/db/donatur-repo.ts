@@ -5,6 +5,8 @@ import { escapeOrFilterValue } from '@/lib/db/filters';
 export type Sapaan = 'BAPAK' | 'IBU' | 'SDR' | 'SDRI' | 'BAPAK_IBU';
 export type JenisDonasi = 'ZAKAT' | 'INFAQ' | 'SHADAQAH' | 'LAINNYA';
 export type BentukDonasi = 'UANG' | 'BARANG';
+/** Gaya font tulisan tangan untuk isian di PNG surat ucapan terima kasih. */
+export type GayaTulisan = 'KALAM' | 'PATRICK';
 
 export type Donatur = {
   id: string; nama: string; sapaan: Sapaan; noWa: string | null;
@@ -17,6 +19,7 @@ export type Donasi = {
 };
 export type Surat = {
   id: string; donasiId: string; nomorSurat: string; tanggalSurat: string;
+  gayaTulisan: GayaTulisan;
   storagePath: string | null; terkirimWa: boolean; dikirimAt: string | null;
   createdAt: string; createdBy: string | null;
 };
