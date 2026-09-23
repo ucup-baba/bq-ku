@@ -2,8 +2,7 @@
 import React from 'react';
 import { usePathname } from 'next/navigation';
 import { RailSidebar } from './RailSidebar';
-import { MobileBottomNav } from './MobileBottomNav';
-import { DonaturBottomNav } from './DonaturBottomNav';
+import { BottomNav } from './BottomNav';
 import { useAuth } from '@/components/auth/AuthProvider';
 import type { Room } from '@/lib/auth/rooms';
 
@@ -11,7 +10,6 @@ export function AppShell({ room, children }: { room: Room; children: React.React
   const { user } = useAuth();
   const pathname = usePathname();
   if (!user) return <div className="min-h-screen bg-bq-bg">{children}</div>;
-  const BottomNav = room === 'donatur' ? DonaturBottomNav : MobileBottomNav;
   return (
     <div className="flex min-h-screen bg-bq-bg text-bq-tinta transition-colors">
       <RailSidebar room={room} />
@@ -19,7 +17,7 @@ export function AppShell({ room, children }: { room: Room; children: React.React
         {/* key per path → animasi masuk setiap navigasi (template.tsx di route group tidak di-mount ulang) */}
         <div key={pathname} className="animate-halaman">{children}</div>
       </main>
-      <BottomNav />
+      <BottomNav room={room} />
     </div>
   );
 }
