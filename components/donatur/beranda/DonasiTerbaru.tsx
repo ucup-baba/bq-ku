@@ -15,10 +15,8 @@ export function DonasiTerbaru({ surat, status, galat, className }: {
 }) {
   return (
     <section aria-labelledby="judul-terbaru" className={twMerge('space-y-2', className)}>
-      <div className="flex items-center justify-between px-1">
-        <h2 id="judul-terbaru" className="text-sm font-extrabold text-bq-tinta">Donasi terbaru</h2>
-        <Link href="/donatur/daftar" className="text-xs font-bold text-bq-biru hover:underline">Lihat semua</Link>
-      </div>
+      {/* Tanpa "Lihat semua": Daftar Donatur sudah ada di navigasi (hindari tautan ganda). */}
+      <h2 id="judul-terbaru" className="px-1 text-sm font-extrabold text-bq-tinta">Donasi terbaru</h2>
       {status === 'memuat' && <div className="h-32 animate-pulse rounded-kartu bg-slate-200/60 dark:bg-slate-800/60" />}
       {status === 'error' && <PesanGalat pesan={galat ?? 'Gagal memuat donasi terbaru.'} />}
       {status === 'siap' && surat && surat.length === 0 && (

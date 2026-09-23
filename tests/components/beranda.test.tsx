@@ -36,12 +36,12 @@ describe('KartuHero', () => {
 });
 
 describe('DonasiTerbaru', () => {
-  it('baris ke-3 dst disembunyikan di HP; tautan Lihat semua ke daftar donatur', () => {
+  it('baris ke-3 dst disembunyikan di HP; tanpa tautan ganda ke daftar donatur', () => {
     const h = renderToStaticMarkup(
       <DonasiTerbaru status="siap" galat={null} surat={[buatSurat('1', 'Aris'), buatSurat('2', 'Budi'), buatSurat('3', 'Citra')]} />,
     );
     expect(h.match(/<li class="hidden md:block"/g)).toHaveLength(1);
-    expect(h).toContain('href="/donatur/daftar"');
+    expect(h).not.toContain('href="/donatur/daftar"');
     expect(h).toContain('aria-label="Donasi lagi dari Aris"');
     expect(h).toContain('data-audit-daftar');
   });

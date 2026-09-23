@@ -30,7 +30,7 @@ export default async function DetailSuratPage({ params }: { params: Promise<{ id
         kembali={{ href: '/donatur/surat', label: 'Kembali ke daftar surat' }}
         aksi={<MenuSurat suratId={surat.id} nomorSurat={surat.nomorSurat} terkirim={surat.terkirimWa} />}
       />
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Wadah gulir + pinch-zoom agar tulisan kecil di surat bisa diperbesar di HP */}
         <div className="max-h-[62dvh] overflow-auto overscroll-contain rounded-kartu border border-bq-garis bg-white shadow-kartu [touch-action:pan-x_pan-y_pinch-zoom] lg:max-h-none">
           <img src={`/api/donatur/surat/${surat.id}/png`} alt={`Surat ucapan terima kasih nomor ${surat.nomorSurat}`} className="h-auto w-full" />

@@ -92,7 +92,7 @@ export function BagianSurat({ f }: { f: FormSuratCtx }) {
   const e = f.fieldErrors;
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block space-y-1">
           <span className={kelasLabel}>Tanggal surat</span>
           <input type="date" value={f.tanggalSurat} onChange={ev => f.setTanggalSurat(ev.target.value)} className={kelasField(e.tanggalSurat)} />

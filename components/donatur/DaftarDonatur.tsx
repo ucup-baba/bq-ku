@@ -142,7 +142,7 @@ export function DaftarDonatur() {
       {error && <PesanGalat pesan={error} />}
 
       {donatur === null && !error && (
-        <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => <div key={i} className="h-16 animate-pulse rounded-kartu bg-slate-200/60 dark:bg-slate-800/60" />)}
         </div>
       )}
@@ -160,7 +160,7 @@ export function DaftarDonatur() {
       )}
 
       {donatur !== null && donatur.length > 0 && (
-        <ul data-audit-daftar className="bergilir grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+        <ul data-audit-daftar className="bergilir grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
           {donatur.map((d, i) => (
             <li key={d.id}>
               <Kartu className="flex items-center gap-3 p-3">

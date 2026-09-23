@@ -27,7 +27,7 @@ export function RingkasanDonatur() {
   return (
     <>
       {b.statusRekap === 'error' && <PesanGalat className="mb-4" pesan={b.galatRekap ?? 'Gagal memuat ringkasan donasi.'} />}
-      <div className="bergilir grid gap-4 md:grid-cols-12 md:gap-5">
+      <div className="bergilir grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
         <KartuHero className="order-1 md:col-span-7"
           total={b.rekap?.totalUang ?? null} memuat={memuat}
           keterangan={keteranganPeriode(b.pilihan, b.dari, b.sampai, perbandingan)}

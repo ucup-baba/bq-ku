@@ -41,7 +41,7 @@ export function auditHalaman(doc, win, opsi = {}) {
   const teksTerpotong = [];
   for (const el of doc.body.querySelectorAll('*')) {
     if (diAbaikan(el) || !terlihat(el)) continue;
-    if (el.scrollWidth <= el.clientWidth + 1) continue;
+    if (el.clientWidth <= 1 || el.scrollWidth <= el.clientWidth + 1) continue; // lewati teks sr-only
     const gaya = win.getComputedStyle(el);
     if (gaya.overflowX === 'hidden' && gaya.whiteSpace === 'nowrap' && gaya.textOverflow !== 'ellipsis') teksTerpotong.push(label(el));
   }
