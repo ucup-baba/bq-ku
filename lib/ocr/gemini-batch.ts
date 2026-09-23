@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { PDFDocument } from 'pdf-lib';
+import { petakanTerbatas } from './konkurensi';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from './parser';
 
 /**
@@ -29,9 +30,14 @@ export async function splitPdfPages(pdfBuffer: Buffer): Promise<Buffer[]> {
 /**
  * Auto-classify a document image/PDF and extract structured data in one Gemini Vision call.
  */
+/** Batas waktu satu panggilan model, dan total waktu per dokumen termasuk model cadangan. */
+export const BATAS_PER_MODEL_MS = 30_000;
+export const BATAS_PER_DOKUMEN_MS = 50_000;
+
 export async function classifyAndExtractDocument(
   imageBuffer: Buffer,
   mimeType: string,
+  batasTotalMs = BATAS_PER_DOKUMEN_MS,
 ): Promise<{ kategori: string; rawText: string; data: ExtractedDocumentData } | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
@@ -94,12 +100,18 @@ Kembalikan HANYA JSON valid (tanpa markdown) dengan format:
     const candidateModels = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-flash-latest'];
     let candidate: string | null = null;
 
+    // Setiap model dibatasi waktunya; model cadangan hanya dicoba bila sisa waktu masih cukup,
+    // agar Gemini yang lambat/kewalahan (503) tidak membuat fungsi melewati maxDuration.
+    const mulai = Date.now();
     for (const modelName of candidateModels) {
+      const sisa = batasTotalMs - (Date.now() - mulai);
+      if (sisa < 5_000) break;
       try {
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
           {
             method: 'POST',
+            signal: AbortSignal.timeout(Math.min(BATAS_PER_MODEL_MS, sisa)),
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: [
@@ -210,24 +222,18 @@ export async function classifyMultiPagePdf(
 ): Promise<MultiPagePdfResult[]> {
   try {
     const pageBuffers = await splitPdfPages(pdfBuffer);
-    const results: MultiPagePdfResult[] = [];
-
-    for (let pageIdx = 0; pageIdx < pageBuffers.length; pageIdx++) {
-      const pageBuf = pageBuffers[pageIdx];
+    // Halaman diproses paralel (maks. 4 sekaligus): total waktu ≈ halaman terlama, bukan jumlahnya.
+    const perHalaman = await petakanTerbatas(pageBuffers, 4, async (pageBuf, pageIdx) => {
       const pageResult = await classifyAndExtractDocument(pageBuf, 'application/pdf');
-
-      if (pageResult) {
-        results.push({
-          halaman: pageIdx + 1,
-          kategori: pageResult.kategori,
-          rawText: pageResult.rawText,
-          data: pageResult.data,
-          pageBuffer: pageBuf,
-        });
-      }
-    }
-
-    return results;
+      return pageResult ? {
+        halaman: pageIdx + 1,
+        kategori: pageResult.kategori,
+        rawText: pageResult.rawText,
+        data: pageResult.data,
+        pageBuffer: pageBuf,
+      } : null;
+    });
+    return perHalaman.filter((r): r is MultiPagePdfResult => r !== null);
   } catch (err) {
     console.error('[batch] classifyMultiPagePdf error:', err);
     return [];

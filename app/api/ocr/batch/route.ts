@@ -8,7 +8,9 @@ import { classifyAndExtractDocument, classifyMultiPagePdf } from '@/lib/ocr/gemi
 import { matchBestFamilyMember } from '@/lib/utils/formatters';
 import { parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from '@/lib/ocr/parser';
 
-export const maxDuration = 60; // Allow up to 60s for batch processing
+// Klien mengirim satu berkas per request; 120 dtk memberi ruang untuk PDF multi-halaman
+// (halaman diproses paralel, tiap panggilan Gemini dibatasi waktunya).
+export const maxDuration = 120;
 
 interface BatchResult {
   index: number;

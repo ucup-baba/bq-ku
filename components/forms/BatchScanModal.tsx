@@ -23,6 +23,11 @@ import {
 import { createBrowserSupabase } from '@/lib/supabase/client';
 import { ExtractedDocumentData } from '@/lib/ocr/parser';
 import { checkNameMatch, toTitleCase } from '@/lib/utils/formatters';
+import { petakanTerbatas } from '@/lib/ocr/konkurensi';
+import { pesanGagalPindai } from '@/lib/ocr/pesan-gagal';
+
+type StatusPindai = 'menunggu' | 'mengunggah' | 'memindai' | 'selesai' | 'gagal';
+type Unggahan = { fileUrl: string; storagePath: string; fileName: string };
 
 export interface BatchItemResult {
   index: number;
@@ -66,10 +71,12 @@ export function BatchScanModal({
 }: BatchScanModalProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [progressMsg, setProgressMsg] = useState<string>('');
   const [batchResults, setBatchResults] = useState<BatchItemResult[] | null>(null);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [statusBerkas, setStatusBerkas] = useState<StatusPindai[]>([]);
+  // Hasil unggah per berkas disimpan agar "Coba lagi" tidak mengunggah ulang.
+  const unggahanRef = useRef<Array<Unggahan | undefined>>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -102,109 +109,73 @@ export function BatchScanModal({
 
   const handleRemoveFile = (index: number) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    unggahanRef.current = unggahanRef.current.filter((_, i) => i !== index);
   };
 
   const isNameEmpty = !targetNamaSantri || !targetNamaSantri.trim();
 
-  const handleStartBatchOcr = async () => {
+  const ubahStatus = (i: number, st: StatusPindai) => setStatusBerkas(prev => { const n = [...prev]; n[i] = st; return n; });
+
+  /** Pindai satu berkas: unggah (sekali) lalu kirim SATU request, sehingga setiap berkas punya batas waktunya sendiri. */
+  const pindaiSatu = async (i: number): Promise<BatchItemResult[]> => {
+    const file = selectedFiles[i];
+    try {
+      let item = unggahanRef.current[i];
+      if (!item) {
+        ubahStatus(i, 'mengunggah');
+        const supabase = createBrowserSupabase();
+        const pathName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+        const { error: uploadError } = await supabase.storage.from('berkas').upload(pathName, file, { upsert: true });
+        if (uploadError) throw new Error(`Gagal mengunggah: ${uploadError.message}`);
+        const { data: signed, error: signErr } = await supabase.storage.from('berkas').createSignedUrl(pathName, 3600);
+        if (signErr || !signed) throw new Error('Gagal membuat tautan berkas');
+        item = { fileUrl: signed.signedUrl, storagePath: pathName, fileName: file.name };
+        unggahanRef.current[i] = item;
+      }
+      ubahStatus(i, 'memindai');
+      const res = await fetch('/api/ocr/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: [item], namaSantri: targetNamaSantri, tahunMasuk, jenisKelamin }),
+      });
+      const teks = await res.text();
+      let json: any = null;
+      try { json = JSON.parse(teks); } catch { /* bukan JSON, mis. halaman galat 504 */ }
+      if (!res.ok || !json?.success) throw new Error(pesanGagalPindai(res.status, teks));
+      ubahStatus(i, 'selesai');
+      return (json.results as BatchItemResult[]).map(r => ({ ...r, index: i }));
+    } catch (err: any) {
+      ubahStatus(i, 'gagal');
+      return [{ index: i, kategori: 'UNKNOWN', fileUrl: '', fileName: file.name, extracted: null, error: err?.message || 'Gagal memindai berkas' }];
+    }
+  };
+
+  /** Pindai semua berkas (atau hanya `indeks` untuk coba ulang), maksimal 2 berkas bersamaan. */
+  const handleStartBatchOcr = async (indeks?: number[]) => {
     if (selectedFiles.length === 0) {
       setErrorBanner('Silakan pilih minimal 1 berkas.');
       return;
     }
-
+    const target = indeks ?? selectedFiles.map((_, i) => i);
     setIsProcessing(true);
-    setProgressMsg(`Menyiapkan ${selectedFiles.length} berkas...`);
     setErrorBanner(null);
+    setStatusBerkas(prev => selectedFiles.map((_, i) => (target.includes(i) ? 'menunggu' : prev[i] ?? 'selesai')));
 
-    try {
-      let resultsData: any[] = [];
+    const baru = (await petakanTerbatas(target, 2, pindaiSatu)).flat();
+    const sebelumnya = (batchResults ?? []).filter(r => !target.includes(r.index));
+    const resultsData = [...sebelumnya, ...baru].sort((a, b) => a.index - b.index);
 
-      // Unggah langsung ke Supabase Storage (bucket private, sesi user) lalu kirim signed URL ke server.
-      // Menghindari batasan payload 4.5MB Vercel (mendukung file hingga 50MB)
-      {
-        const supabase = createBrowserSupabase();
-        const uploadedItems: Array<{ fileUrl: string; storagePath: string; fileName: string }> = [];
-
-        for (let i = 0; i < selectedFiles.length; i++) {
-          const file = selectedFiles[i];
-          setProgressMsg(`Mengunggah berkas ${i + 1}/${selectedFiles.length}: ${file.name}...`);
-
-          const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-          const pathName = `${Date.now()}_${cleanName}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('berkas')
-            .upload(pathName, file, { upsert: true });
-
-          if (uploadError) {
-            throw new Error(`Gagal mengunggah ${file.name} ke storage: ${uploadError.message}`);
-          }
-
-          const { data: signed, error: signErr } = await supabase.storage.from('berkas').createSignedUrl(pathName, 3600);
-          if (signErr || !signed) throw new Error(`Gagal membuat tautan berkas ${file.name}`);
-          uploadedItems.push({
-            fileUrl: signed.signedUrl,
-            storagePath: pathName,
-            fileName: file.name,
-          });
-        }
-
-        setProgressMsg(`Memindai & mengekstrak data berkas dengan Gemini Vision AI...`);
-
-        const res = await fetch('/api/ocr/batch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: uploadedItems,
-            namaSantri: targetNamaSantri,
-            tahunMasuk,
-            jenisKelamin,
-          }),
-        });
-
-        const resText = await res.text();
-        let json;
-        try {
-          json = JSON.parse(resText);
-        } catch {
-          if (res.status === 413 || resText.includes('Request Entity Too Large')) {
-            throw new Error('Ukuran berkas melebihi batas server (maks 4.5 MB). Silakan gunakan file yang lebih kecil.');
-          }
-          throw new Error(resText || `Gagal memproses batch OCR (Status ${res.status})`);
-        }
-
-        if (!res.ok || !json.success) {
-          throw new Error(json.error || 'Gagal memproses batch scan.');
-        }
-
-        resultsData = json.results;
+    // Nama acuan: nama santri di formulir, atau nama dari KK, atau nama pertama yang terbaca.
+    const kkResult = resultsData.find(r => r.kategori === 'KARTU_KELUARGA' && r.extracted?.namaLengkap);
+    const masterName = targetNamaSantri || kkResult?.extracted?.namaLengkap || resultsData.find(r => r.extracted?.namaLengkap)?.extracted?.namaLengkap;
+    setBatchResults(resultsData.map(r => {
+      let isMatch = true;
+      if (masterName && r.extracted?.namaLengkap && r.kategori !== 'KARTU_KELUARGA') {
+        isMatch = checkNameMatch(masterName, r.extracted.namaLengkap).isMatch;
       }
-
-      // First check if there's a KK in the results to establish master name
-      const kkResult = resultsData.find((r: any) => r.kategori === 'KARTU_KELUARGA' && r.extracted?.namaLengkap);
-      const masterName = targetNamaSantri || (kkResult?.extracted?.namaLengkap) || (resultsData.find((r: any) => r.extracted?.namaLengkap)?.extracted?.namaLengkap);
-
-      // Validate name match for each result
-      const processedResults: BatchItemResult[] = resultsData.map((r: any) => {
-        let isMatch = true;
-        if (masterName && r.extracted?.namaLengkap && r.kategori !== 'KARTU_KELUARGA') {
-          const matchCheck = checkNameMatch(masterName, r.extracted.namaLengkap);
-          isMatch = matchCheck.isMatch;
-        }
-        return {
-          ...r,
-          isMatch,
-        };
-      });
-
-      setBatchResults(processedResults);
-    } catch (err: any) {
-      console.error(err);
-      setErrorBanner(err.message || 'Terjadi kesalahan saat memproses OCR multi-berkas.');
-    } finally {
-      setIsProcessing(false);
-      setProgressMsg('');
-    }
+      return { ...r, isMatch };
+    }));
+    setIsProcessing(false);
   };
 
   const handleApplyAll = () => {
@@ -218,6 +189,8 @@ export function BatchScanModal({
 
   const handleResetModal = () => {
     setSelectedFiles([]);
+    setStatusBerkas([]);
+    unggahanRef.current = [];
     setBatchResults(null);
     setIsProcessing(false);
     setErrorBanner(null);
@@ -271,7 +244,7 @@ export function BatchScanModal({
           )}
 
           {/* STEP 1: Upload Dropzone (if results not yet processed) */}
-          {!batchResults && (
+          {!batchResults && !isProcessing && (
             <div className="space-y-4">
               {isNameEmpty && (
                 <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-3">
@@ -339,35 +312,6 @@ export function BatchScanModal({
                 }}
               />
 
-              {/* Quick Action Card (Posisi AGAK DI ATAS agar langsung terlihat di HP tanpa scroll) */}
-              {selectedFiles.length > 0 && (
-                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-teal-500/15 via-emerald-500/20 to-teal-500/10 border-2 border-teal-500 dark:border-teal-400 shadow-md flex items-center justify-between gap-3 animate-in fade-in duration-200">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                      <Lightning size={20} weight="fill" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-black text-teal-950 dark:text-teal-100 truncate">
-                        {selectedFiles.length} Berkas Siap Dipindai
-                      </p>
-                      <p className="text-xs text-teal-700 dark:text-teal-300">
-                        Klik tombol untuk mulai proses OCR AI
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleStartBatchOcr}
-                    disabled={isProcessing}
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white font-extrabold text-xs shadow-lg active:scale-95 transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <Sparkle size={15} weight="fill" />
-                    <span>{isProcessing ? 'Memproses...' : 'Mulai Pindai'}</span>
-                  </button>
-                </div>
-              )}
-
               {/* Drag and Drop Zone (Desktop & Tablet) */}
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
@@ -397,7 +341,7 @@ export function BatchScanModal({
                 </div>
 
                 <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 mb-0.5">
-                  {selectedFiles.length > 0 ? '+ Tambah Berkas Lainnya (Tarik / Klik)' : 'Atau Tarik Semua Berkas ke Sini'}
+                  {selectedFiles.length > 0 ? 'Tambah berkas lain (tarik / klik)' : 'Atau tarik semua berkas ke sini'}
                 </h4>
                 {selectedFiles.length === 0 && (
                   <p className="text-xs sm:text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-2 leading-relaxed">
@@ -454,39 +398,35 @@ export function BatchScanModal({
                     })}
                   </div>
 
-                  {/* Immediate Action CTA right below file list */}
-                  <div className="pt-3">
-                    <button
-                      type="button"
-                      onClick={handleStartBatchOcr}
-                      disabled={isProcessing}
-                      className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white font-extrabold text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      <Sparkle size={18} weight="fill" />
-                      <span>{isProcessing ? 'Memproses Berkas...' : `Mulai Pindai ${selectedFiles.length} Berkas Sekarang`}</span>
-                    </button>
-                    <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-1.5">
-                      Gemini AI akan membaca dan mengekstrak data santri secara otomatis
-                    </p>
-                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* STEP 2: Processing State */}
+          {/* STEP 2: Status per berkas */}
           {isProcessing && (
-            <div className="py-10 text-center space-y-3">
-              <SpinnerGap size={40} className="animate-spin text-teal-600 mx-auto" />
-              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                Gemini Vision AI Sedang Bekerja...
-              </h4>
-              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-                {progressMsg}
+            <div className="space-y-3">
+              <p className="flex items-center gap-2 text-sm font-bold text-bq-tinta">
+                <SpinnerGap size={18} className="animate-spin text-[#0E9F54]" aria-hidden="true" />
+                Memindai {statusBerkas.filter(x => x === 'selesai' || x === 'gagal').length}/{selectedFiles.length} berkas…
               </p>
-              <div className="w-48 bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden mx-auto">
-                <div className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 animate-pulse w-full" />
-              </div>
+              <ul className="space-y-2" aria-live="polite">
+                {selectedFiles.map((file, i) => {
+                  const st = statusBerkas[i] ?? 'menunggu';
+                  const label = { menunggu: 'Menunggu', mengunggah: 'Mengunggah…', memindai: 'Memindai…', selesai: 'Selesai', gagal: 'Gagal' }[st];
+                  return (
+                    <li key={i} className="flex items-center justify-between gap-3 rounded-2xl border border-bq-garis p-2.5 text-xs">
+                      <span className="min-w-0 truncate font-semibold text-bq-tinta">{file.name}</span>
+                      <span className={`inline-flex shrink-0 items-center gap-1 font-bold ${st === 'selesai' ? 'text-[#0E9F54]' : st === 'gagal' ? 'text-rose-600' : 'text-bq-redup'}`}>
+                        {st === 'selesai' ? <CheckCircle size={14} weight="fill" aria-hidden="true" />
+                          : st === 'gagal' ? <WarningCircle size={14} weight="fill" aria-hidden="true" />
+                          : st === 'menunggu' ? null : <SpinnerGap size={14} className="animate-spin" aria-hidden="true" />}
+                        {label}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
 
@@ -500,13 +440,17 @@ export function BatchScanModal({
                     Berhasil mengenali {batchResults.filter(r => !r.error).length} dari {batchResults.length} berkas!
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleResetModal}
-                  className="text-xs underline font-bold"
-                >
-                  Pindai Ulang
-                </button>
+                <div className="flex items-center gap-3">
+                  {batchResults.some(r => r.error) && (
+                    <button type="button" onClick={() => handleStartBatchOcr([...new Set(batchResults.filter(r => r.error).map(r => r.index))])}
+                      className="text-xs font-bold text-rose-700 underline dark:text-rose-300">
+                      Coba lagi yang gagal
+                    </button>
+                  )}
+                  <button type="button" onClick={handleResetModal} className="text-xs font-bold underline">
+                    Pindai ulang
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2.5">
@@ -608,12 +552,12 @@ export function BatchScanModal({
           {!batchResults ? (
             <button
               type="button"
-              onClick={handleStartBatchOcr}
+              onClick={() => handleStartBatchOcr()}
               disabled={selectedFiles.length === 0 || isProcessing}
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white disabled:opacity-50 cursor-pointer active:scale-95"
             >
               <Sparkle size={16} weight="fill" />
-              <span>{isProcessing ? 'Memproses...' : `Mulai Pindai ${selectedFiles.length > 0 ? `(${selectedFiles.length})` : ''}`}</span>
+              <span>{isProcessing ? 'Memindai…' : selectedFiles.length > 0 ? `Pindai ${selectedFiles.length} berkas` : 'Pilih berkas dulu'}</span>
             </button>
           ) : (
             <button
