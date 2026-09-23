@@ -1,15 +1,14 @@
 import { Suspense } from 'react';
+import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
 import { FormSurat } from '@/components/donatur/FormSurat';
 
 export const metadata = { title: 'Buat Surat — BQ-ku' };
 
 export default function BuatSuratPage() {
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-extrabold">Buat Surat Ucapan Terima Kasih</h1>
-        <p className="text-sm text-slate-500">Isi data donatur dan donasi, surat akan dibuat otomatis.</p>
-      </header>
+    <div className="space-y-3 md:space-y-6">
+      <KepalaHalaman judul="Buat Surat" sub="Isi data donatur dan donasi; surat dibuat otomatis."
+        kembali={{ href: '/donatur', label: 'Kembali ke beranda' }} />
       <Suspense>
         <FormSurat />
       </Suspense>

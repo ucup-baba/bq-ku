@@ -23,7 +23,7 @@ export function PratinjauSurat({ data }: { data: SuratData }) {
   const isian = KELAS_FONT_GAYA[data.gayaTulisan];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" data-audit-abaikan>
       {/* Live Indicator Bar */}
       <div className="flex items-center justify-between px-2 text-xs">
         <span className="inline-flex items-center gap-1.5 font-extrabold text-[#0E9F54] uppercase tracking-wider text-[11px]">
