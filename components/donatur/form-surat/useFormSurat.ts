@@ -2,16 +2,24 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatRupiah } from '@/lib/utils/terbilang';
-import type { JenisDonasi, GayaTulisan } from '@/lib/db/donatur-repo';
+import type { JenisDonasi, GayaTulisan, SuratWithRelasi } from '@/lib/db/donatur-repo';
 import type { PilihDonaturValue } from '@/components/donatur/PilihDonatur';
 import { hitungPratinjau, petakanErrorField, hariIni, FIELD_DONATUR_DIKENAL, FIELD_SURAT_DIKENAL, type FormState } from './logika';
 
-export function useFormSurat() {
+/**
+ * State & logika form surat. Dengan `awal`, form berjalan dalam mode edit: donatur &
+ * nomor surat terkunci, nomor otomatis tidak dimuat, dan Simpan memanggil PUT.
+ */
+export function useFormSurat(awal?: SuratWithRelasi) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const donaturIdAwal = searchParams.get('donaturId');
+  const modeEdit = !!awal;
+  const donaturIdAwal = modeEdit ? null : searchParams.get('donaturId');
+  const d0 = awal?.donasi;
 
-  const [donatur, setDonatur] = useState<PilihDonaturValue>({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' });
+  const [donatur, setDonatur] = useState<PilihDonaturValue>(
+    d0 ? { donaturId: d0.donatur.id, nama: d0.donatur.nama, sapaan: d0.donatur.sapaan, noWa: d0.donatur.noWa || '' }
+       : { donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' });
   const [pesanDonaturAwal, setPesanDonaturAwal] = useState<string | null>(null);
   // true begitu pengguna memilih donatur secara manual SEBELUM prefill ?donaturId= selesai —
   // mencegah hasil fetch yang datang belakangan menimpa pilihan pengguna.
@@ -37,19 +45,19 @@ export function useFormSurat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [donaturIdAwal]);
 
-  const [jenis, setJenis] = useState<JenisDonasi>('INFAQ');
-  const [bentuk, setBentuk] = useState<'UANG' | 'BARANG'>('UANG');
-  const [nominal, setNominal] = useState(0);
-  const [nominalTeks, setNominalTeks] = useState('');
-  const [deskripsiBarang, setDeskripsiBarang] = useState('');
-  const [tanggalDonasi, setTanggalDonasi] = useState(hariIni());
-  const [tanggalSurat, setTanggalSurat] = useState(hariIni());
-  const [keterangan, setKeterangan] = useState('');
+  const [jenis, setJenis] = useState<JenisDonasi>(d0?.jenis ?? 'INFAQ');
+  const [bentuk, setBentuk] = useState<'UANG' | 'BARANG'>(d0?.bentuk ?? 'UANG');
+  const [nominal, setNominal] = useState(d0?.nominal ?? 0);
+  const [nominalTeks, setNominalTeks] = useState(d0?.nominal ? formatRupiah(d0.nominal) : '');
+  const [deskripsiBarang, setDeskripsiBarang] = useState(d0?.deskripsiBarang ?? '');
+  const [tanggalDonasi, setTanggalDonasi] = useState(d0?.tanggal ?? hariIni());
+  const [tanggalSurat, setTanggalSurat] = useState(awal?.tanggalSurat ?? hariIni());
+  const [keterangan, setKeterangan] = useState(d0?.keterangan ?? '');
 
-  const [nomorSurat, setNomorSurat] = useState('');
+  const [nomorSurat, setNomorSurat] = useState(awal?.nomorSurat ?? '');
   const [nomorOtomatis, setNomorOtomatis] = useState('');
   const [nomorDiedit, setNomorDiedit] = useState(false);
-  const [gayaTulisan, setGayaTulisan] = useState<GayaTulisan>('KALAM');
+  const [gayaTulisan, setGayaTulisan] = useState<GayaTulisan>(awal?.gayaTulisan ?? 'KALAM');
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [donaturFieldErrors, setDonaturFieldErrors] = useState<Record<string, string>>({});
@@ -59,6 +67,7 @@ export function useFormSurat() {
   const belumPernahDiisi = useRef(true);
 
   useEffect(() => {
+    if (modeEdit) return; // nomor surat yang sudah terbit tidak berubah
     let batal = false;
     (async () => {
       try {
@@ -99,6 +108,36 @@ export function useFormSurat() {
     setNomorUsulan(null);
     setFieldErrors({});
     setDonaturFieldErrors({});
+    if (awal) {
+      try {
+        const res = await fetch(`/api/donatur/surat/${encodeURIComponent(awal.id)}`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            donasi: {
+              donaturId: awal.donasi.donaturId, tanggal: tanggalDonasi, jenis, bentuk,
+              ...(bentuk === 'UANG' ? { nominal } : { deskripsiBarang }),
+              keterangan: keterangan || undefined,
+            },
+            tanggalSurat, gayaTulisan,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 400 && data.fields) {
+          const { field, umum } = petakanErrorField(data.fields);
+          setFieldErrors(field);
+          if (umum) setError(umum);
+          return;
+        }
+        if (!res.ok) { setError(data.error || 'Gagal menyimpan perubahan.'); return; }
+        router.push('/donatur/surat/' + awal.id);
+        router.refresh();
+      } catch {
+        setError('Tidak dapat terhubung ke server.');
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     try {
       let donaturId = donatur.donaturId;
       if (!donaturId) {
@@ -175,7 +214,7 @@ export function useFormSurat() {
     nomorSurat, ubahNomorSurat, nomorOtomatis, nomorDiedit, pakaiNomorOtomatis,
     gayaTulisan, setGayaTulisan,
     fieldErrors, donaturFieldErrors, error, nomorUsulan, pakaiNomorUsulan, busy,
-    pratinjau, simpan,
+    pratinjau, simpan, modeEdit,
   };
 }
 

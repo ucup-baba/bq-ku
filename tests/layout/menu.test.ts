@@ -73,6 +73,7 @@ describe('sembunyikanNavHp', () => {
     expect(sembunyikanNavHp('/tambah')).toBe(true);
     expect(sembunyikanNavHp('/santri/abc/edit')).toBe(true);
     expect(sembunyikanNavHp('/santri/abc')).toBe(false);
+    expect(sembunyikanNavHp('/donatur/surat/abc/edit')).toBe(true);
   });
   it('label Ruang Santri: Santri baru', () => {
     expect(menuRail('santri', dua).find(i => i.href === '/tambah')?.label).toBe('Santri baru');

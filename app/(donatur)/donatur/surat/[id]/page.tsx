@@ -28,7 +28,9 @@ export default async function DetailSuratPage({ params }: { params: Promise<{ id
         sub={formatDateIndonesian(surat.tanggalSurat)}
         subTampilDiHp
         kembali={{ href: '/donatur/surat', label: 'Kembali ke daftar surat' }}
-        aksi={<MenuSurat suratId={surat.id} nomorSurat={surat.nomorSurat} terkirim={surat.terkirimWa} />}
+        aksi={<MenuSurat suratId={surat.id} nomorSurat={surat.nomorSurat} terkirim={surat.terkirimWa}
+          namaDonatur={`${labelSapaan(donatur.sapaan)} ${donatur.nama}`}
+          nilai={donasi.bentuk === 'UANG' ? `Rp ${formatRupiah(donasi.nominal ?? 0)}` : (donasi.deskripsiBarang || '-')} />}
       />
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Wadah gulir + pinch-zoom agar tulisan kecil di surat bisa diperbesar di HP */}

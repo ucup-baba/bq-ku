@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { DonaturInput, DonasiInput, SuratInput } from '@/lib/validation/donatur';
 import { escapeOrFilterValue } from '@/lib/db/filters';
+import { parseNomorSurat } from '@/lib/utils/nomor-surat';
 
 export type Sapaan = 'BAPAK' | 'IBU' | 'SDR' | 'SDRI' | 'BAPAK_IBU';
 export type JenisDonasi = 'ZAKAT' | 'INFAQ' | 'SHADAQAH' | 'LAINNYA';
@@ -194,4 +195,63 @@ export async function rekap(client: SupabaseClient, dari: string, sampai: string
     })),
     perJenis,
   };
+}
+
+
+/** Surat sudah terkirim sehingga tidak boleh diubah lagi. */
+export class SuratTerkunciError extends Error {
+  constructor() { super('Surat sudah terkirim sehingga tidak bisa diubah'); this.name = 'SuratTerkunciError'; }
+}
+
+/** Penghapusan ditolak RLS (Supabase tidak melempar galat, hanya 0 baris terhapus). */
+export class HapusDitolakError extends Error {
+  constructor() { super('Anda tidak memiliki izin menghapus surat ini'); this.name = 'HapusDitolakError'; }
+}
+
+/**
+ * Menghapus surat beserta catatan donasinya (surat ikut terhapus lewat ON DELETE CASCADE),
+ * sehingga rekap tetap benar. Bila nomornya adalah nomor terakhir bulan itu, counter
+ * dikembalikan satu agar nomor bisa dipakai lagi; nomor di tengah dibiarkan kosong.
+ * Mengembalikan storagePath PNG (bila ada) untuk dihapus pemanggil.
+ */
+export async function hapusSuratBesertaDonasi(client: SupabaseClient, surat: SuratWithRelasi): Promise<string | null> {
+  const { data, error } = await client.from('donasi').delete().eq('id', surat.donasiId).select('id');
+  if (error) throw new Error(`Gagal menghapus surat: ${error.message}`);
+  if (!data || data.length === 0) throw new HapusDitolakError();
+
+  const p = parseNomorSurat(surat.nomorSurat);
+  if (p) {
+    const { error: cErr } = await client.from('nomor_surat_counter')
+      .update({ urutanTerakhir: p.urut - 1 })
+      .eq('tahun', p.tahun).eq('bulan', p.bulan).eq('urutanTerakhir', p.urut);
+    if (cErr) console.error('Gagal mengembalikan counter nomor surat:', cErr.message);
+  }
+  return surat.storagePath;
+}
+
+export type UbahSuratInput = {
+  donasi: Pick<DonasiInput, 'tanggal' | 'jenis' | 'bentuk' | 'nominal' | 'deskripsiBarang' | 'keterangan'>;
+  tanggalSurat: string;
+  gayaTulisan: GayaTulisan;
+};
+
+/**
+ * Mengubah isi surat yang BELUM terkirim. Syarat "belum terkirim" diperiksa di kueri
+ * update itu sendiri (bebas balapan). storagePath dikosongkan agar PNG dirender ulang.
+ */
+export async function ubahSurat(client: SupabaseClient, surat: SuratWithRelasi, input: UbahSuratInput): Promise<void> {
+  const { data, error } = await client.from('surat')
+    .update({ tanggalSurat: input.tanggalSurat, gayaTulisan: input.gayaTulisan, storagePath: null })
+    .eq('id', surat.id).eq('terkirimWa', false).select('id');
+  if (error) throw new Error(`Gagal mengubah surat: ${error.message}`);
+  if (!data || data.length === 0) throw new SuratTerkunciError();
+
+  const d = input.donasi;
+  const { error: dErr } = await client.from('donasi').update({
+    tanggal: d.tanggal, jenis: d.jenis, bentuk: d.bentuk,
+    nominal: d.bentuk === 'UANG' ? d.nominal ?? null : null,
+    deskripsiBarang: d.bentuk === 'BARANG' ? d.deskripsiBarang ?? null : null,
+    keterangan: d.keterangan ?? null,
+  }).eq('id', surat.donasiId);
+  if (dErr) throw new Error(`Gagal mengubah donasi: ${dErr.message}`);
 }

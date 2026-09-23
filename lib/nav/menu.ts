@@ -50,5 +50,6 @@ export function itemAktif(pathname: string, href: string): boolean {
 
 /** Layar satu tugas (Buat Surat, wizard santri) punya tombol aksi menempel di bawah sendiri. */
 export function sembunyikanNavHp(pathname: string): boolean {
-  return pathname === '/donatur/surat/baru' || pathname === '/tambah' || /^\/santri\/[^/]+\/edit$/.test(pathname);
+  return pathname === '/donatur/surat/baru' || pathname === '/tambah'
+    || /^\/santri\/[^/]+\/edit$/.test(pathname) || /^\/donatur\/surat\/[^/]+\/edit$/.test(pathname);
 }

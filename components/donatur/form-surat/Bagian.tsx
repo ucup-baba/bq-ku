@@ -29,6 +29,15 @@ export function KotakGalat({ f }: { f: FormSuratCtx }) {
 }
 
 export function BagianDonatur({ f }: { f: FormSuratCtx }) {
+  if (f.modeEdit) {
+    return (
+      <div className="rounded-2xl border border-bq-garis bg-slate-50 p-3 dark:bg-slate-800/40">
+        <p className="text-xs text-bq-redup">Donatur (tidak bisa diganti di sini)</p>
+        <p className="truncate text-sm font-bold text-bq-tinta">{f.donatur.nama}</p>
+        {f.donatur.noWa && <p className="truncate text-xs text-bq-redup">{f.donatur.noWa}</p>}
+      </div>
+    );
+  }
   return (
     <div className="space-y-2">
       {f.pesanDonaturAwal && <p className="text-xs text-bq-jingga">{f.pesanDonaturAwal}</p>}
@@ -100,9 +109,10 @@ export function BagianSurat({ f }: { f: FormSuratCtx }) {
         </label>
         <label className="block space-y-1">
           <span className={kelasLabel}>Nomor surat</span>
-          <input value={f.nomorSurat} onChange={ev => f.ubahNomorSurat(ev.target.value)} className={twMerge(kelasField(e.nomorSurat), 'font-mono')} />
+          <input value={f.nomorSurat} onChange={ev => f.ubahNomorSurat(ev.target.value)} readOnly={f.modeEdit}
+            aria-readonly={f.modeEdit} className={twMerge(kelasField(e.nomorSurat), 'font-mono', f.modeEdit && 'bg-slate-50 text-bq-redup dark:bg-slate-800/40')} />
           <Galat pesan={e.nomorSurat} />
-          {f.nomorDiedit && f.nomorOtomatis && f.nomorOtomatis !== f.nomorSurat && (
+          {!f.modeEdit && f.nomorDiedit && f.nomorOtomatis && f.nomorOtomatis !== f.nomorSurat && (
             <button type="button" onClick={f.pakaiNomorOtomatis} className="flex items-center gap-1 text-xs font-bold text-bq-biru underline underline-offset-2">
               <ArrowClockwise size={14} weight="bold" aria-hidden="true" /> Pakai nomor otomatis: {f.nomorOtomatis}
             </button>
@@ -132,13 +142,13 @@ export function BagianSurat({ f }: { f: FormSuratCtx }) {
   );
 }
 
-export function TombolSimpan({ busy, onClick, type = 'button', className }: {
-  busy: boolean; onClick?: () => void; type?: 'button' | 'submit'; className?: string;
+export function TombolSimpan({ busy, onClick, type = 'button', className, label = 'Simpan & buat surat' }: {
+  busy: boolean; onClick?: () => void; type?: 'button' | 'submit'; className?: string; label?: string;
 }) {
   return (
     <button type={type} onClick={onClick} disabled={busy} className={twMerge(kelasTombolUtama, 'h-12 w-full text-base', className)}>
       <FloppyDisk size={20} weight="bold" aria-hidden="true" />
-      <span>{busy ? 'Menyimpan…' : 'Simpan & buat surat'}</span>
+      <span>{busy ? 'Menyimpan…' : label}</span>
     </button>
   );
 }

@@ -5,6 +5,7 @@ import { useMedia } from '@/components/ui/useMedia';
 import { PanelTetap, SNAP_PANEL } from '@/components/ui/LembarBawah';
 import { ChipPilihan } from '@/components/ui/ChipPilihan';
 import { bagianUntukGalat } from '@/lib/donatur/bagian-form';
+import type { SuratWithRelasi } from '@/lib/db/donatur-repo';
 import { PratinjauSurat } from '@/components/donatur/PratinjauSurat';
 import { useFormSurat, type FormSuratCtx } from './form-surat/useFormSurat';
 import { BagianDonatur, BagianDonasi, BagianSurat, KotakGalat, TombolSimpan, KartuBagian } from './form-surat/Bagian';
@@ -19,7 +20,7 @@ function TataLetakDesktop({ f }: { f: FormSuratCtx }) {
         <KartuBagian nomor={1} judul="Donatur" sub="Pilih donatur terdaftar atau tambahkan baru." warna="biru"><BagianDonatur f={f} /></KartuBagian>
         <KartuBagian nomor={2} judul="Donasi" sub="Jenis, bentuk, dan nilai donasi." warna="hijau"><BagianDonasi f={f} /></KartuBagian>
         <KartuBagian nomor={3} judul="Surat & gaya tulisan" sub="Nomor, tanggal, dan gaya tulisan tangan." warna="ungu"><BagianSurat f={f} /></KartuBagian>
-        <TombolSimpan busy={f.busy} type="submit" />
+        <TombolSimpan busy={f.busy} type="submit" label={f.modeEdit ? 'Simpan perubahan' : undefined} />
       </form>
       <div className="col-span-12 lg:sticky lg:top-6 lg:col-span-5">
         <PratinjauSurat data={f.pratinjau} />
@@ -97,14 +98,14 @@ function TataLetakHp({ f }: { f: FormSuratCtx }) {
         </div>
       </PanelTetap>
       <div className="fixed inset-x-0 bottom-0 z-[60] border-t border-bq-garis bg-bq-surface/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur lg:hidden">
-        <TombolSimpan busy={f.busy} onClick={f.simpan} />
+        <TombolSimpan busy={f.busy} onClick={f.simpan} label={f.modeEdit ? 'Simpan perubahan' : undefined} />
       </div>
     </>
   );
 }
 
-export function FormSurat() {
-  const f = useFormSurat();
+export function FormSurat({ awal }: { awal?: SuratWithRelasi } = {}) {
+  const f = useFormSurat(awal);
   const desktop = useMedia('(min-width: 1024px)');
   return desktop ? <TataLetakDesktop f={f} /> : <TataLetakHp f={f} />;
 }
