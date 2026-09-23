@@ -12,9 +12,5 @@ export default async function SantriEditPage({ params }: { params: Promise<{ id:
     notFound();
   }
 
-  return (
-    <div className="py-6 px-4 sm:px-6">
-      <SantriForm initialData={santri} isEditing={true} />
-    </div>
-  );
+  return <SantriForm initialData={santri} isEditing />;
 }
