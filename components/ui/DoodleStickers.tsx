@@ -97,3 +97,21 @@ export function DoodleUnderline({ className, ...props }: DoodleProps) {
     </svg>
   );
 }
+
+/** Coretan bergelombang — dekorasi pojok kartu/ikon. */
+export function DoodleCoretan({ className, ...props }: DoodleProps) {
+  return (
+    <svg className={twMerge('w-6 h-3 text-current', className)} viewBox="0 0 48 16" fill="none" aria-hidden="true" {...props}>
+      <path data-doodle-garis="" d="M2 10 C 8 2, 14 14, 20 8 S 32 2, 38 9 S 44 12, 46 6" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Lingkaran tangan yang tidak tertutup sempurna. */
+export function DoodleLingkaran({ className, ...props }: DoodleProps) {
+  return (
+    <svg className={twMerge('w-5 h-5 text-current', className)} viewBox="0 0 40 40" fill="none" aria-hidden="true" {...props}>
+      <path data-doodle-garis="" d="M20 4 C 31 4, 37 12, 36 21 C 35 31, 26 37, 17 35 C 8 33, 3 25, 5 16 C 7 9, 13 5, 22 5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
