@@ -1,0 +1,42 @@
+<h2>Sidebar desktop: expand &amp; collapse</h2>
+<p class="subtitle">Gaya A (Clay Doodle). Dua cara kerja — klik yang Anda mau.</p>
+<style>
+  .frame{display:flex;height:300px;border-radius:18px;overflow:hidden;background:#f6f5ef;border:1px solid #e4ebe0;font-family:system-ui,sans-serif;color:#152a26}
+  .sb{background:#fff;border-right:1px solid #e4ebe0;padding:12px 10px;display:flex;flex-direction:column;gap:6px;transition:width .3s}
+  .it{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap}
+  .it.on{background:#e7f6ee;color:#0E7a43}
+  .ic{width:28px;height:28px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px}
+  .main{flex:1;padding:16px;display:flex;flex-direction:column;gap:10px}
+  .blk{background:#fff;border-radius:14px;box-shadow:0 6px 14px -8px rgba(0,0,0,.15);flex:1}
+  .tog{margin-top:auto;display:flex;align-items:center;gap:8px;font-size:11px;padding:8px;border-radius:10px;background:#f1f5ef;cursor:pointer}
+  .tip{position:absolute;left:62px;background:#152a26;color:#fff;font-size:11px;padding:4px 8px;border-radius:8px;white-space:nowrap}
+</style>
+<div class="options">
+  <div class="option" data-choice="klik" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Tombol ciutkan (disimpan)</h3>
+      <p>Tombol «/» di bawah sidebar. Lebar 240px ↔ 76px (hanya ikon + tooltip saat hover). Pilihan diingat di perangkat. Animasi lebar & teks memudar ±250ms.</p>
+      <div style="display:flex;gap:12px;margin-top:10px">
+        <div class="frame" style="width:48%"><div class="sb" style="width:170px">
+          <div class="it on"><span class="ic" style="background:#d1fae5;box-shadow:2px 3px 0 #0E9F5433">⌂</span>Beranda</div>
+          <div class="it"><span class="ic" style="background:#dbeafe;box-shadow:2px 3px 0 #0B5FA533">♡</span>Donatur</div>
+          <div class="it"><span class="ic" style="background:#fef3c7;box-shadow:2px 3px 0 #d9770633">✉</span>Surat</div>
+          <div class="tog">« Ciutkan</div></div><div class="main"><div class="blk"></div><div class="blk"></div></div></div>
+        <div class="frame" style="width:48%;position:relative"><div class="sb" style="width:52px;align-items:center">
+          <div class="it on" style="padding:8px 4px"><span class="ic" style="background:#d1fae5;box-shadow:2px 3px 0 #0E9F5433">⌂</span></div>
+          <div class="it" style="padding:8px 4px;position:relative"><span class="ic" style="background:#dbeafe;box-shadow:2px 3px 0 #0B5FA533">♡</span><span class="tip">Donatur</span></div>
+          <div class="it" style="padding:8px 4px"><span class="ic" style="background:#fef3c7;box-shadow:2px 3px 0 #d9770633">✉</span></div>
+          <div class="tog" style="padding:8px 6px">»</div></div><div class="main"><div class="blk"></div><div class="blk"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="option" data-choice="hover" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Rail yang melebar saat disentuh kursor + tombol pin</h3>
+      <p>Default ciut (76px). Arahkan kursor → sidebar melebar melayang di atas konten; klik ikon pin untuk menahannya tetap lebar. Hemat ruang, tapi gerak lebih sering terjadi dan bisa terasa "gelisah".</p>
+    </div>
+  </div>
+</div>
+<p class="subtitle">Catatan: di layar tablet (768–1024px) sidebar otomatis mulai dalam keadaan ciut.</p>

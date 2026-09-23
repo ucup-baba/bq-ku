@@ -1,0 +1,57 @@
+<h2>Buat Surat di HP: cara memadatkan</h2>
+<p class="subtitle">Sekarang 2,6 layar (form + pratinjau di bawahnya). Pilih pola yang paling nyaman untuk panitia.</p>
+<style>
+  .ph{width:230px;height:430px;border-radius:26px;background:#fbfaf5;border:1px solid #e4ebe0;padding:12px;font-family:system-ui,sans-serif;color:#152a26;display:flex;flex-direction:column;gap:8px;margin:0 auto;box-shadow:0 10px 24px -12px rgba(0,0,0,.2);position:relative;overflow:hidden}
+  .fld{background:#fff;border:1px solid #e4ebe0;border-radius:12px;padding:8px;font-size:10px}
+  .fld b{display:block;font-size:12px;margin-top:2px}
+  .hand{font-family:'Comic Sans MS',cursive;color:#1d3b8f;font-size:13px}
+  .btn{background:#0E9F54;color:#fff;border-radius:12px;text-align:center;padding:9px;font-size:11px;font-weight:700;box-shadow:0 6px 12px -6px #0E9F54}
+  .steps{display:flex;gap:4px;align-items:center;font-size:9px}
+  .steps i{flex:1;height:5px;border-radius:9px;background:#e4ebe0}.steps i.on{background:#0E9F54}
+  .tabs{display:flex;background:#eef2ec;border-radius:12px;padding:3px;font-size:10px;font-weight:700}
+  .tabs span{flex:1;text-align:center;padding:6px;border-radius:9px}.tabs .on{background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+  .paper{background:#fff;border:1px solid #e4ebe0;border-radius:8px;flex:1;padding:8px;font-size:7px;line-height:1.6}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:20px 20px 0 0;box-shadow:0 -8px 20px rgba(0,0,0,.12);padding:10px;height:170px}
+  .grab{width:40px;height:4px;border-radius:9px;background:#d4dcd2;margin:0 auto 6px}
+</style>
+<div class="cards">
+  <div class="card" data-choice="wizard" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#eef3ee">
+      <div class="ph">
+        <div class="steps"><i class="on"></i><i class="on"></i><i></i></div>
+        <div style="font-size:10px;font-weight:700">Langkah 2 dari 3 · Donasi</div>
+        <div class="fld">Jenis<b>Infaq ▾</b></div>
+        <div class="fld">Bentuk<b>● Uang ○ Barang</b></div>
+        <div class="fld">Nominal<b>Rp 2.500.000</b><span style="color:#64748b">Dua Juta Lima Ratus Ribu</span></div>
+        <div class="fld">Tanggal<b>23 Sep 2026</b></div>
+        <div style="margin-top:auto;display:flex;gap:6px"><div class="btn" style="background:#fff;color:#152a26;border:1px solid #e4ebe0;flex:1;box-shadow:none">Kembali</div><div class="btn" style="flex:2">Lanjut</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>A — Wizard 3 langkah</h3><p>① Donatur → ② Donasi → ③ Surat & gaya tulisan + pratinjau → Simpan. Setiap langkah muat 1 layar, ada progres. Paling tidak membingungkan untuk HP.</p></div>
+  </div>
+  <div class="card" data-choice="tab" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#eef3ee">
+      <div class="ph">
+        <div class="tabs"><span class="on">Isi data</span><span>Pratinjau</span></div>
+        <div class="fld">Donatur<b>Bapak Pradana ✓</b></div>
+        <div style="display:flex;gap:6px"><div class="fld" style="flex:1">Jenis<b>Infaq</b></div><div class="fld" style="flex:1">Bentuk<b>Uang</b></div></div>
+        <div class="fld">Nominal<b>Rp 2.500.000</b></div>
+        <div style="display:flex;gap:6px"><div class="fld" style="flex:1">Tgl donasi<b>23/09</b></div><div class="fld" style="flex:1">No. surat<b>272</b></div></div>
+        <div class="fld">Gaya tulisan<b><span class="hand">Kalam</span> · Patrick</b></div>
+        <div class="btn" style="margin-top:auto">Simpan & Buat Surat</div>
+      </div>
+    </div>
+    <div class="card-body"><h3>B — Satu layar padat + tab Pratinjau</h3><p>Field dipasangkan 2 kolom, pratinjau dipindah ke tab. Semua isian terlihat sekaligus, tombol simpan selalu di bawah. Cepat untuk panitia yang sudah terbiasa.</p></div>
+  </div>
+  <div class="card" data-choice="sheet" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#eef3ee">
+      <div class="ph">
+        <div class="paper"><b style="font-size:8px">No : <span class="hand" style="font-size:9px">272</span>/PBQ/IX/2026</b><br>Kepada Yth. Bapak/Ibu/Sdr : <span class="hand" style="font-size:9px">Pradana</span><br>…<br>Rp. <span class="hand" style="font-size:9px">2.500.000</span></div>
+        <div class="sheet"><div class="grab"></div>
+          <div style="display:flex;gap:6px"><div class="fld" style="flex:1">Nominal<b>2.500.000</b></div><div class="fld" style="flex:1">Jenis<b>Infaq</b></div></div>
+          <div class="btn" style="margin-top:8px">Simpan & Buat Surat</div></div>
+      </div>
+    </div>
+    <div class="card-body"><h3>C — Pratinjau penuh + panel isian geser</h3><p>Surat tampil besar, isian di bottom sheet yang bisa ditarik. Paling "wow" secara visual, tapi mengetik di sheet kecil kurang nyaman.</p></div>
+  </div>
+</div>
