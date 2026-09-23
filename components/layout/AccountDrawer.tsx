@@ -54,7 +54,7 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-6">
       {/* Backdrop overlay dengan blur halus */}
       <div 
         className="fixed inset-0 bg-slate-900/60 dark:bg-black/70 backdrop-blur-sm transition-opacity animate-in fade-in duration-200"
@@ -63,7 +63,7 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
       />
 
       {/* Sheet Content (Slide Up dari Bawah) */}
-      <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-t-[32px] shadow-2xl border-t border-slate-200/80 dark:border-slate-800/80 z-50 p-6 space-y-5 animate-in slide-in-from-bottom duration-300 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-lg md:max-w-md bg-bq-surface rounded-t-[32px] md:rounded-[32px] shadow-2xl border-t md:border border-bq-garis z-50 p-6 space-y-5 max-h-[90vh] overflow-y-auto animate-halaman">
         
         {/* Drag handle & close header */}
         <div className="flex items-center justify-between">
@@ -94,7 +94,7 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
               <span>{user?.email || 'email@baitulqowwam.sch.id'}</span>
             </p>
             <div className="mt-2">
-              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase shadow-xs ${
+              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold tracking-wide uppercase shadow-xs ${
                 roles.includes('SUPERADMIN')
                   ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
                   : roles.includes('ADMIN_SANTRI') || roles.includes('ADMIN_DONATUR')
@@ -110,7 +110,7 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
 
         {/* Menu Navigasi & Pintasan Akun */}
         <div className="space-y-2.5">
-          <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 block">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1 block">
             Akses & Pengaturan
           </span>
 
@@ -129,7 +129,7 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
                   <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
                     Kelola Akun & Pengguna
                   </h4>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Undang email panitia & kelola izin akses
                   </p>
                 </div>
@@ -152,7 +152,7 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
                 <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100">
                   Tema Tampilan
                 </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   {theme === 'dark' ? 'Mode Gelap Aktif' : 'Mode Terang Aktif'}
                 </p>
               </div>
@@ -166,18 +166,7 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
             </button>
           </div>
 
-          {/* Status Koneksi Sistem */}
-          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px]">
-                Server & AI OCR Siap
-              </span>
-            </div>
-            <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-              BQ-Ku v1.0
-            </span>
-          </div>
+          
         </div>
 
         {/* Section Keluar Akun dengan Konfirmasi Aman */}
@@ -197,7 +186,7 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
                 <WarningCircle size={18} weight="fill" className="text-rose-500" />
                 <span>Yakin ingin keluar dari akun BQ-Ku?</span>
               </div>
-              <p className="text-[11px] text-rose-600/90 dark:text-rose-400 leading-tight">
+              <p className="text-xs text-rose-600/90 dark:text-rose-400 leading-tight">
                 Anda harus login kembali dengan akun Google terdaftar untuk mengakses aplikasi.
               </p>
               <div className="grid grid-cols-2 gap-2 pt-1">

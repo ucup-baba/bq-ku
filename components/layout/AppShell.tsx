@@ -1,21 +1,24 @@
 'use client';
 import React from 'react';
-import { DesktopSidebar } from './DesktopSidebar';
+import { usePathname } from 'next/navigation';
+import { RailSidebar } from './RailSidebar';
 import { MobileBottomNav } from './MobileBottomNav';
-import { DonaturSidebar } from './DonaturSidebar';
 import { DonaturBottomNav } from './DonaturBottomNav';
 import { useAuth } from '@/components/auth/AuthProvider';
 import type { Room } from '@/lib/auth/rooms';
 
 export function AppShell({ room, children }: { room: Room; children: React.ReactNode }) {
   const { user } = useAuth();
-  if (!user) return <div className="min-h-screen bg-slate-50 dark:bg-slate-950">{children}</div>;
-  const Sidebar = room === 'donatur' ? DonaturSidebar : DesktopSidebar;
+  const pathname = usePathname();
+  if (!user) return <div className="min-h-screen bg-bq-bg">{children}</div>;
   const BottomNav = room === 'donatur' ? DonaturBottomNav : MobileBottomNav;
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
-      <Sidebar />
-      <main className="flex-1 min-w-0 pb-28 md:pb-12 pt-4 md:pt-8 px-4 sm:px-8 max-w-7xl mx-auto w-full">{children}</main>
+    <div className="flex min-h-screen bg-bq-bg text-bq-tinta transition-colors">
+      <RailSidebar room={room} />
+      <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-4 pb-28 pt-4 sm:px-8 md:pb-12 md:pt-8">
+        {/* key per path → animasi masuk setiap navigasi (template.tsx di route group tidak di-mount ulang) */}
+        <div key={pathname} className="animate-halaman">{children}</div>
+      </main>
       <BottomNav />
     </div>
   );
