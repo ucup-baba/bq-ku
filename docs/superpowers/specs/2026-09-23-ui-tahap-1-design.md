@@ -53,7 +53,7 @@ Didefinisikan di `app/globals.css` sebagai CSS variable + dipetakan di `tailwind
 | Komponen | Fungsi |
 |---|---|
 | `IkonUbin` | Ikon Phosphor di ubin warna lembut + bayangan offset sewarna + doodle opsional (`coretan`, `bintang`, `lingkaran`); ukuran sm/md/lg |
-| `Doodle` | Memperluas `components/ui/DoodleStickers.tsx` yang sudah ada (tidak membuat duplikat): tambah `coretan`, `bintang`, `lingkaran`; dapat "tergambar" (stroke-dashoffset via anime.js) saat masuk layar dan bergoyang pelan saat hover |
+| `Doodle` | Memperluas `components/ui/DoodleStickers.tsx` yang sudah ada (tidak membuat duplikat): tambah `DoodleCoretan` dan `DoodleLingkaran`, sedangkan `bintang` memakai `DoodleSparkle` yang sudah ada; dapat "tergambar" (stroke-dashoffset via anime.js) saat masuk layar dan bergoyang pelan saat hover |
 | `Kartu` | Permukaan kartu standar (surface, radius, shadow-card), varian `hero` bergradien hijau→biru |
 | `AngkaNaik` | Angka yang menghitung naik saat pertama terlihat (anime.js), format rupiah/angka |
 | `Carousel` | Embla + dots (dot aktif memanjang), geser, keyboard, `aria-roledescription="carousel"` |
@@ -85,7 +85,8 @@ Semua animasi JS memeriksa `matchMedia('(prefers-reduced-motion: reduce)')`; CSS
 ### 5.1 Desktop (≥1024 px; 768–1023 px mulai dalam keadaan rail)
 - `components/layout/RailSidebar.tsx` menggantikan `DesktopSidebar` dan `DonaturSidebar`: satu komponen, isi menu dari konfigurasi per ruangan (`lib/nav/menu.ts`).
 - Lebar tetap 76 px di tata letak; saat hover (atau fokus keyboard) melebar 240 px **melayang** di atas konten (tidak menggeser konten). Tombol pin menahan lebar 240 px dan menggeser konten; status pin di `localStorage('bq_rail_pin')`.
-- Saat rail ciut: ikon `IkonUbin` + tooltip nama menu. Bagian bawah: tombol Pindah Ruang, menu akun (nama, peran, keluar), toggle tema.
+- Saat rail ciut hanya ikon `IkonUbin` yang tampak; label muncul saat rail melebar (hover/fokus), sehingga tidak perlu tooltip terpisah. Bagian bawah: tombol Pindah Ruang, tombol Akun (avatar; membuka panel Akun yang sama dengan HP — berisi tema, kelola pengguna, keluar), tombol pin. Toggle tema hanya ada di panel Akun (tidak dobel di rail).
+- Aksi utama ruangan (Buat Surat / Input Berkas) **tidak** menjadi item rail Ruang Donatur; di desktop ia tampil sebagai tombol utama di header halaman yang relevan (Beranda, Daftar Surat). Ruang Santri tetap memakai item rail "Input Berkas" sampai Tahap 2.
 
 ### 5.2 HP (<768 px)
 - `components/layout/BottomNav.tsx` menggantikan `MobileBottomNav` dan `DonaturBottomNav`, isi dari `lib/nav/menu.ts`.
@@ -94,7 +95,7 @@ Semua animasi JS memeriksa `matchMedia('(prefers-reduced-motion: reduce)')`; CSS
 - Tidak ada lagi tautan ke tujuan yang sama di header halaman bila sudah ada di bottom nav.
 
 ### 5.3 Transisi halaman
-`app/(donatur)/template.tsx` dan `app/(santri)/template.tsx` memberi animasi masuk halaman (template di-mount ulang per navigasi).
+`AppShell` membungkus konten dengan elemen ber-`key={pathname}` dan kelas `animate-halaman`, sehingga setiap navigasi memicu animasi masuk. (`template.tsx` di route group tidak di-mount ulang antar-halaman dalam grup yang sama, jadi tidak dipakai.)
 
 ## 6. Halaman Ruang Donatur
 
@@ -103,7 +104,7 @@ Semua animasi JS memeriksa `matchMedia('(prefers-reduced-motion: reduce)')`; CSS
 - **Kartu hero:** total donasi uang periode ini (`AngkaNaik`), `ChipPilihan` periode (Bulan / 3 bln / Tahun / ⋯), keterangan perbandingan, sparkline tren.
 - **"⋯" periode** membuka `PanelBawah` (desktop: popover) berisi rentang tanggal manual (satu ikon kalender) dan tombol Export CSV.
 - **Carousel angka** (HP; desktop grid 3–4 kolom): Donasi uang, Donasi barang, Surat terkirim (x/y), Komposisi akad.
-- **"Perlu dikirim ke WhatsApp"**: carousel kartu surat belum terkirim, masing-masing tombol Kirim WA (memakai `TombolKirimWa` yang sudah ada); judul menautkan ke Daftar Surat filter "Belum dikirim". Kosong → pesan sukses kecil.
+- **"Perlu dikirim ke WhatsApp"**: carousel kartu surat belum terkirim (maks. 5) di HP maupun desktop, masing-masing tombol Kirim WA (memakai `TombolKirimWa`). Gambar PNG hanya disiapkan untuk slide yang sedang aktif agar beranda tidak merender 5 PNG sekaligus. Tautan di judul: "n surat" → Daftar Surat filter Belum dikirim; bila kosong, "Arsip surat" → Daftar Surat, dan kartu diganti pesan sukses kecil.
 - **Donasi terbaru**: 2 baris di HP (desktop 5), ikon "donasi lagi" (↻) ber-`aria-label`; "Lihat semua" ke Daftar Donatur.
 - Desktop tambahan: grafik tren lengkap dan daftar donasi barang di grid bento.
 - **Dihapus:** tombol "+ Buat Surat" di filter, "Input Donasi Baru", "Arsip Surat", kartu filter besar, badge "Belum WA" di daftar donatur, panah ↗.
@@ -124,7 +125,7 @@ Kartu profil ringkas + timeline riwayat donasi; satu tombol "Donasi lagi".
 `ChipPilihan` status (Semua / Belum dikirim / Sudah dikirim), periode di "⋯"; baris surat dengan status + aksi Kirim WA; tidak ada tautan ke Buat Surat selain tombol global.
 
 ### 6.6 Detail Surat
-Gambar surat dengan pinch-zoom (CSS `touch-action: pinch-zoom` pada wadah gulir); tombol Kirim WA mengambang di bawah (HP) / di panel kanan (desktop); Unduh & Tandai terkirim di menu "⋯".
+Gambar surat dengan pinch-zoom (CSS `touch-action: pinch-zoom` pada wadah gulir); tombol Kirim WA mengambang di bawah (HP) / di panel kanan (desktop); Unduh & Tandai terkirim di menu "⋯". Setelah Kirim WA ditekan, muncul ajakan kontekstual "Sudah terkirim? Tandai" supaya langkah menandai tidak terlupa.
 
 ### 6.7 Akun & Pengguna (`/pengguna`)
 Disamakan dengan gaya A: tabel di desktop, kartu di HP; tombol tambah email = `TombolIkon`.
