@@ -123,7 +123,7 @@ Cari menempel (sticky) di atas; kartu padat (avatar inisial, nama, WA, ↻); tam
 Kartu profil ringkas + timeline riwayat donasi; satu tombol "Donasi lagi".
 
 ### 6.5 Daftar Surat (`/donatur/surat`)
-`ChipPilihan` status (Semua / Belum dikirim / Sudah dikirim), periode di "⋯"; baris surat dengan status + aksi Kirim WA; tidak ada tautan ke Buat Surat selain tombol global.
+`ChipPilihan` status berjumlah (Semua / Belum dikirim / Sudah dikirim), bisa dibuka langsung lewat `?status=`; bulan dipilih lewat tombol kalender berlabel bulan yang membuka `LembarBawah`; baris surat dengan status + aksi Kirim WA; tidak ada tautan ke Buat Surat selain tombol global.
 
 ### 6.6 Detail Surat
 Gambar surat dengan pinch-zoom (CSS `touch-action: pinch-zoom` pada wadah gulir); tombol Kirim WA mengambang di bawah (HP) / di panel kanan (desktop); Unduh & Tandai terkirim di menu "⋯". Setelah Kirim WA ditekan, muncul ajakan kontekstual "Sudah terkirim? Tandai" supaya langkah menandai tidak terlupa.
