@@ -40,7 +40,7 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
   return (
     <div style={{ width: 1240, height: 1754, display: 'flex', flexDirection: 'column', backgroundColor: '#fff', color: TEKS, fontFamily: 'Arimo', padding: '48px 80px' }}>
       {/* KOP — ekspor CorelDRAW asli, lengkap (logo, tulisan Arab, nama panti, akte/izin/alamat, garis hijau bawah) */}
-      <img src={assets.kop} width={1080} height={229} style={{ objectFit: 'contain' }} />
+      <img src={assets.kop} width={1080} height={229} style={{ width: 1080, height: 229, objectFit: 'contain' }} />
 
       {/* Badan surat, dengan watermark logo samar di belakang */}
       <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', marginTop: 28 }}>
@@ -52,7 +52,7 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
           src={assets.logo}
           width={600}
           height={600}
-          style={{ position: 'absolute', left: 240, top: 380, opacity: 0.07 }}
+          style={{ width: 600, height: 600, position: 'absolute', left: 240, top: 380, opacity: 0.07 }}
         />
 
         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -116,7 +116,7 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 10 }}>
               <div style={{ display: 'flex', fontSize: 22 }}>Teriring Do’a</div>
               <div style={{ display: 'flex', fontFamily: 'Bebas', fontSize: 38, color: TEKS, letterSpacing: 1 }}>JAZAKUMULLAHU KHAIRAN JAZAA</div>
-              <img src={assets.doaCdr} width={680} height={41} style={{ objectFit: 'contain', marginTop: 6 }} />
+              <img src={assets.doaCdr} width={680} height={41} style={{ width: 680, height: 41, objectFit: 'contain', marginTop: 6 }} />
               <div style={{ display: 'flex', fontSize: 20, fontFamily: 'Arimo', fontStyle: 'italic', textAlign: 'center', marginTop: 10, maxWidth: 900 }}>
                 “Semoga Allah memberi pahala dengan apa yang engkau berikan dan Allah memberkahi apa saja yang masih ada pada diri engkau dan semoga Allah menjadikannya suci bagi engkau” Aamiin...
               </div>
@@ -134,8 +134,8 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
               <div style={{ display: 'flex', fontSize: 22 }}>Pengurus Panti Asuhan</div>
               <div style={{ display: 'flex', fontSize: 22 }}>Baitul Qowwam</div>
               <div style={{ display: 'flex', position: 'relative', height: 150, width: 380, alignItems: 'center', justifyContent: 'center' }}>
-                <img src={assets.stempel} width={210} height={210} style={{ position: 'absolute', left: 20, top: -20, opacity: 0.9 }} />
-                <img src={assets.ttd} width={150} height={150} style={{ position: 'absolute', left: 150, top: -6 }} />
+                <img src={assets.stempel} width={210} height={210} style={{ width: 210, height: 210, position: 'absolute', left: 20, top: -20, opacity: 0.9 }} />
+                <img src={assets.ttd} width={150} height={150} style={{ width: 150, height: 150, position: 'absolute', left: 150, top: -6 }} />
               </div>
               <div style={{ display: 'flex', fontSize: 24, fontWeight: 700 }}>Dr. H. Agus Triyanta</div>
             </div>

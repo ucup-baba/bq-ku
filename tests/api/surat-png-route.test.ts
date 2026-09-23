@@ -5,6 +5,14 @@ const getSurat = vi.fn();
 const setSuratStoragePath = vi.fn();
 const upload = vi.fn();
 const loadSuratAssets = vi.fn();
+const download = vi.fn();
+const tertunda: Array<() => Promise<void>> = [];
+const jalankanAfter = async () => { while (tertunda.length) await tertunda.shift()!(); };
+
+vi.mock('next/server', async (asli) => ({
+  ...(await asli<typeof import('next/server')>()),
+  after: (fn: () => Promise<void>) => { tertunda.push(fn); },
+}));
 
 vi.mock('@/lib/db/donatur-repo', () => ({
   getSurat: (...a: any[]) => getSurat(...a),
@@ -20,7 +28,7 @@ vi.mock('next/og', () => ({
   ImageResponse: class { arrayBuffer() { return Promise.resolve(new Uint8Array([137, 80, 78, 71]).buffer); } },
 }));
 
-const fakeSupabase = { storage: { from: () => ({ upload: (...a: any[]) => upload(...a) }) } };
+const fakeSupabase = { storage: { from: () => ({ upload: (...a: any[]) => upload(...a), download: (...a: any[]) => download(...a) }) } };
 vi.mock('@/lib/auth/session', () => ({
   requireRoom: vi.fn(async () => ({ user: { id: 'u1' }, supabase: fakeSupabase })),
   authErrorResponse: () => null,
@@ -36,6 +44,8 @@ beforeEach(() => {
   getSurat.mockReset().mockResolvedValue(surat);
   setSuratStoragePath.mockReset().mockResolvedValue(undefined);
   upload.mockReset();
+  download.mockReset();
+  tertunda.length = 0;
   loadSuratAssets.mockReset().mockResolvedValue({});
   errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 });
@@ -46,8 +56,10 @@ describe('GET /api/donatur/surat/[id]/png', () => {
     upload.mockResolvedValue({ error: null });
     const res = await GET({} as any, ctx);
     expect(res.status).toBe(200);
-    expect(upload.mock.calls[0][0]).toBe('surat/2026/5-PBQ-IX-2026.png');
-    expect(setSuratStoragePath).toHaveBeenCalledWith(fakeSupabase, 'surat-1', 'surat/2026/5-PBQ-IX-2026.png');
+    expect(upload).not.toHaveBeenCalled(); // unggah baru jalan setelah respons terkirim
+    await jalankanAfter();
+    expect(upload.mock.calls[0][0]).toBe('surat/2026/5-PBQ-IX-2026-v2.png');
+    expect(setSuratStoragePath).toHaveBeenCalledWith(fakeSupabase, 'surat-1', 'surat/2026/5-PBQ-IX-2026-v2.png');
     expect(errSpy).not.toHaveBeenCalled();
   });
 
@@ -56,6 +68,7 @@ describe('GET /api/donatur/surat/[id]/png', () => {
     const res = await GET({} as any, ctx);
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toBe('image/png');
+    await jalankanAfter();
     expect(setSuratStoragePath).not.toHaveBeenCalled();
     expect(errSpy).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(errSpy.mock.calls[0])).toContain('row-level security');
@@ -69,5 +82,24 @@ describe('GET /api/donatur/surat/[id]/png', () => {
     expect(body).toEqual({ error: 'Gagal membuat gambar surat' });
     expect(JSON.stringify(body)).not.toContain('ENOENT');
     expect(errSpy).toHaveBeenCalled();
+  });
+
+  it('PNG versi terbaru sudah di storage -> dikirim dari storage tanpa render ulang', async () => {
+    getSurat.mockResolvedValue({ ...surat, storagePath: 'surat/2026/5-PBQ-IX-2026-v2.png' });
+    download.mockResolvedValue({ data: new Blob([new Uint8Array([1, 2, 3])]), error: null });
+    const res = await GET({} as any, ctx);
+    expect(res.status).toBe(200);
+    expect(new Uint8Array(await res.arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]));
+    expect(loadSuratAssets).not.toHaveBeenCalled();
+    expect(tertunda).toHaveLength(0);
+  });
+
+  it('PNG versi lama di storage -> dirender ulang dengan template terbaru', async () => {
+    getSurat.mockResolvedValue({ ...surat, storagePath: 'surat/2026/5-PBQ-IX-2026.png' });
+    upload.mockResolvedValue({ error: null });
+    const res = await GET({} as any, ctx);
+    expect(res.status).toBe(200);
+    expect(download).not.toHaveBeenCalled();
+    expect(loadSuratAssets).toHaveBeenCalled();
   });
 });
