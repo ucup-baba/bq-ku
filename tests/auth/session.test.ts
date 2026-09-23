@@ -20,13 +20,13 @@ describe('getSessionUser', () => {
   });
   it('null jika profil nonaktif', async () => {
     getUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.c' } } });
-    maybeSingle.mockResolvedValue({ data: { nama: 'A', role: 'PANITIA', aktif: false } });
+    maybeSingle.mockResolvedValue({ data: { nama: 'A', roles: ['ADMIN_SANTRI'], aktif: false } });
     expect(await getSessionUser()).toBeNull();
   });
-  it('mengembalikan user + role', async () => {
+  it('mengembalikan user + roles', async () => {
     getUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.c' } } });
-    maybeSingle.mockResolvedValue({ data: { nama: 'A', role: 'PANITIA', aktif: true } });
-    expect(await getSessionUser()).toEqual({ id: 'u1', email: 'a@b.c', nama: 'A', role: 'PANITIA' });
+    maybeSingle.mockResolvedValue({ data: { nama: 'A', roles: ['ADMIN_SANTRI'], aktif: true } });
+    expect(await getSessionUser()).toEqual({ id: 'u1', email: 'a@b.c', nama: 'A', roles: ['ADMIN_SANTRI'] });
   });
 });
 
@@ -35,15 +35,21 @@ describe('requireUser', () => {
     getUser.mockResolvedValue({ data: { user: null } });
     await expect(requireUser()).rejects.toMatchObject({ status: 401, code: 'UNAUTHENTICATED' });
   });
-  it('403 jika role tidak diizinkan', async () => {
+  it('403 jika tidak punya peran yang diizinkan', async () => {
     getUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.c' } } });
-    maybeSingle.mockResolvedValue({ data: { nama: 'A', role: 'VIEWER', aktif: true } });
+    maybeSingle.mockResolvedValue({ data: { nama: 'A', roles: ['VIEWER'], aktif: true } });
     await expect(requireUser(['SUPERADMIN'])).rejects.toBeInstanceOf(AuthError);
   });
-  it('lolos jika role cocok', async () => {
+  it('lolos jika salah satu peran cocok', async () => {
     getUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.c' } } });
-    maybeSingle.mockResolvedValue({ data: { nama: 'A', role: 'SUPERADMIN', aktif: true } });
-    const { user } = await requireUser(['SUPERADMIN', 'PANITIA']);
-    expect(user.role).toBe('SUPERADMIN');
+    maybeSingle.mockResolvedValue({ data: { nama: 'A', roles: ['SUPERADMIN'], aktif: true } });
+    const { user } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
+    expect(user.roles).toEqual(['SUPERADMIN']);
+  });
+  it('lolos bila peran ganda mencakup salah satu yang diizinkan', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.c' } } });
+    maybeSingle.mockResolvedValue({ data: { nama: 'A', roles: ['ADMIN_DONATUR', 'ADMIN_SANTRI'], aktif: true } });
+    const { user } = await requireUser(['ADMIN_SANTRI']);
+    expect(user.roles).toContain('ADMIN_SANTRI');
   });
 });

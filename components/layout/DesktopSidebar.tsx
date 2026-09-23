@@ -17,6 +17,7 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { UserMenu } from '@/components/auth/UserMenu';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { DoodleSparkle } from '@/components/ui/DoodleStickers';
+import { RoomSwitchButton } from './RoomSwitchButton';
 
 export function DesktopSidebar() {
   const pathname = usePathname();
@@ -79,6 +80,7 @@ export function DesktopSidebar() {
 
       {/* Footer Area: Role Switcher & Theme Toggle */}
       <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+        <RoomSwitchButton variant="sidebar" />
         <UserMenu />
 
         <div className="flex items-center justify-between">

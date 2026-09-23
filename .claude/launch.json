@@ -1,6 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "bq-ku-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000, "autoPort": true }
+    { "name": "bq-ku-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "-p", "41471"], "port": 41471, "autoPort": false }
   ]
 }

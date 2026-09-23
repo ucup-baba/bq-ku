@@ -1,25 +1,25 @@
 import { describe, it, expect } from 'vitest';
-import { canDeleteSantri, canEditSantri, canVerifyDocuments, canManageUsers } from '@/lib/auth/roles';
+import { canEditSantri, canDeleteSantri, canManageUsers, canManageDonatur, getRoleLabel } from '@/lib/auth/roles';
 
-describe('Role Permission Matrix', () => {
-  it('should grant full privileges to SUPERADMIN', () => {
-    expect(canDeleteSantri('SUPERADMIN')).toBe(true);
-    expect(canEditSantri('SUPERADMIN')).toBe(true);
-    expect(canVerifyDocuments('SUPERADMIN')).toBe(true);
-    expect(canManageUsers('SUPERADMIN')).toBe(true);
+describe('izin berbasis banyak peran', () => {
+  it('ADMIN_SANTRI boleh mengubah santri, tidak boleh menghapus', () => {
+    expect(canEditSantri(['ADMIN_SANTRI'])).toBe(true);
+    expect(canDeleteSantri(['ADMIN_SANTRI'])).toBe(false);
   });
-
-  it('should allow PANITIA to edit and verify but NOT delete santri', () => {
-    expect(canDeleteSantri('PANITIA')).toBe(false);
-    expect(canEditSantri('PANITIA')).toBe(true);
-    expect(canVerifyDocuments('PANITIA')).toBe(true);
-    expect(canManageUsers('PANITIA')).toBe(false);
+  it('ADMIN_DONATUR tidak menyentuh santri', () => {
+    expect(canEditSantri(['ADMIN_DONATUR'])).toBe(false);
+    expect(canManageDonatur(['ADMIN_DONATUR'])).toBe(true);
   });
-
-  it('should restrict VIEWER to read-only access', () => {
-    expect(canDeleteSantri('VIEWER')).toBe(false);
-    expect(canEditSantri('VIEWER')).toBe(false);
-    expect(canVerifyDocuments('VIEWER')).toBe(false);
-    expect(canManageUsers('VIEWER')).toBe(false);
+  it('SUPERADMIN boleh semuanya', () => {
+    expect(canDeleteSantri(['SUPERADMIN'])).toBe(true);
+    expect(canManageUsers(['SUPERADMIN'])).toBe(true);
+    expect(canManageDonatur(['SUPERADMIN'])).toBe(true);
+  });
+  it('peran ganda menggabungkan izin', () => {
+    expect(canEditSantri(['ADMIN_SANTRI', 'ADMIN_DONATUR'])).toBe(true);
+    expect(canManageDonatur(['ADMIN_SANTRI', 'ADMIN_DONATUR'])).toBe(true);
+  });
+  it('label peran berbahasa Indonesia', () => {
+    expect(getRoleLabel('ADMIN_DONATUR')).toMatch(/Donatur/i);
   });
 });

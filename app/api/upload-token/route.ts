@@ -16,7 +16,7 @@ function generateToken(length = 12): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { supabase } = await requireUser(['SUPERADMIN', 'PANITIA']);
+    const { supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
     const body = await req.json();
     const { santriId } = body;
 

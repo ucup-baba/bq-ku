@@ -26,7 +26,7 @@ export interface AccountDrawerProps {
 }
 
 export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
-  const { user, role, canManageUsers, logout } = useAuth();
+  const { user, roles, canManageUsers, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -95,14 +95,14 @@ export function AccountDrawer({ isOpen, onClose }: AccountDrawerProps) {
             </p>
             <div className="mt-2">
               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold tracking-wide uppercase shadow-xs ${
-                role === 'SUPERADMIN'
+                roles.includes('SUPERADMIN')
                   ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
-                  : role === 'PANITIA'
+                  : roles.includes('ADMIN_SANTRI') || roles.includes('ADMIN_DONATUR')
                   ? 'bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-700'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700'
               }`}>
                 <ShieldCheck size={12} weight="fill" />
-                <span>{getRoleLabel(role)}</span>
+                <span>{roles.map(getRoleLabel).join(' · ')}</span>
               </span>
             </div>
           </div>

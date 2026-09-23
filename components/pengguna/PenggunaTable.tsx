@@ -1,16 +1,23 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
-import { UserPlus, Prohibit, CheckCircle, ShieldCheck, ArrowsClockwise, Trash, Warning } from '@phosphor-icons/react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { UserPlus, Prohibit, CheckCircle, ShieldCheck, ArrowsClockwise, Trash, Warning, PencilSimple, Check, X } from '@phosphor-icons/react';
 import { UndangPenggunaModal } from './UndangPenggunaModal';
-import type { UserRole } from '@/lib/auth/roles';
+import { ALL_ROLES, getRoleLabel, type UserRole } from '@/lib/auth/roles';
+import { roomsFor, ROOM_LABEL, type Room } from '@/lib/auth/rooms';
 
-type Row = { id: string; nama: string; email: string; role: UserRole; aktif: boolean; createdAt: string; status: 'PROFIL' | 'MENUNGGU'; lastSignInAt: string | null };
+type Row = { id: string; nama: string; email: string; roles: UserRole[]; aktif: boolean; createdAt: string; status: 'PROFIL' | 'MENUNGGU'; lastSignInAt: string | null };
 
 const ROLE_BADGE: Record<UserRole, string> = {
   SUPERADMIN: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200',
-  PANITIA: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200',
+  ADMIN_SANTRI: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200',
+  ADMIN_DONATUR: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
   VIEWER: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 };
+const RUANGAN_FILTER: { value: 'semua' | Room; label: string }[] = [
+  { value: 'semua', label: 'Semua' },
+  { value: 'santri', label: ROOM_LABEL.santri },
+  { value: 'donatur', label: ROOM_LABEL.donatur },
+];
 const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : 'Belum pernah';
 const fmtMasuk = (r: Row) => r.status === 'MENUNGGU' ? 'Menunggu masuk pertama via Google' : fmt(r.lastSignInAt);
 
@@ -21,9 +28,12 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
   const [modal, setModal] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [konfirmHapus, setKonfirmHapus] = useState<Row | null>(null);
+  const [editRoleId, setEditRoleId] = useState<string | null>(null);
+  const [editRoles, setEditRoles] = useState<UserRole[]>([]);
+  const [ruangan, setRuangan] = useState<'semua' | Room>('semua');
 
   const load = useCallback(async () => {
-    setLoading(true); setError(null);
+    setLoading(true); setError(null); setEditRoleId(null);
     try {
       const res = await fetch('/api/pengguna');
       const data = await res.json();
@@ -33,12 +43,18 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const patch = async (id: string, body: { role?: UserRole; aktif?: boolean }) => {
+  const filteredRows = useMemo(() => {
+    if (ruangan === 'semua') return rows;
+    return rows.filter(r => roomsFor(r.roles).includes(ruangan));
+  }, [rows, ruangan]);
+
+  const patch = async (id: string, body: { roles?: UserRole[]; aktif?: boolean }) => {
     setBusyId(id); setError(null);
     try {
       const res = await fetch(`/api/pengguna/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Gagal memperbarui');
+      setEditRoleId(null);
       await load();
     } catch (e: any) { setError(e.message); } finally { setBusyId(null); }
   };
@@ -54,14 +70,57 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
     } catch (e: any) { setError(e.message); } finally { setBusyId(null); }
   };
 
-  const select = 'h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50';
+  const bukaEditRole = (r: Row) => { setEditRoleId(r.id); setEditRoles(r.roles); };
+  const toggleEditRole = (role: UserRole) => {
+    setEditRoles(prev => prev.includes(role) ? prev.filter(x => x !== role) : [...prev, role]);
+  };
+  const simpanRole = (r: Row) => {
+    if (editRoles.length === 0) { setError('Pilih minimal satu peran'); return; }
+    patch(r.id, { roles: editRoles });
+  };
 
-  const RoleSelect = ({ r }: { r: Row }) => (
-    <select aria-label={`Peran ${r.nama}`} value={r.role} disabled={r.id === currentUserId || busyId === r.id}
-      onChange={e => patch(r.id, { role: e.target.value as UserRole })} className={select}>
-      <option value="SUPERADMIN">Superadmin</option><option value="PANITIA">Panitia</option><option value="VIEWER">Viewer</option>
-    </select>
-  );
+  const RolePeran = ({ r }: { r: Row }) => {
+    const diriSendiri = r.id === currentUserId;
+    const busy = busyId === r.id;
+    if (editRoleId === r.id) {
+      return (
+        <div className="space-y-2 rounded-2xl border border-teal-300 dark:border-teal-700 bg-teal-50/50 dark:bg-teal-900/10 p-3 w-64">
+          {ALL_ROLES.map(role => (
+            <label key={role} className="flex items-center gap-2 min-h-11 py-0.5 cursor-pointer">
+              <input type="checkbox" checked={editRoles.includes(role)} onChange={() => toggleEditRole(role)}
+                className="h-5 w-5 rounded border-slate-300 text-teal-600 focus:ring-2 focus:ring-teal-500" />
+              <span className="text-sm">{getRoleLabel(role)}</span>
+            </label>
+          ))}
+          <div className="flex gap-2 pt-1">
+            <button type="button" aria-label={`Simpan peran ${r.nama}`} disabled={busy} onClick={() => simpanRole(r)}
+              className="h-11 flex-1 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold inline-flex items-center justify-center gap-1 text-sm">
+              <Check size={16} weight="bold" /> {busy ? 'Menyimpan…' : 'Simpan'}
+            </button>
+            <button type="button" aria-label="Batal ubah peran" disabled={busy} onClick={() => setEditRoleId(null)}
+              className="h-11 w-11 rounded-xl border border-slate-200 dark:border-slate-700 inline-flex items-center justify-center">
+              <X size={16} weight="bold" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="flex flex-wrap items-center gap-1.5">
+        {r.roles.map(role => (
+          <span key={role} className={`rounded-full px-2 py-0.5 text-[11px] font-bold inline-flex items-center gap-1 ${ROLE_BADGE[role]}`}>
+            <ShieldCheck size={12} weight="bold" />{getRoleLabel(role)}
+          </span>
+        ))}
+        <button type="button" aria-label={`Ubah peran ${r.nama}`} disabled={diriSendiri || busy}
+          onClick={() => bukaEditRole(r)}
+          className="h-11 w-11 rounded-full inline-flex items-center justify-center border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-teal-600 hover:border-teal-300 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <PencilSimple size={14} weight="bold" />
+        </button>
+      </div>
+    );
+  };
+
   const AktifToggle = ({ r }: { r: Row }) => (
     <button type="button" aria-pressed={!r.aktif} aria-label={`${r.aktif ? 'Blokir' : 'Buka blokir'} ${r.nama}`}
       disabled={r.id === currentUserId || busyId === r.id || r.status === 'MENUNGGU'} onClick={() => patch(r.id, { aktif: !r.aktif })}
@@ -89,7 +148,16 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
         <button type="button" onClick={load} aria-label="Muat ulang" className="h-11 w-11 rounded-2xl border border-slate-200 dark:border-slate-700 inline-flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800">
           <ArrowsClockwise size={20} weight="bold" className={loading ? 'animate-spin' : ''} />
         </button>
-        <span className="text-xs text-slate-500">{rows.length} pengguna</span>
+        <div className="flex items-center gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 p-1" role="group" aria-label="Filter ruangan">
+          {RUANGAN_FILTER.map(f => (
+            <button key={f.value} type="button" onClick={() => setRuangan(f.value)}
+              aria-pressed={ruangan === f.value}
+              className={`h-11 px-3 rounded-xl text-xs font-bold transition-colors ${ruangan === f.value ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <span className="text-xs text-slate-500">{filteredRows.length} pengguna</span>
       </div>
       {error && <p role="alert" className="text-sm text-rose-600 bg-rose-50 dark:bg-rose-900/20 rounded-xl px-3 py-2">{error}</p>}
 
@@ -100,34 +168,35 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
             <th className="px-5 py-3">Nama</th><th className="px-5 py-3">Email</th><th className="px-5 py-3">Peran</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Terakhir masuk</th><th className="px-5 py-3 text-right">Aksi</th>
           </tr></thead>
           <tbody>
-            {rows.map(r => (
+            {filteredRows.map(r => (
               <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800/60 last:border-0">
-                <td className="px-5 py-3 font-bold">{r.nama}{r.id === currentUserId && <span className="ml-2 text-[11px] font-semibold text-teal-600">(Anda)</span>}</td>
-                <td className="px-5 py-3 text-slate-600 dark:text-slate-300">{r.email}</td>
-                <td className="px-5 py-3"><RoleSelect r={r} /></td>
-                <td className="px-5 py-3"><AktifToggle r={r} /></td>
-                <td className="px-5 py-3 text-slate-500">{fmtMasuk(r)}</td>
-                <td className="px-5 py-3 text-right"><HapusButton r={r} /></td>
+                <td className="px-5 py-3 font-bold align-top">{r.nama}{r.id === currentUserId && <span className="ml-2 text-[11px] font-semibold text-teal-600">(Anda)</span>}</td>
+                <td className="px-5 py-3 text-slate-600 dark:text-slate-300 align-top">{r.email}</td>
+                <td className="px-5 py-3 align-top"><RolePeran r={r} /></td>
+                <td className="px-5 py-3 align-top"><AktifToggle r={r} /></td>
+                <td className="px-5 py-3 text-slate-500 align-top">{fmtMasuk(r)}</td>
+                <td className="px-5 py-3 text-right align-top"><HapusButton r={r} /></td>
               </tr>
             ))}
-            {!loading && rows.length === 0 && <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-500">Belum ada pengguna.</td></tr>}
+            {!loading && filteredRows.length === 0 && <tr><td colSpan={6} className="px-5 py-8 text-center text-slate-500">Belum ada pengguna.</td></tr>}
           </tbody>
         </table>
       </div>
 
       {/* Mobile: kartu */}
       <ul className="md:hidden space-y-3">
-        {rows.map(r => (
+        {filteredRows.map(r => (
           <li key={r.id} className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0"><p className="font-bold truncate">{r.nama}{r.id === currentUserId && <span className="ml-2 text-[11px] font-semibold text-teal-600">(Anda)</span>}</p>
                 <p className="text-xs text-slate-500 truncate">{r.email}</p></div>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold inline-flex items-center gap-1 ${ROLE_BADGE[r.role]}`}><ShieldCheck size={12} weight="bold" />{r.role}</span>
             </div>
-            <div className="flex flex-wrap items-center gap-2"><RoleSelect r={r} /><AktifToggle r={r} /><HapusButton r={r} /></div>
+            <RolePeran r={r} />
+            <div className="flex flex-wrap items-center gap-2"><AktifToggle r={r} /><HapusButton r={r} /></div>
             <p className="text-[11px] text-slate-500">Terakhir masuk: {fmtMasuk(r)}</p>
           </li>
         ))}
+        {!loading && filteredRows.length === 0 && <li className="px-5 py-8 text-center text-slate-500">Belum ada pengguna.</li>}
       </ul>
 
       <UndangPenggunaModal open={modal} onClose={() => setModal(false)} onInvited={load} />

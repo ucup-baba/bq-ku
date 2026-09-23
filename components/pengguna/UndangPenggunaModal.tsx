@@ -1,17 +1,12 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { X, UserPlus, Check } from '@phosphor-icons/react';
-
-const ROLES = [
-  { value: 'PANITIA', label: 'Panitia Administrasi' },
-  { value: 'VIEWER', label: 'Viewer (hanya lihat)' },
-  { value: 'SUPERADMIN', label: 'Superadmin (penuh)' },
-] as const;
+import { ALL_ROLES, getRoleLabel, type UserRole } from '@/lib/auth/roles';
 
 export function UndangPenggunaModal({ open, onClose, onInvited }: { open: boolean; onClose: () => void; onInvited: () => void }) {
   const [nama, setNama] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<string>('PANITIA');
+  const [roles, setRoles] = useState<UserRole[]>(['ADMIN_SANTRI']);
   const [fields, setFields] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -19,7 +14,7 @@ export function UndangPenggunaModal({ open, onClose, onInvited }: { open: boolea
 
   useEffect(() => {
     if (!open) return;
-    setNama(''); setEmail(''); setRole('PANITIA'); setFields({}); setError(null);
+    setNama(''); setEmail(''); setRoles(['ADMIN_SANTRI']); setFields({}); setError(null);
     setTimeout(() => firstInput.current?.focus(), 30);
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -28,12 +23,17 @@ export function UndangPenggunaModal({ open, onClose, onInvited }: { open: boolea
 
   if (!open) return null;
 
+  const toggleRole = (role: UserRole) => {
+    setRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault(); setBusy(true); setError(null); setFields({});
+    if (roles.length === 0) { setFields({ roles: 'Pilih minimal satu peran' }); setBusy(false); return; }
     try {
       const res = await fetch('/api/pengguna', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nama, email, role }),
+        body: JSON.stringify({ nama, email, roles }),
       });
       const data = await res.json();
       if (res.status === 400 && data.fields) { setFields(data.fields); return; }
@@ -63,10 +63,21 @@ export function UndangPenggunaModal({ open, onClose, onInvited }: { open: boolea
         <label className="block space-y-1"><span className="text-xs font-semibold">Email</span>
           <input type="email" placeholder="nama@gmail.com" value={email} onChange={e => setEmail(e.target.value)} required className={`${field} ${border('email')}`} />
           {fields.email && <span className="text-xs text-rose-600">{fields.email}</span>}</label>
-        <label className="block space-y-1"><span className="text-xs font-semibold">Peran</span>
-          <select value={role} onChange={e => setRole(e.target.value)} className={`${field} ${border('role')}`}>
-            {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-          </select></label>
+        <fieldset className={`space-y-2 rounded-2xl border p-3 ${border('roles')}`}>
+          <legend className="text-xs font-semibold px-1">Peran</legend>
+          {ALL_ROLES.map(role => (
+            <label key={role} className="flex items-center gap-3 min-h-11 py-1 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={roles.includes(role)}
+                onChange={() => toggleRole(role)}
+                className="h-5 w-5 rounded border-slate-300 text-teal-600 focus:ring-2 focus:ring-teal-500"
+              />
+              <span className="text-sm">{getRoleLabel(role)}</span>
+            </label>
+          ))}
+          {fields.roles && <span className="text-xs text-rose-600">{fields.roles}</span>}
+        </fieldset>
         <button type="submit" disabled={busy} className="w-full py-3 rounded-2xl bg-teal-600 hover:bg-teal-700 disabled:opacity-60 text-white font-bold flex items-center justify-center gap-2">
           <Check size={20} weight="bold" /> {busy ? 'Menyimpan…' : 'Simpan'}
         </button>

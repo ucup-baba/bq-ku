@@ -5,7 +5,7 @@ import { useAuth } from './AuthProvider';
 import { getRoleLabel } from '@/lib/auth/roles';
 
 export function UserMenu({ compact = false }: { compact?: boolean }) {
-  const { user, role, logout } = useAuth();
+  const { user, roles, logout } = useAuth();
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -27,7 +27,7 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
       {!compact && (
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold truncate text-slate-800 dark:text-slate-100">{user.nama}</p>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{getRoleLabel(role)}</p>
+          <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{roles.map(getRoleLabel).join(' · ')}</p>
         </div>
       )}
 

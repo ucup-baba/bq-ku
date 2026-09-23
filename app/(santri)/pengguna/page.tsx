@@ -6,7 +6,7 @@ import { PenggunaTable } from '@/components/pengguna/PenggunaTable';
 export const metadata = { title: 'Akun & Pengguna — BQ-ku' };
 export default async function PenggunaPage() {
   const user = await getSessionUser();
-  if (!user || !canManageUsers(user.role)) redirect('/');
+  if (!user || !canManageUsers(user.roles)) redirect('/');
   return (
     <div className="space-y-6">
       <header><h1 className="text-2xl font-extrabold">Akun &amp; Pengguna</h1>

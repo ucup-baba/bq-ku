@@ -26,7 +26,7 @@ Modul baru "Ruang Donatur" yang: mencatat donatur & donasi, membuat **surat ucap
 | Peran | Satu akun boleh punya **beberapa** peran |
 | Tombol pindah ruangan | Di HP **menggantikan** tombol dark/light; toggle tema pindah ke menu Akun |
 | Bentuk donasi | Uang **dan** barang; rekap uang bertotal, barang hanya daftar |
-| Aset surat | File asli dari pengurus: `public/brand/logo.webp`, `stempel.webp`, `ttd.png` |
+| Aset surat | File asli dari pengurus: `assets/surat/logo.webp`, `stempel.webp`, `ttd.png` |
 | Arsitektur ruangan | Route group Next.js (`app/(santri)`, `app/(donatur)`) |
 
 ## 3. Peran & Ruangan
@@ -89,7 +89,7 @@ Format `<urut>/PBQ/<bulan romawi>/<tahun>`. Usulan = `urutanTerakhir + 1` untuk 
 
 ### 5.3 Render
 - `components/donatur/SuratTemplate.tsx` — satu sumber tata letak, dipakai untuk **pratinjau HTML** dan **render PNG**.
-- PNG: `GET /api/donatur/surat/[id]/png` memakai `ImageResponse` dari `next/og`, ukuran A4 **1240×1754** (150 dpi), font embed Plus Jakarta Sans (400/700) + Noto Naskh Arabic (baris doa). Aset gambar dibaca dari `public/brand/*` sebagai data URI.
+- PNG: `GET /api/donatur/surat/[id]/png` memakai `ImageResponse` dari `next/og`, ukuran A4 **1240×1754** (150 dpi), font embed Plus Jakarta Sans (400/700) + Noto Naskh Arabic (baris doa). Aset gambar dibaca dari `assets/surat/*` sebagai data URI.
 - Hasil disimpan ke bucket privat: `surat/<tahun>/<nomor-slug>.png`; `storagePath` disimpan di baris `surat`. Render ulang menimpa berkas yang sama.
 
 ## 6. Alur Kirim WhatsApp

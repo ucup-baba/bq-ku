@@ -1,22 +1,24 @@
 'use client';
 import React, { createContext, useContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { canDeleteSantri, canEditSantri, canManageUsers, type UserRole } from '@/lib/auth/roles';
+import { canDeleteSantri, canEditSantri, canManageDonatur, canManageUsers, type UserRole } from '@/lib/auth/roles';
+import { roomsFor, type Room } from '@/lib/auth/rooms';
 import type { SessionUser } from '@/lib/auth/session';
 import { createBrowserSupabase } from '@/lib/supabase/client';
 
 type AuthContextType = {
-  user: SessionUser | null; role: UserRole;
-  canEdit: boolean; canDelete: boolean; canManageUsers: boolean;
+  user: SessionUser | null; roles: UserRole[];
+  canEdit: boolean; canDelete: boolean; canManageUsers: boolean; canManageDonatur: boolean;
+  rooms: Room[];
   logout: () => Promise<void>;
 };
 const AuthContext = createContext<AuthContextType>({
-  user: null, role: 'VIEWER', canEdit: false, canDelete: false, canManageUsers: false, logout: async () => {},
+  user: null, roles: [], canEdit: false, canDelete: false, canManageUsers: false, canManageDonatur: false, rooms: [], logout: async () => {},
 });
 
 export function AuthProvider({ user, children }: { user: SessionUser | null; children: React.ReactNode }) {
   const router = useRouter();
-  const role: UserRole = user?.role ?? 'VIEWER';
+  const roles: UserRole[] = user?.roles ?? [];
   // Session kedaluwarsa/keluar di tab lain → kembali ke login (spec §7)
   React.useEffect(() => {
     if (!user) return;
@@ -30,7 +32,11 @@ export function AuthProvider({ user, children }: { user: SessionUser | null; chi
     router.push('/login'); router.refresh();
   };
   return (
-    <AuthContext.Provider value={{ user, role, canEdit: canEditSantri(role), canDelete: canDeleteSantri(role), canManageUsers: canManageUsers(role), logout }}>
+    <AuthContext.Provider value={{
+      user, roles,
+      canEdit: canEditSantri(roles), canDelete: canDeleteSantri(roles), canManageUsers: canManageUsers(roles), canManageDonatur: canManageDonatur(roles),
+      rooms: roomsFor(roles), logout,
+    }}>
       {children}
     </AuthContext.Provider>
   );

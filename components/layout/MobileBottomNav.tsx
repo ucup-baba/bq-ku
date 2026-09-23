@@ -3,21 +3,18 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  House, 
-  Users, 
-  Plus, 
-  Sun, 
-  Moon,
-  UserCircle 
+import {
+  House,
+  Users,
+  Plus,
+  UserCircle
 } from '@phosphor-icons/react';
-import { useTheme } from '@/components/theme/ThemeProvider';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { AccountDrawer } from './AccountDrawer';
+import { RoomSwitchButton } from './RoomSwitchButton';
 
 export function MobileBottomNav() {
   const pathname = usePathname();
-  const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
   const [isAccountOpen, setIsAccountOpen] = useState(false);
 
@@ -60,19 +57,8 @@ export function MobileBottomNav() {
             </span>
           </Link>
 
-          {/* Theme Switcher Button */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="flex flex-col items-center gap-1 p-1.5 text-slate-500 dark:text-slate-400 hover:text-teal-600 cursor-pointer"
-          >
-            {theme === 'dark' ? (
-              <Sun size={22} weight="duotone" className="text-amber-400" />
-            ) : (
-              <Moon size={22} weight="duotone" className="text-teal-600" />
-            )}
-            <span className="text-[10px] font-bold">{theme === 'dark' ? 'Terang' : 'Gelap'}</span>
-          </button>
+          {/* Pindah Ruangan */}
+          <RoomSwitchButton variant="nav" />
 
           {/* Akun */}
           <button

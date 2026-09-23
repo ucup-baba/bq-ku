@@ -13,6 +13,7 @@
     "start": "next start",
     "lint": "next lint",
     "seed:admin": "node --env-file=.env.local scripts/seed-admin.mjs",
+    "render:arab": "node scripts/render-arab.mjs",
     "empty-bucket": "node --env-file=.env.local scripts/empty-bucket.mjs"
   },
   "keywords": [],
