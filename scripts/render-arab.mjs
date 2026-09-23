@@ -34,7 +34,7 @@ async function main() {
     color: '#0E9F54',
     fontSize: 24,
     dpi: 150,
-    out: 'public/brand/kop-arab.png',
+    out: 'assets/surat/kop-arab.png',
   });
 
   // Doa: setinggi kira-kira teks 28px pada kanvas 1240px.
@@ -43,7 +43,7 @@ async function main() {
     color: '#111111',
     fontSize: 28,
     dpi: 150,
-    out: 'public/brand/doa-arab.png',
+    out: 'assets/surat/doa-arab.png',
   });
 }
 

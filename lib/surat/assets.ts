@@ -13,45 +13,51 @@ export type SuratAssets = {
   doaArab: string;
 };
 
-const asDataUri = async (rel: string, mime: string) => {
-  const buf = await fs.readFile(path.join(process.cwd(), 'public', rel));
+// Aset surat (TTD, stempel, logo, baris Arab) sengaja TIDAK berada di public/
+// agar tidak bisa diunduh siapa pun tanpa login. Hanya dibaca di server;
+// next.config.mjs memastikan folder ini ikut ter-trace ke bundle rute PNG.
+const ASET_DIR = path.join(process.cwd(), 'assets', 'surat');
+
+const asDataUri = async (nama: string, mime: string) => {
+  const buf = await fs.readFile(path.join(ASET_DIR, nama));
   return `data:${mime};base64,${buf.toString('base64')}`;
 };
 
 // Satori/resvg (mesin di balik next/og) gagal mem-parsing dimensi gambar WEBP
 // ("u2 is not iterable"), jadi aset .webp ditranskode ke PNG di memori sebelum
-// dijadikan data URI. Berkas asli di public/brand/ tidak diubah.
-const asPngDataUriFromWebp = async (rel: string) => {
-  const buf = await fs.readFile(path.join(process.cwd(), 'public', rel));
+// dijadikan data URI. Berkas asli di assets/surat/ tidak diubah.
+const asPngDataUriFromWebp = async (nama: string) => {
+  const buf = await fs.readFile(path.join(ASET_DIR, nama));
   const png = await sharp(buf).png().toBuffer();
   return `data:image/png;base64,${png.toString('base64')}`;
 };
 
 async function buildSuratAssets(): Promise<SuratAssets> {
   const [logo, stempel, ttd, kopArab, doaArab] = await Promise.all([
-    asPngDataUriFromWebp('brand/logo.webp'),
-    asPngDataUriFromWebp('brand/stempel.webp'),
-    asDataUri('brand/ttd.png', 'image/png'),
+    asPngDataUriFromWebp('logo.webp'),
+    asPngDataUriFromWebp('stempel.webp'),
+    asDataUri('ttd.png', 'image/png'),
     // Satori tidak mendukung bidi/shaping Arab (kata terbalik, huruf lafaz
     // "الله" pecah), jadi kedua baris Arab dipra-render menjadi PNG statis
     // oleh scripts/render-arab.mjs dan dimuat di sini sebagai <img> biasa.
-    asDataUri('brand/kop-arab.png', 'image/png'),
-    asDataUri('brand/doa-arab.png', 'image/png'),
+    asDataUri('kop-arab.png', 'image/png'),
+    asDataUri('doa-arab.png', 'image/png'),
   ]);
   return { logo, stempel, ttd, kopArab, doaArab };
 }
 
+// Hanya font Latin: baris Arab sudah berupa PNG pra-render (kop-arab.png,
+// doa-arab.png), jadi font Naskh tidak perlu dimuat ke Satori. Berkas
+// NotoNaskhArabic-Regular.ttf tetap di repo untuk scripts/render-arab.mjs.
 async function buildSuratFonts() {
   const read = (f: string) => fs.readFile(path.join(process.cwd(), 'public', 'fonts', f));
-  const [reg, bold, arab] = await Promise.all([
+  const [reg, bold] = await Promise.all([
     read('PlusJakartaSans-Regular.ttf'),
     read('PlusJakartaSans-Bold.ttf'),
-    read('NotoNaskhArabic-Regular.ttf'),
   ]);
   return [
     { name: 'Jakarta', data: reg, weight: 400 as const, style: 'normal' as const },
     { name: 'Jakarta', data: bold, weight: 700 as const, style: 'normal' as const },
-    { name: 'Naskh', data: arab, weight: 400 as const, style: 'normal' as const },
   ];
 }
 

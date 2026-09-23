@@ -44,7 +44,35 @@ describe('loadSuratFonts — pemulihan setelah kegagalan sementara', () => {
     await expect(loadSuratFonts()).rejects.toThrow('EIO sementara');
     shouldFail = false;
     const fonts = await loadSuratFonts();
-    expect(fonts).toHaveLength(3);
-    expect(fonts.map((f) => f.name)).toEqual(['Jakarta', 'Jakarta', 'Naskh']);
+    // Hanya font Latin; baris Arab sudah PNG pra-render sehingga Naskh tidak dimuat.
+    expect(fonts).toHaveLength(2);
+    expect(fonts.map((f) => f.name)).toEqual(['Jakarta', 'Jakarta']);
+  });
+});
+
+describe('loadSuratAssets — aset surat dibaca dari folder non-publik', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    shouldFail = false;
+  });
+
+  it('semua aset (TTD, stempel, logo, baris Arab) dibaca dari assets/surat, bukan public/', async () => {
+    vi.doMock('sharp', () => ({
+      default: () => ({ png: () => ({ toBuffer: async () => Buffer.from('png') }) }),
+    }));
+    const fsMod = (await import('fs/promises')).default as any;
+    fsMod.readFile.mockClear();
+    const { loadSuratAssets } = await import('@/lib/surat/assets');
+    const path = await import('path');
+
+    const assets = await loadSuratAssets();
+    expect(Object.keys(assets).sort()).toEqual(['doaArab', 'kopArab', 'logo', 'stempel', 'ttd']);
+
+    const dibaca = fsMod.readFile.mock.calls.map((c: any[]) => String(c[0]));
+    const dir = path.join(process.cwd(), 'assets', 'surat') + path.sep;
+    expect(dibaca.sort()).toEqual(
+      ['doa-arab.png', 'kop-arab.png', 'logo.webp', 'stempel.webp', 'ttd.png'].map((f) => dir + f),
+    );
+    vi.doUnmock('sharp');
   });
 });

@@ -30,7 +30,13 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
     const bucket = process.env.SUPABASE_STORAGE_BUCKET || 'berkas';
     const { error: upErr } = await supabase.storage.from(bucket)
       .upload(path, png, { contentType: 'image/png', upsert: true });
-    if (!upErr && surat.storagePath !== path) await setSuratStoragePath(supabase, id, path);
+    if (upErr) {
+      // Jangan diam-diam: gambar tetap dikirim ke pengguna, tetapi kegagalan
+      // menyimpan (mis. policy storage menolak) harus terlihat di log server.
+      console.error('Gagal menyimpan PNG surat ke storage', { suratId: id, path, error: upErr.message });
+    } else if (surat.storagePath !== path) {
+      await setSuratStoragePath(supabase, id, path);
+    }
 
     // Nama berkas untuk header harus disaring dari karakter selain
     // [A-Za-z0-9._-] agar tidak menyisipkan karakter berbahaya/tak terduga
@@ -44,7 +50,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ id: string
         'Cache-Control': 'private, max-age=60',
       },
     });
-  } catch (e: any) {
-    return authErrorResponse(e) ?? NextResponse.json({ error: 'Gagal membuat gambar surat: ' + e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const authRes = authErrorResponse(e);
+    if (authRes) return authRes;
+    console.error('Gagal membuat gambar surat', e);
+    return NextResponse.json({ error: 'Gagal membuat gambar surat' }, { status: 500 });
   }
 }
