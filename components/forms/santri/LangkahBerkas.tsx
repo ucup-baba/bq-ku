@@ -75,7 +75,7 @@ export function LangkahBerkas({ f }: { f: SantriFormCtx }) {
                   </span>
                 ) : null}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="hidden text-xs text-slate-500 dark:text-slate-400 sm:block">
                 Nama santri menjadi kunci acuan pencocokan seluruh dokumen berkas di Pondok Pesantren Baitul Qowwam.
               </p>
             </div>
@@ -190,19 +190,7 @@ export function LangkahBerkas({ f }: { f: SantriFormCtx }) {
       </div>
 
       {/* Pindai Dokumen Kependudukan (OCR) */}
-        <div className={`bg-gradient-to-br from-teal-500/5 via-emerald-500/5 to-cyan-500/5 border border-teal-200 dark:border-teal-900/60 rounded-3xl p-6 shadow-sm space-y-4`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-teal-800 dark:text-teal-300 font-bold text-base">
-              <Sparkle size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
-              <span>Opsi 1: Pindai Otomatis dari Dokumen (OCR Presisi Tinggi)</span>
-              <span className="text-xs bg-teal-100 dark:bg-teal-900/60 text-teal-700 dark:text-teal-300 px-2 py-0.5 rounded-full font-bold">
-                Rekomendasi
-              </span>
-            </div>
-            <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">Opsional</span>
-          </div>
-
-          <DocumentUploadBox 
+        <DocumentUploadBox 
             key={uploadBoxKey}
             onDataExtracted={handleOcrDataExtracted} 
             onBatchExtracted={handleBatchOcrCompleted}
@@ -214,7 +202,6 @@ export function LangkahBerkas({ f }: { f: SantriFormCtx }) {
               setPendingDocuments(prev => prev.filter(d => d.kategori !== kategori));
             }}
           />
-        </div>
 
       {/* Auto-filled Notification Banner */}
       {ocrAutoFilledNotice && (

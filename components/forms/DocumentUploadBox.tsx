@@ -286,74 +286,39 @@ export function DocumentUploadBox({
   const currentExistingDoc = uploadedDocuments.find(d => d.kategori === selectedKategori);
 
   return (
-    <div className={`bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm ${className}`}>
+    <div className={`rounded-kartu border border-bq-garis bg-bq-surface p-4 shadow-kartu md:p-6 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 flex items-center justify-center border border-teal-200/50 dark:border-teal-800/40">
-            <Scan size={22} weight="duotone" />
-          </div>
-          <div>
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-              Smart OCR Scanner Berkas
-              <span className="text-xs bg-lime-100 dark:bg-lime-950/70 text-lime-800 dark:text-lime-300 font-bold px-2 py-0.5 rounded-full border border-lime-300/60 dark:border-lime-700/50">
-                Auto-Fill Aktif
-              </span>
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Unggah scan/foto berkas santri, sistem otomatis mengenali tulisan dan mengisi formulir di bawah
-            </p>
-          </div>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-bq-hijau shadow-[3px_4px_0_rgb(14_159_84/0.25)] dark:bg-emerald-900/50">
+          <Scan size={20} weight="duotone" aria-hidden="true" />
         </div>
-        <DoodleSparkle className="text-lime-500" size={28} />
+        <div className="min-w-0">
+          <h3 className="text-base font-extrabold text-bq-tinta">Pindai berkas (OCR)</h3>
+          <p className="hidden text-xs text-bq-redup sm:block">Unggah foto atau scan berkas; isian formulir terisi otomatis.</p>
+        </div>
       </div>
 
-      {/* Banner Peringatan jika Nama Santri belum diisi */}
+      {/* Peringatan singkat bila nama santri belum diisi */}
       {isNameEmpty && (
-        <div className="mb-5 p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border-2 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
-              <LockKey size={22} weight="fill" />
-            </div>
-            <div>
-              <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                Langkah 1 Wajib: Tulis Nama Santri Terlebih Dahulu
-              </h4>
-              <p className="text-xs text-amber-800 dark:text-amber-300 font-normal mt-0.5">
-                Fitur scanner dinonaktifkan sementara. Silakan ketik <strong>Nama Lengkap Calon Santri</strong> pada formulir Langkah 1 di atas terlebih dahulu sebagai acuan verifikasi dokumen.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              const nameInput = document.querySelector('input[placeholder*="Muhammad Hanif"]') as HTMLInputElement;
-              if (nameInput) {
-                nameInput.focus();
-                nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }
-            }}
-            className="shrink-0 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <span>Ketik Nama</span>
-            <ArrowRight size={13} weight="bold" />
-          </button>
-        </div>
+        <p className="mb-4 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">
+          <LockKey size={16} weight="fill" aria-hidden="true" className="shrink-0" />
+          Isi nama santri di atas dulu untuk membuka pemindai.
+        </p>
       )}
 
       {/* Upload Progress Bar + Multi-Scan Trigger */}
-      <div className="mb-5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="mb-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-bq-garis flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex-1 w-full">
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
               <CheckCircle size={16} weight="fill" className="text-emerald-500" />
-              Kelengkapan Berkas Wajib:
+              Berkas wajib
               <span className="text-emerald-600 dark:text-emerald-400 font-extrabold ml-1">
-                {uploadedMandatoryCount} dari {mandatoryCategories.length} Selesai ({mandatoryPercent}%)
+                {uploadedMandatoryCount}/{mandatoryCategories.length}
               </span>
             </span>
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Total Berkas: {uploadedDocuments.length}
+            <span className="hidden text-xs font-semibold text-slate-500 dark:text-slate-400 sm:inline">
+              Total berkas: {uploadedDocuments.length}
             </span>
           </div>
           {/* Progress bar */}
@@ -379,19 +344,14 @@ export function DocumentUploadBox({
           title="Pindai banyak dokumen sekaligus"
         >
           <Sparkle size={16} weight="fill" className="text-amber-300" />
-          <span>✨ Multi-Scan Sekaligus</span>
-          <span className="text-xs px-1.5 py-0.5 rounded-full font-bold bg-white/20 text-white">
-            Batch AI
-          </span>
+          <span>Pindai banyak sekaligus</span>
         </button>
       </div>
 
       {/* Kategori Berkas Selector */}
       <div className="mb-4">
-        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-2">
-          Pilih Kategori Dokumen (atau biarkan otomatis dideteksi):
-        </label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <p className="mb-2 text-xs font-semibold text-bq-redup">Kategori dokumen</p>
+        <div className="tanpa-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap">
           {DOCUMENT_CATEGORIES.map((cat) => {
             const Icon = cat.icon;
             const isSelected = selectedKategori === cat.id;
@@ -406,41 +366,20 @@ export function DocumentUploadBox({
                     handleReset();
                   }
                 }}
-                className={`relative flex flex-col items-start p-3 rounded-2xl border text-left transition-all ${
+                aria-pressed={isSelected}
+                className={`tekan relative flex h-11 shrink-0 items-center gap-2 rounded-2xl border px-3 text-left transition-colors ${
                   isSelected
-                    ? isUploaded
-                      ? 'bg-emerald-50/90 dark:bg-emerald-950/60 border-emerald-500 text-emerald-950 dark:text-emerald-100 shadow-sm ring-2 ring-emerald-500/20'
-                      : 'bg-teal-50/80 dark:bg-teal-950/50 border-teal-500 text-teal-900 dark:text-teal-200 shadow-sm ring-2 ring-teal-500/20'
+                    ? 'border-[#0E9F54] bg-emerald-50 text-bq-tinta ring-2 ring-emerald-500/20 dark:bg-emerald-950/50'
                     : isUploaded
-                    ? 'bg-emerald-50/30 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60 text-slate-700 dark:text-slate-200 hover:border-emerald-400'
-                    : 'bg-slate-50/50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                    ? 'border-emerald-200 bg-emerald-50/40 text-bq-tinta dark:border-emerald-800/60 dark:bg-emerald-950/20'
+                    : 'border-bq-garis bg-bq-surface text-bq-tinta hover:border-slate-300'
                 }`}
               >
-                <div className="flex items-center justify-between w-full mb-1.5">
-                  <div className={`p-1 rounded-lg ${isUploaded ? 'bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-400' : isSelected ? 'bg-teal-100 dark:bg-teal-900/60 text-teal-600 dark:text-teal-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
-                    <Icon size={18} weight={isSelected || isUploaded ? 'duotone' : 'regular'} />
-                  </div>
-                  
-                  {isUploaded ? (
-                    <span className="inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-700">
-                      <CheckCircle size={11} weight="fill" /> Terunggah
-                    </span>
-                  ) : cat.id === 'KARTU_KELUARGA' ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-wider text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-300 dark:border-teal-700">
-                      <ShieldCheck size={11} weight="fill" /> Wajib #1
-                    </span>
-                  ) : cat.wajib ? (
-                    <span className="text-xs font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
-                      Wajib
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                      Opsional
-                    </span>
-                  )}
-                </div>
-                <span className="text-xs font-bold line-clamp-1">{cat.label}</span>
-                <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{cat.desc}</span>
+                <Icon size={18} weight={isSelected || isUploaded ? 'duotone' : 'regular'} aria-hidden="true" className={isUploaded ? 'text-emerald-600' : 'text-bq-redup'} />
+                <span className="whitespace-nowrap text-xs font-bold">{cat.label}</span>
+                {isUploaded
+                  ? <CheckCircle size={14} weight="fill" className="text-emerald-600" aria-label="Terunggah" />
+                  : cat.wajib && <span className="h-1.5 w-1.5 rounded-full bg-rose-500" aria-label="Wajib" />}
               </button>
             );
           })}
@@ -554,7 +493,7 @@ export function DocumentUploadBox({
         ) : (
           /* Empty Dropzone */
           <div 
-            className={`border-2 border-dashed rounded-3xl p-6 sm:p-8 flex flex-col items-center justify-center text-center transition-all ${
+            className={`border-2 border-dashed rounded-3xl flex flex-col items-center justify-center text-center transition-all ${isNameEmpty ? 'p-4' : 'p-6 sm:p-8'} ${
               isNameEmpty
                 ? 'border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/40 cursor-not-allowed'
                 : 'border-slate-300 dark:border-slate-700 hover:border-teal-500 dark:hover:border-teal-400 bg-slate-50/40 dark:bg-slate-800/20'
@@ -577,7 +516,7 @@ export function DocumentUploadBox({
               onChange={handleFileChange}
               className="hidden"
             />
-            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-3 ${
+            <div className={`${isNameEmpty ? 'w-10 h-10 mb-2' : 'w-14 h-14 mb-3'} rounded-2xl flex items-center justify-center ${
               isNameEmpty
                 ? 'bg-amber-100/80 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300'
                 : 'bg-teal-100/60 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300'
@@ -585,13 +524,13 @@ export function DocumentUploadBox({
               {isNameEmpty ? <LockKey size={28} weight="fill" /> : <UploadSimple size={28} weight="duotone" />}
             </div>
             <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">
-              {isNameEmpty ? 'Tulis Nama Calon Santri di Atas Terlebih Dahulu' : 'Unggah atau Foto Berkas Dokumen'}
+              {isNameEmpty ? 'Pemindai terkunci' : 'Unggah atau foto berkas'}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-4">
-              {isNameEmpty
-                ? 'Isi nama calon santri pada Langkah 1 di atas untuk membuka fitur unggah dan pemindaian berkas.'
-                : 'Mendukung foto berkas kamera HP (JPG, PNG) atau file PDF. Dokumen dibaca OCR presisi tinggi.'}
-            </p>
+            {!isNameEmpty && (
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-4">
+                Foto dari kamera HP (JPG, PNG) atau file PDF.
+              </p>
+            )}
 
             {!isNameEmpty && (
               <div className="flex flex-wrap items-center justify-center gap-2.5">

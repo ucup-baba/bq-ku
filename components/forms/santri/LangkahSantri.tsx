@@ -25,14 +25,14 @@ export function LangkahSantri({ f }: { f: SantriFormCtx }) {
           <Camera size={20} weight="duotone" className="text-teal-600 dark:text-teal-400" />
           Sistem Dua Foto Santri (Formal & Profil Kreatif)
         </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+        <p className="hidden text-xs text-slate-500 dark:text-slate-400 mb-6 sm:block">
           Foto formal digunakan untuk rapor dan berkas ijazah, foto profil pose digunakan untuk kartu digital CV santri.
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-3 sm:gap-6">
           {/* Foto Formal */}
-          <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
-            <div className="relative w-24 h-28 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden border border-slate-300 dark:border-slate-600 flex-shrink-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2 rounded-2xl border border-bq-garis bg-slate-50 p-3 text-center dark:bg-slate-800/40 sm:flex-row sm:items-center sm:gap-4 sm:p-4 sm:text-left">
+            <div className="relative h-24 w-20 sm:h-28 sm:w-24 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden border border-slate-300 dark:border-slate-600 flex-shrink-0 flex items-center justify-center">
               {formData.fotoFormalUrl ? (
                 <img src={formData.fotoFormalUrl} alt="Formal" className="w-full h-full object-cover" />
               ) : (
@@ -43,18 +43,18 @@ export function LangkahSantri({ f }: { f: SantriFormCtx }) {
               <span className="inline-block text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 mb-1">
                 Pas Foto Formal (3x4)
               </span>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Background merah/biru, berpakaian rapi</p>
+              <p className="hidden text-xs text-slate-500 dark:text-slate-400 mb-2 sm:block">Background merah/biru, berpakaian rapi</p>
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg cursor-pointer hover:bg-slate-50">
                 <Camera size={14} />
-                Pilih Foto Formal
+                Pilih foto
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, 'fotoFormalUrl')} />
               </label>
             </div>
           </div>
 
           {/* Foto Profil Santai */}
-          <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700">
-            <div className="relative w-24 h-28 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden border border-slate-300 dark:border-slate-600 flex-shrink-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-2 rounded-2xl border border-bq-garis bg-slate-50 p-3 text-center dark:bg-slate-800/40 sm:flex-row sm:items-center sm:gap-4 sm:p-4 sm:text-left">
+            <div className="relative h-24 w-20 sm:h-28 sm:w-24 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden border border-slate-300 dark:border-slate-600 flex-shrink-0 flex items-center justify-center">
               {formData.fotoProfilUrl ? (
                 <img src={formData.fotoProfilUrl} alt="Profil" className="w-full h-full object-cover" />
               ) : (
@@ -65,10 +65,10 @@ export function LangkahSantri({ f }: { f: SantriFormCtx }) {
               <span className="inline-block text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 mb-1">
                 Foto Pose / Profil Santai
               </span>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Pose ekspresif untuk poster CV digital</p>
+              <p className="hidden text-xs text-slate-500 dark:text-slate-400 mb-2 sm:block">Pose ekspresif untuk poster CV digital</p>
               <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg cursor-pointer hover:bg-slate-50">
                 <Camera size={14} />
-                Pilih Foto Pose
+                Pilih foto
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, 'fotoProfilUrl')} />
               </label>
             </div>

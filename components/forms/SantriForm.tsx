@@ -104,8 +104,8 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
           </button>
         )}
         {aktif < 4 ? (
-          <TombolUtama onClick={lanjut} className="h-12 flex-1 md:flex-none md:px-8">
-            Lanjut: {LANGKAH[aktif as 1 | 2 | 3].label} <CaretRight size={18} weight="bold" aria-hidden="true" />
+          <TombolUtama onClick={lanjut} ikon={CaretRight} className="h-12 flex-1 flex-row-reverse md:flex-none md:px-8">
+            Lanjut: {LANGKAH[aktif as 1 | 2 | 3].label}
           </TombolUtama>
         ) : (
           <TombolUtama ikon={FloppyDisk} onClick={f.simpan} disabled={f.isSubmitting} className="h-12 flex-1 md:flex-none md:px-8">

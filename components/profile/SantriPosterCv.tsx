@@ -70,7 +70,7 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
         <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full blur-3xl opacity-15 dark:opacity-20 pointer-events-none bg-teal-400 dark:bg-teal-500" />
 
         {/* Poster Top Bar */}
-        <div className="relative flex items-center justify-between mb-8 pb-4 border-b border-slate-200 dark:border-white/10">
+        <div className="relative flex items-center justify-between gap-2 mb-4 pb-3 md:mb-8 md:pb-4 border-b border-slate-200 dark:border-white/10">
           <div className="flex items-center gap-2">
             <span className="text-xs font-extrabold tracking-widest uppercase text-teal-700 dark:text-teal-400">
               BAITUL QOWWAM • BIODATA SANTRI
@@ -95,20 +95,20 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
         </div>
 
         {/* Hero Section: Photo & Big Typography */}
-        <div className="relative grid grid-cols-1 md:grid-cols-12 gap-8 items-center mb-10">
+        <div className="relative mb-6 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-4 md:mb-10 md:grid-cols-12 md:gap-8">
           {/* Photo Frame (With floating creative badges) */}
-          <div className="md:col-span-5 flex justify-center">
+          <div className="flex justify-center md:col-span-5">
             <div className="relative">
               {/* Photo Background Ribbon */}
               <div className={`absolute -inset-2 rounded-3xl rotate-2 opacity-70 blur-sm ${
                 isIkhwan ? 'bg-lime-400' : 'bg-rose-400'
               }`} />
 
-              <div className="relative w-56 h-72 sm:w-64 sm:h-80 rounded-3xl overflow-hidden border-4 border-white dark:border-slate-700 shadow-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+              <div className="relative h-36 w-28 sm:h-80 sm:w-64 rounded-3xl overflow-hidden border-4 border-white dark:border-slate-700 shadow-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
                 {displayPhoto ? (
                   <img src={displayPhoto} alt={santri.namaLengkap} className="w-full h-full object-cover" />
                 ) : (
-                  <User size={80} className="text-slate-400 dark:text-slate-500" />
+                  <User size={48} className="text-slate-400 dark:text-slate-500" />
                 )}
               </div>
 
@@ -116,31 +116,31 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
               {santri.fotoFormalUrl && santri.fotoProfilUrl && (
                 <div className="absolute -bottom-4 -left-4 w-20 h-24 rounded-2xl overflow-hidden border-2 border-white dark:border-slate-700 shadow-lg bg-slate-100 dark:bg-slate-800">
                   <img src={santri.fotoFormalUrl} alt="Formal" className="w-full h-full object-cover" />
-                  <span className="absolute bottom-0 inset-x-0 bg-black/70 text-[8px] text-center text-white py-0.5 font-bold">
+                  <span className="absolute bottom-0 inset-x-0 bg-black/70 text-xs text-center text-white py-0.5 font-bold">
                     Pas Foto
                   </span>
                 </div>
               )}
 
               {/* Tape Sticker Decor */}
-              <div className="absolute -top-3 right-6 -rotate-6">
+              <div className="absolute -top-3 right-6 hidden -rotate-6 sm:block">
                 <DoodleBadgeTape text="TERDATA RESMI" className={isIkhwan ? 'text-lime-400' : 'text-rose-300'} />
               </div>
             </div>
           </div>
 
           {/* Big Typography Header */}
-          <div className="md:col-span-7 space-y-3">
-            <div className="inline-block">
+          <div className="min-w-0 space-y-2 md:col-span-7 md:space-y-3">
+            <div className="hidden sm:inline-block">
               <DoodleSpeechBubble 
                 text={isIkhwan ? "Ahlan wa Sahlan!" : "Ahlan wa Sahlan!"} 
                 className={isIkhwan ? "text-emerald-100 dark:text-emerald-900/80" : "text-rose-100 dark:text-rose-900/80"} 
               />
             </div>
 
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none text-slate-900 dark:text-white">
+            <h2 className="break-words text-2xl font-black leading-none tracking-tight text-slate-900 dark:text-white sm:text-5xl">
               {santri.namaLengkap}
-            </h1>
+            </h2>
 
             {santri.namaPanggilan && (
               <p className="font-handwriting text-2xl text-teal-700 dark:text-lime-300 font-bold -mt-1">
@@ -164,9 +164,9 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
         </div>
 
         {/* MODULAR BENTO BLOCKS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 relative">
+        <div className="relative grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-5">
           {/* Block 1: Tahfidz & Capaian */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-sm space-y-3">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-sm space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
                 <BookOpen size={16} weight="duotone" />
@@ -183,7 +183,7 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
           </div>
 
           {/* Block 2: Keahlian & Minat */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-sm space-y-3">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-sm space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
                 <Sparkle size={16} weight="duotone" />
@@ -211,7 +211,7 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
           </div>
 
           {/* Block 3: Riwayat Pendidikan */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-sm space-y-2">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-sm space-y-2">
             <span className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
               <GraduationCap size={16} weight="duotone" />
               Riwayat Pendidikan
@@ -235,7 +235,7 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
           </div>
 
           {/* Block 4: Identitas & Wali Santri */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-sm space-y-2">
+          <div className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-sm space-y-2">
             <span className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
               <IdentificationCard size={16} weight="duotone" />
               Identitas & Wali Santri

@@ -1,10 +1,8 @@
-import { UserPlus } from '@phosphor-icons/react/dist/ssr';
 import { listSantri } from '@/lib/db/santri-repo';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getSessionUser } from '@/lib/auth/session';
 import { ringkasanSantri, perluDilengkapi } from '@/lib/santri/ringkasan';
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
-import { TautanUtama } from '@/components/ui/Tombol';
 import { HeroSantri } from '@/components/santri/beranda/HeroSantri';
 import { CarouselAngkaSantri } from '@/components/santri/beranda/CarouselAngkaSantri';
 import { PerluDilengkapi } from '@/components/santri/beranda/PerluDilengkapi';
@@ -27,7 +25,6 @@ export default async function HomePage() {
         judul="Ruang Santri"
         sub={namaDepan ? `Assalamu'alaikum, ${namaDepan}` : "Assalamu'alaikum"}
         subTampilDiHp
-        aksi={<TautanUtama href="/tambah" ikon={UserPlus} className="hidden md:inline-flex">Santri baru</TautanUtama>}
       />
       <div className="bergilir grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
         <HeroSantri className="order-1 md:col-span-7" ringkasan={ringkasan} />
