@@ -4,7 +4,7 @@ import { escapeOrFilterValue } from '@/lib/db/filters';
 import { parseNomorSurat } from '@/lib/utils/nomor-surat';
 
 export type Sapaan = 'BAPAK' | 'IBU' | 'SDR' | 'SDRI' | 'BAPAK_IBU';
-export type JenisDonasi = 'ZAKAT' | 'INFAQ' | 'SHADAQAH' | 'LAINNYA';
+export type JenisDonasi = 'ZIS' | 'WAKAF' | 'LAINNYA' | 'ZAKAT' | 'INFAQ' | 'SHADAQAH';
 export type BentukDonasi = 'UANG' | 'BARANG';
 /** Gaya font tulisan tangan untuk isian di PNG surat ucapan terima kasih. */
 export type GayaTulisan = 'KALAM' | 'PATRICK';
@@ -141,7 +141,9 @@ export async function listSurat(
   client: SupabaseClient,
   filter: { dari?: string; sampai?: string; terkirim?: boolean; limit?: number } = {},
 ): Promise<SuratWithRelasi[]> {
-  let q = client.from('surat').select('*, donasi(*, donatur(*))').order('tanggalSurat', { ascending: false });
+  let q = client.from('surat').select('*, donasi(*, donatur(*))')
+    .order('tanggalSurat', { ascending: false })
+    .order('createdAt', { ascending: false });
   if (filter.dari) q = q.gte('tanggalSurat', filter.dari);
   if (filter.sampai) q = q.lte('tanggalSurat', filter.sampai);
   if (filter.terkirim !== undefined) q = q.eq('terkirimWa', filter.terkirim);

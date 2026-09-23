@@ -18,7 +18,7 @@ const tanggalIsoBebas = z.string().trim()
   .refine(isTanggalIso, 'Tanggal tidak valid');
 
 export const sapaanEnum = z.enum(['BAPAK', 'IBU', 'SDR', 'SDRI', 'BAPAK_IBU']);
-export const jenisEnum = z.enum(['ZAKAT', 'INFAQ', 'SHADAQAH', 'LAINNYA']);
+export const jenisEnum = z.enum(['ZIS', 'WAKAF', 'LAINNYA', 'ZAKAT', 'INFAQ', 'SHADAQAH']);
 export const bentukEnum = z.enum(['UANG', 'BARANG']);
 
 export const donaturSchema = z.object({

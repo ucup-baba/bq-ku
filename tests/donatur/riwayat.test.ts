@@ -3,6 +3,8 @@ import { labelJenis, formatNilaiDonasi } from '@/lib/donatur/riwayat';
 
 describe('labelJenis', () => {
   it('memetakan setiap jenis donasi ke label Indonesia', () => {
+    expect(labelJenis('ZIS')).toBe('ZIS');
+    expect(labelJenis('WAKAF')).toBe('Wakaf');
     expect(labelJenis('ZAKAT')).toBe('Zakat');
     expect(labelJenis('INFAQ')).toBe('Infaq');
     expect(labelJenis('SHADAQAH')).toBe('Shadaqah');

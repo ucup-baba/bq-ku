@@ -45,7 +45,7 @@ export function useFormSurat(awal?: SuratWithRelasi) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [donaturIdAwal]);
 
-  const [jenis, setJenis] = useState<JenisDonasi>(d0?.jenis ?? 'INFAQ');
+  const [jenis, setJenis] = useState<JenisDonasi>(d0?.jenis ?? 'ZIS');
   const [bentuk, setBentuk] = useState<'UANG' | 'BARANG'>(d0?.bentuk ?? 'UANG');
   const [nominal, setNominal] = useState(d0?.nominal ?? 0);
   const [nominalTeks, setNominalTeks] = useState(d0?.nominal ? formatRupiah(d0.nominal) : '');

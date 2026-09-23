@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toTitleCase, matchBestFamilyMember } from '@/lib/utils/formatters';
+import { toTitleCase, matchBestFamilyMember, formatJam } from '@/lib/utils/formatters';
 import { FamilyMemberCandidate } from '@/lib/ocr/parser';
 
 describe('formatters utility', () => {
@@ -97,6 +97,19 @@ describe('formatters utility', () => {
     it('returns null if no matching name found', () => {
       const match = matchBestFamilyMember('zulkarnain', members);
       expect(match).toBeNull();
+    });
+  });
+
+  describe('formatJam', () => {
+    it('mengembalikan string kosong jika null atau undefined', () => {
+      expect(formatJam(null)).toBe('');
+      expect(formatJam(undefined)).toBe('');
+    });
+
+    it('memformat timestamp ISO ke format HH:mm', () => {
+      // Buat date lokal untuk pengujian deterministik
+      const date = new Date(2026, 8, 23, 14, 25);
+      expect(formatJam(date.toISOString())).toBe('14:25');
     });
   });
 });

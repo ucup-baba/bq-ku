@@ -32,7 +32,8 @@ function KartuAngka({ ikon, warna, doodle, nilai, label, href }: {
 }
 
 const WARNA_AKAD: Record<string, string> = {
-  ZAKAT: 'bg-emerald-500', INFAQ: 'bg-[#0B5FA5]', SHADAQAH: 'bg-amber-500', LAINNYA: 'bg-violet-500',
+  ZIS: 'bg-emerald-500', WAKAF: 'bg-teal-500', LAINNYA: 'bg-violet-500',
+  ZAKAT: 'bg-emerald-600', INFAQ: 'bg-[#0B5FA5]', SHADAQAH: 'bg-amber-500',
 };
 
 function KartuAkad({ akad }: { akad: PorsiAkad[] }) {

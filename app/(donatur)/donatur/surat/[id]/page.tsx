@@ -3,7 +3,7 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { getSurat } from '@/lib/db/donatur-repo';
 import { labelSapaan } from '@/lib/surat/data';
 import { formatRupiah, terbilang } from '@/lib/utils/terbilang';
-import { formatDateIndonesian } from '@/lib/utils/formatters';
+import { formatDateIndonesian, formatJam } from '@/lib/utils/formatters';
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
 import { Kartu } from '@/components/ui/Kartu';
 import { TombolKirimWa } from '@/components/donatur/TombolKirimWa';
@@ -21,11 +21,13 @@ export default async function DetailSuratPage({ params }: { params: Promise<{ id
   const donatur = surat.donasi.donatur;
   const donasi = surat.donasi;
 
+  const subWaktu = `${formatDateIndonesian(surat.tanggalSurat)}${surat.createdAt ? ` · Dibuat pukul ${formatJam(surat.createdAt)}` : ''}`;
+
   return (
     <div className="space-y-4 pb-24 md:pb-0">
       <KepalaHalaman
         judul={`Surat ${surat.nomorSurat}`}
-        sub={formatDateIndonesian(surat.tanggalSurat)}
+        sub={subWaktu}
         subTampilDiHp
         kembali={{ href: '/donatur/surat', label: 'Kembali ke daftar surat' }}
         aksi={<MenuSurat suratId={surat.id} nomorSurat={surat.nomorSurat} terkirim={surat.terkirimWa}

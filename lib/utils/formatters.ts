@@ -193,6 +193,19 @@ export function formatDateIndonesian(dateStr?: string | null): string {
 }
 
 /**
+ * Mengekstrak jam dan menit dari string ISO/timestamp.
+ * Menghasilkan format "HH:mm" (mis. "14:25").
+ */
+export function formatJam(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  const jam = String(d.getHours()).padStart(2, '0');
+  const menit = String(d.getMinutes()).padStart(2, '0');
+  return `${jam}:${menit}`;
+}
+
+/**
  * Menentukan otomatis jenjang pendidikan di Baitul Qowwam, kelas awal,
  * dan sekolah tujuan berdasarkan nama asal sekolah sebelumnya:
  * - Asal SD/MI -> Masuk SMP IT Baitul Qowwam (Kelas 7)

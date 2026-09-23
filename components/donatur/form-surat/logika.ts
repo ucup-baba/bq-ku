@@ -60,9 +60,8 @@ export function petakanErrorField(fields: Record<string, string>): { field: Reco
 }
 
 export const OPSI_JENIS: Array<{ value: JenisDonasi; label: string }> = [
-  { value: 'ZAKAT', label: 'Zakat' },
-  { value: 'INFAQ', label: 'Infaq' },
-  { value: 'SHADAQAH', label: 'Shadaqah' },
+  { value: 'ZIS', label: 'ZIS' },
+  { value: 'WAKAF', label: 'Wakaf' },
   { value: 'LAINNYA', label: 'Lainnya' },
 ];
 

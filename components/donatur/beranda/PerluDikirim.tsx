@@ -10,7 +10,7 @@ import { PesanGalat } from '@/components/ui/PesanGalat';
 import { TombolKirimWa } from '@/components/donatur/TombolKirimWa';
 import { labelSapaan } from '@/lib/surat/data';
 import { formatNilaiDonasi } from '@/lib/donatur/riwayat';
-import { formatDateIndonesian } from '@/lib/utils/formatters';
+import { formatDateIndonesian, formatJam } from '@/lib/utils/formatters';
 import type { SuratWithRelasi } from '@/lib/db/donatur-repo';
 import type { Status } from './useDataBeranda';
 
@@ -41,7 +41,9 @@ export function PerluDikirim({ surat, status, galat, onTerkirim, className }: {
             <Kartu key={s.id} varian="peringatan" className="space-y-2 p-3.5">
               <Link href={`/donatur/surat/${s.id}`} className="block min-w-0">
                 <p className="truncate text-sm font-bold text-bq-tinta">{labelSapaan(s.donasi.donatur.sapaan)} {s.donasi.donatur.nama}</p>
-                <p className="truncate text-xs text-bq-redup">{formatNilaiDonasi(s.donasi)} · {formatDateIndonesian(s.tanggalSurat)}</p>
+                <p className="truncate text-xs text-bq-redup">
+                  {formatNilaiDonasi(s.donasi)} · {formatDateIndonesian(s.tanggalSurat)}{s.createdAt ? ` · ${formatJam(s.createdAt)}` : ''}
+                </p>
               </Link>
               <TombolKirimWa surat={s} aktif={i === aktif} onTerkirim={() => onTerkirim(s.id)} />
             </Kartu>

@@ -2,10 +2,12 @@ import { formatRupiah } from '@/lib/utils/terbilang';
 import type { Donasi, JenisDonasi } from '@/lib/db/donatur-repo';
 
 const LABEL_JENIS: Record<JenisDonasi, string> = {
+  ZIS: 'ZIS',
+  WAKAF: 'Wakaf',
+  LAINNYA: 'Lainnya',
   ZAKAT: 'Zakat',
   INFAQ: 'Infaq',
   SHADAQAH: 'Shadaqah',
-  LAINNYA: 'Lainnya',
 };
 
 /** Label Indonesia untuk jenis donasi (Zakat/Infaq/Shadaqah/Lainnya). */

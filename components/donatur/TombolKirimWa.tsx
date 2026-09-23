@@ -24,10 +24,30 @@ export function TombolKirimWa({ surat, onTerkirim, aktif = true, className }: {
   const fileRef = useRef<File | null>(null);
   const [menandai, setMenandai] = useState(false);
   const [terkirimLokal, setTerkirimLokal] = useState(surat.terkirimWa);
+  const [otomatisTandai, setOtomatisTandai] = useState(true);
   const [sudahDicoba, setSudahDicoba] = useState(false);
   const [pesanInfo, setPesanInfo] = useState<string | null>(null);
   const [pesanError, setPesanError] = useState<string | null>(null);
   const [tautanManual, setTautanManual] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const disimpan = localStorage.getItem('bq_auto_tandai_wa');
+      if (disimpan !== null) setOtomatisTandai(disimpan === 'true');
+    } catch {
+      /* ignore SSR / storage blocked */
+    }
+  }, []);
+
+  const ubahOtomatisTandai = (baru: boolean) => {
+    setOtomatisTandai(baru);
+    try {
+      localStorage.setItem('bq_auto_tandai_wa', String(baru));
+    } catch {
+      /* ignore */
+    }
+  };
+
   const donatur = surat.donasi.donatur;
   const sapaanNama = `${labelSapaan(donatur.sapaan)} ${donatur.nama}`;
   const teks = pesanUcapan(sapaanNama, surat.nomorSurat);
@@ -90,6 +110,10 @@ export function TombolKirimWa({ surat, onTerkirim, aktif = true, className }: {
     setTautanManual(null);
     setSudahDicoba(true);
 
+    if (otomatisTandai && !terkirimLokal) {
+      void tandai();
+    }
+
     const bisaShare = typeof navigator !== 'undefined' && !!navigator.canShare?.({ files: [file] });
     if (bisaShare) {
       // Panggilan SINKRON agar aktivasi pengguna dari klik ini masih berlaku.
@@ -116,6 +140,32 @@ export function TombolKirimWa({ surat, onTerkirim, aktif = true, className }: {
 
   return (
     <div className={twMerge('space-y-2', className)}>
+      {!terkirimLokal ? (
+        <div className="flex items-center justify-between px-1 text-xs">
+          <span className="font-semibold text-bq-redup">Otomatis tandai terkirim</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={otomatisTandai}
+            onClick={() => ubahOtomatisTandai(!otomatisTandai)}
+            title="Otomatis tandai surat sebagai sudah terkirim saat klik Kirim WA"
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              otomatisTandai ? 'bg-[#0E9F54]' : 'bg-slate-300 dark:bg-slate-700'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                otomatisTandai ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 px-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+          <CheckCircle size={15} weight="fill" aria-hidden="true" />
+          <span>Surat sudah berstatus terkirim</span>
+        </div>
+      )}
       <div className="flex gap-2">
         <button type="button" onClick={kirim} disabled={statusFile !== 'siap' || !donatur.noWa}
           aria-label="Kirim surat sebagai gambar lewat WhatsApp"
@@ -126,7 +176,7 @@ export function TombolKirimWa({ surat, onTerkirim, aktif = true, className }: {
           <TombolIkon ikon={ArrowClockwise} label="Coba lagi memuat gambar surat" onClick={() => setPercobaan(p => p + 1)} />
         )}
       </div>
-      {sudahDicoba && !terkirimLokal && (
+      {sudahDicoba && !terkirimLokal && !otomatisTandai && (
         <div role="status" className="flex items-center justify-between gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-bq-tinta dark:bg-emerald-950/30">
           <span>Sudah terkirim ke donatur?</span>
           <button type="button" onClick={tandai} disabled={menandai}

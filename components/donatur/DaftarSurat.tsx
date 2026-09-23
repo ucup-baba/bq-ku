@@ -7,7 +7,7 @@ import { twMerge } from 'tailwind-merge';
 import type { SuratWithRelasi } from '@/lib/db/donatur-repo';
 import { labelSapaan } from '@/lib/surat/data';
 import { labelBulan } from '@/lib/utils/rekap';
-import { formatDateIndonesian } from '@/lib/utils/formatters';
+import { formatDateIndonesian, formatJam } from '@/lib/utils/formatters';
 import { formatNilaiDonasi } from '@/lib/donatur/riwayat';
 import { statusDariParam, bulanDari, rentangBulan, hitungStatus, saringSurat, type StatusFilter } from '@/lib/donatur/daftar-surat';
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
@@ -115,7 +115,9 @@ export function DaftarSurat() {
                     <InisialUbin nama={d.nama} indeks={i} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold text-bq-tinta">{labelSapaan(d.sapaan)} {d.nama}</span>
-                      <span className="block truncate text-xs text-bq-redup">{formatNilaiDonasi(s.donasi)} · <span className="font-mono">{s.nomorSurat}</span></span>
+                      <span className="block truncate text-xs text-bq-redup">
+                        {formatNilaiDonasi(s.donasi)} · <span className="font-mono">{s.nomorSurat}</span>{s.createdAt ? ` · ${formatJam(s.createdAt)}` : ''}
+                      </span>
                     </span>
                     <StatusSurat terkirim={s.terkirimWa} />
                   </Link>
@@ -142,7 +144,10 @@ export function DaftarSurat() {
                       <td className="px-5 py-3 font-mono text-xs font-bold">
                         <Link href={`/donatur/surat/${s.id}`} className="text-bq-biru hover:underline">{s.nomorSurat}</Link>
                       </td>
-                      <td className="px-5 py-3 text-xs text-bq-redup">{formatDateIndonesian(s.tanggalSurat)}</td>
+                      <td className="px-5 py-3 text-xs text-bq-redup">
+                        <div className="font-medium text-bq-tinta">{formatDateIndonesian(s.tanggalSurat)}</div>
+                        {s.createdAt && <div className="text-[11px] text-bq-redup">Pukul {formatJam(s.createdAt)}</div>}
+                      </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <InisialUbin nama={d.nama} indeks={i} className="h-8 w-8" />
