@@ -15,7 +15,8 @@ export type SuratAssets = {
 
 // Aset surat (TTD, stempel, logo, baris Arab) sengaja TIDAK berada di public/
 // agar tidak bisa diunduh siapa pun tanpa login. Hanya dibaca di server;
-// next.config.mjs memastikan folder ini ikut ter-trace ke bundle rute PNG.
+// Next men-trace folder ini secara otomatis ke bundle rute PNG karena
+// dibaca lewat fs.readFile dengan path statis (bukan dinamis) di atas.
 const ASET_DIR = path.join(process.cwd(), 'assets', 'surat');
 
 const asDataUri = async (nama: string, mime: string) => {

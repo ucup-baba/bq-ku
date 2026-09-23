@@ -10,6 +10,10 @@
 --      (ADMIN_DONATUR tidak lagi bisa membaca data santri).
 --   D. Storage bucket 'berkas': policy lama tidak berlaku untuk prefix surat/,
 --      dan policy baru khusus surat/ untuk SUPERADMIN & ADMIN_DONATUR.
+--   E. CHECK constraint lapisan ketiga (pertahanan berlapis bersama
+--      lib/storage/paths.ts & lib/db/santri-repo.ts): kolom storagePath milik
+--      dokumen/foto santri tidak boleh menunjuk ke folder surat/, walau ada
+--      celah di kode aplikasi.
 --
 -- Idempoten: aman dijalankan ulang (create or replace function, drop trigger
 -- if exists, drop policy if exists). Seluruh isi dibungkus satu transaksi agar
@@ -258,5 +262,27 @@ create policy "berkas surat: hapus" on storage.objects for delete to authenticat
     and (storage.foldername(name))[1] = 'surat'
     and public.has_role('SUPERADMIN')
   );
+
+-- =====================================================================
+-- E. CHECK CONSTRAINT: STORAGEPATH SANTRI TIDAK BOLEH MENUNJUK KE surat/
+-- =====================================================================
+-- Lapisan ketiga (pertahanan berlapis): ADMIN_SANTRI tidak boleh menulis
+-- path yang menunjuk ke folder surat/ (PNG surat ucapan terima kasih
+-- donatur, dijaga khusus oleh policy storage bagian D2). lib/storage/paths.ts
+-- (storagePathFromUrl) dan lib/db/santri-repo.ts sudah menolak/menyaring ini
+-- di kode aplikasi; constraint di sini menutup celah bila ada jalur tulis
+-- lain (mis. bug di masa depan, akses langsung ke DB) yang melewatinya.
+-- Idempoten: drop constraint if exists lalu add constraint.
+alter table public.documents drop constraint if exists documents_storage_bukan_surat;
+alter table public.documents add constraint documents_storage_bukan_surat
+  check ("storagePath" not like 'surat/%');
+
+alter table public.santri drop constraint if exists santri_foto_formal_bukan_surat;
+alter table public.santri add constraint santri_foto_formal_bukan_surat
+  check ("fotoFormalPath" is null or "fotoFormalPath" not like 'surat/%');
+
+alter table public.santri drop constraint if exists santri_foto_profil_bukan_surat;
+alter table public.santri add constraint santri_foto_profil_bukan_surat
+  check ("fotoProfilPath" is null or "fotoProfilPath" not like 'surat/%');
 
 commit;

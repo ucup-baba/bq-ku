@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { signPaths } from '@/lib/storage/signed';
-import { storagePathFromUrl } from '@/lib/storage/paths';
+import { storagePathFromUrl, isPathSuratDonatur } from '@/lib/storage/paths';
 import { escapeOrFilterValue } from '@/lib/db/filters';
 
 export type StatusVerifikasi = 'PENDING' | 'VERIFIED' | 'REJECTED' | 'NEED_FIX';
@@ -88,18 +88,25 @@ const generateId = () => crypto.randomUUID();
 const now = () => new Date().toISOString();
 const keahlianToString = (k: SantriInput['keahlian']) => Array.isArray(k) ? JSON.stringify(k) : (k ?? null);
 
+// Lapisan kedua (defense-in-depth): meski storagePathFromUrl seharusnya
+// sudah menolak path 'surat/...' saat ditulis, data lama/rusak di DB tetap
+// TIDAK BOLEH ditandatangani lewat jalur santri — PNG surat donatur hanya
+// boleh ditandatangani oleh ruang donatur sendiri.
+const pathAmanUntukTandaTangan = (p?: string | null): p is string => !!p && !isPathSuratDonatur(p);
+
 async function attachSignedUrls(client: SupabaseClient, rows: Santri[]): Promise<Santri[]> {
   const paths: string[] = [];
   for (const s of rows) {
-    paths.push(s.fotoFormalPath || '', s.fotoProfilPath || '');
-    for (const d of s.documents || []) paths.push(d.storagePath);
+    if (pathAmanUntukTandaTangan(s.fotoFormalPath)) paths.push(s.fotoFormalPath);
+    if (pathAmanUntukTandaTangan(s.fotoProfilPath)) paths.push(s.fotoProfilPath);
+    for (const d of s.documents || []) if (pathAmanUntukTandaTangan(d.storagePath)) paths.push(d.storagePath);
   }
   const map = await signPaths(client, paths);
   return rows.map(s => ({
     ...s,
-    fotoFormalUrl: s.fotoFormalPath ? map[s.fotoFormalPath] || null : null,
-    fotoProfilUrl: s.fotoProfilPath ? map[s.fotoProfilPath] || null : null,
-    documents: (s.documents || []).map(d => ({ ...d, fileUrl: map[d.storagePath] || '' })),
+    fotoFormalUrl: pathAmanUntukTandaTangan(s.fotoFormalPath) ? map[s.fotoFormalPath] || null : null,
+    fotoProfilUrl: pathAmanUntukTandaTangan(s.fotoProfilPath) ? map[s.fotoProfilPath] || null : null,
+    documents: (s.documents || []).map(d => ({ ...d, fileUrl: pathAmanUntukTandaTangan(d.storagePath) ? (map[d.storagePath] || '') : '' })),
   }));
 }
 
@@ -168,7 +175,11 @@ export async function deleteSantri(client: SupabaseClient, id: string): Promise<
   const { data: s } = await client.from('santri').select('fotoFormalPath, fotoProfilPath').eq('id', id).maybeSingle();
   const { error, count } = await client.from('santri').delete({ count: 'exact' }).eq('id', id);
   if (error) throw new Error(`Gagal menghapus santri: ${error.message}`);
-  const paths = [...(docs || []).map(d => d.storagePath), s?.fotoFormalPath, s?.fotoProfilPath].filter(Boolean) as string[];
+  // Lapisan kedua: jangan pernah menghapus berkas di folder surat/ (aset
+  // donatur) lewat jalur penghapusan santri, walau data storagePath di DB
+  // sudah rusak/lama.
+  const paths = [...(docs || []).map(d => d.storagePath), s?.fotoFormalPath, s?.fotoProfilPath]
+    .filter((p): p is string => !!p && !isPathSuratDonatur(p));
   if (paths.length) await client.storage.from(process.env.SUPABASE_STORAGE_BUCKET || 'berkas').remove(paths);
   return (count ?? 0) > 0;
 }
@@ -193,7 +204,10 @@ export async function saveDocument(client: SupabaseClient, input: DocumentInput)
     const { data, error } = await client.from('documents').update(base).eq('id', existing.id).select().single();
     if (error) throw new Error(`Gagal memperbarui dokumen: ${error.message}`);
     saved = data as SantriDocument;
-    if (existing.storagePath && existing.storagePath !== storagePath) {
+    // Lapisan kedua: storagePath baru tidak pernah 'surat/...' (ditolak oleh
+    // storagePathFromUrl di atas), tapi existing.storagePath berasal dari DB
+    // dan bisa saja data lama/rusak — jangan hapus berkas surat donatur.
+    if (existing.storagePath && existing.storagePath !== storagePath && !isPathSuratDonatur(existing.storagePath)) {
       await client.storage.from(process.env.SUPABASE_STORAGE_BUCKET || 'berkas').remove([existing.storagePath]);
     }
   } else {
@@ -202,8 +216,8 @@ export async function saveDocument(client: SupabaseClient, input: DocumentInput)
     if (error) throw new Error(`Gagal menyimpan dokumen: ${error.message}`);
     saved = data as SantriDocument;
   }
-  const map = await signPaths(client, [saved.storagePath]);
-  return { ...saved, fileUrl: map[saved.storagePath] || '' };
+  const map = pathAmanUntukTandaTangan(saved.storagePath) ? await signPaths(client, [saved.storagePath]) : {};
+  return { ...saved, fileUrl: pathAmanUntukTandaTangan(saved.storagePath) ? (map[saved.storagePath] || '') : '' };
 }
 
 export async function getDocumentById(client: SupabaseClient, id: string): Promise<SantriDocument | null> {
@@ -216,8 +230,8 @@ export async function listDocumentsBySantri(client: SupabaseClient, santriId: st
   const { data, error } = await client.from('documents').select('*').eq('santriId', santriId);
   if (error) return [];
   const rows = (data || []) as SantriDocument[];
-  const map = await signPaths(client, rows.map(d => d.storagePath));
-  return rows.map(d => ({ ...d, fileUrl: map[d.storagePath] || '' }));
+  const map = await signPaths(client, rows.map(d => d.storagePath).filter(pathAmanUntukTandaTangan));
+  return rows.map(d => ({ ...d, fileUrl: pathAmanUntukTandaTangan(d.storagePath) ? (map[d.storagePath] || '') : '' }));
 }
 
 export async function updateDocumentStatus(client: SupabaseClient, id: string, status: StatusVerifikasi, catatan?: string): Promise<boolean> {
@@ -228,7 +242,8 @@ export async function updateDocumentStatus(client: SupabaseClient, id: string, s
 export async function deleteDocument(client: SupabaseClient, id: string): Promise<boolean> {
   const doc = await getDocumentById(client, id);
   const { error } = await client.from('documents').delete().eq('id', id);
-  if (!error && doc?.storagePath) {
+  // Lapisan kedua: jangan hapus berkas surat donatur lewat jalur dokumen santri.
+  if (!error && doc?.storagePath && !isPathSuratDonatur(doc.storagePath)) {
     await client.storage.from(process.env.SUPABASE_STORAGE_BUCKET || 'berkas').remove([doc.storagePath]);
   }
   return !error;
