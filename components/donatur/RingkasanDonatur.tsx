@@ -22,7 +22,7 @@ function nilaiSurat(s: SuratWithRelasi): string {
 function BadgeStatus({ terkirim }: { terkirim: boolean }) {
   return terkirim ? (
     <span className="inline-flex items-center gap-1 text-[#0E9F54] font-bold text-xs whitespace-nowrap">
-      <CheckCircle size={16} weight="bold" aria-hidden="true" /> Terkirim
+      <CheckCircle size={16} weight="bold" aria-hidden="true" /> Sudah terkirim
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 text-amber-600 font-bold text-xs whitespace-nowrap">
@@ -39,13 +39,16 @@ function ErrorBanner({ pesan }: { pesan: string }) {
   );
 }
 
-function KartuAngka({ icon, warna, label, nilai }: { icon: React.ReactNode; warna: string; label: string; nilai: string }) {
+function KartuAngka({
+  icon, warna, label, nilai, keterangan,
+}: { icon: React.ReactNode; warna: string; label: string; nilai: string; keterangan?: string }) {
   return (
     <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 space-y-1">
       <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-slate-500">
         <span className={warna}>{icon}</span> {label}
       </p>
       <p className="text-2xl font-extrabold">{nilai}</p>
+      {keterangan && <p className="text-xs text-slate-400">{keterangan}</p>}
     </div>
   );
 }
@@ -137,7 +140,7 @@ export function RingkasanDonatur() {
             <KartuAngka
               icon={<Receipt size={16} weight="duotone" />}
               warna="text-[#0B5FA5]"
-              label="Jumlah donasi"
+              label="Jumlah donasi uang"
               nilai={String(ringkasan.jumlahDonasi)}
             />
             <KartuAngka
@@ -149,8 +152,9 @@ export function RingkasanDonatur() {
             <KartuAngka
               icon={<PaperPlaneTilt size={16} weight="duotone" />}
               warna="text-[#0E9F54]"
-              label="Surat terkirim bulan ini"
+              label="Surat bulan ini terkirim"
               nilai={String(ringkasan.suratTerkirim)}
+              keterangan="dari surat bertanggal bulan ini"
             />
           </>
         )}
