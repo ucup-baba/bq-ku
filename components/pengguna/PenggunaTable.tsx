@@ -2,6 +2,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { UserPlus, Prohibit, CheckCircle, ShieldCheck, ArrowsClockwise, Trash, Warning, PencilSimple, Check, X } from '@phosphor-icons/react';
 import { UndangPenggunaModal } from './UndangPenggunaModal';
+import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
+import { TombolIkon } from '@/components/ui/Tombol';
+import { ChipPilihan } from '@/components/ui/ChipPilihan';
+import { PesanGalat } from '@/components/ui/PesanGalat';
 import { ALL_ROLES, getRoleLabel, type UserRole } from '@/lib/auth/roles';
 import { roomsFor, ROOM_LABEL, type Room } from '@/lib/auth/rooms';
 
@@ -108,7 +112,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
     return (
       <div className="flex flex-wrap items-center gap-1.5">
         {r.roles.map(role => (
-          <span key={role} className={`rounded-full px-2 py-0.5 text-[11px] font-bold inline-flex items-center gap-1 ${ROLE_BADGE[role]}`}>
+          <span key={role} className={`rounded-full px-2 py-0.5 text-xs font-bold inline-flex items-center gap-1 ${ROLE_BADGE[role]}`}>
             <ShieldCheck size={12} weight="bold" />{getRoleLabel(role)}
           </span>
         ))}
@@ -141,28 +145,17 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={() => setModal(true)} className="h-11 px-4 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white font-bold inline-flex items-center gap-2">
-          <UserPlus size={20} weight="bold" /> Tambah email
-        </button>
-        <button type="button" onClick={load} aria-label="Muat ulang" className="h-11 w-11 rounded-2xl border border-slate-200 dark:border-slate-700 inline-flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800">
-          <ArrowsClockwise size={20} weight="bold" className={loading ? 'animate-spin' : ''} />
-        </button>
-        <div className="flex items-center gap-1 rounded-2xl border border-slate-200 dark:border-slate-700 p-1" role="group" aria-label="Filter ruangan">
-          {RUANGAN_FILTER.map(f => (
-            <button key={f.value} type="button" onClick={() => setRuangan(f.value)}
-              aria-pressed={ruangan === f.value}
-              className={`h-11 px-3 rounded-xl text-xs font-bold transition-colors ${ruangan === f.value ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-              {f.label}
-            </button>
-          ))}
-        </div>
-        <span className="text-xs text-slate-500">{filteredRows.length} pengguna</span>
+      <KepalaHalaman judul="Akun & Pengguna" sub="Izinkan email panitia, atur peran, blokir, atau hapus akun."
+        aksi={<TombolIkon ikon={UserPlus} label="Tambah email yang diizinkan" varian="utama" onClick={() => setModal(true)} />} />
+      <div className="flex flex-wrap items-center gap-2">
+        <ChipPilihan label="Filter ruangan" opsi={RUANGAN_FILTER} nilai={ruangan} onPilih={setRuangan} />
+        <TombolIkon ikon={ArrowsClockwise} label="Muat ulang" ukuran="sm" onClick={load} className={loading ? '[&_svg]:animate-spin' : ''} />
+        <span className="text-xs text-bq-redup">{filteredRows.length} pengguna</span>
       </div>
-      {error && <p role="alert" className="text-sm text-rose-600 bg-rose-50 dark:bg-rose-900/20 rounded-xl px-3 py-2">{error}</p>}
+      {error && <PesanGalat pesan={error} />}
 
       {/* Desktop: tabel */}
-      <div className="hidden md:block overflow-x-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+      <div className="hidden md:block overflow-x-auto rounded-kartu bg-bq-surface border border-bq-garis shadow-kartu">
         <table className="w-full text-sm">
           <thead><tr className="text-left text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
             <th className="px-5 py-3">Nama</th><th className="px-5 py-3">Email</th><th className="px-5 py-3">Peran</th><th className="px-5 py-3">Status</th><th className="px-5 py-3">Terakhir masuk</th><th className="px-5 py-3 text-right">Aksi</th>
@@ -170,7 +163,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
           <tbody>
             {filteredRows.map(r => (
               <tr key={r.id} className="border-b border-slate-100 dark:border-slate-800/60 last:border-0">
-                <td className="px-5 py-3 font-bold align-top">{r.nama}{r.id === currentUserId && <span className="ml-2 text-[11px] font-semibold text-teal-600">(Anda)</span>}</td>
+                <td className="px-5 py-3 font-bold align-top">{r.nama}{r.id === currentUserId && <span className="ml-2 text-xs font-semibold text-teal-600">(Anda)</span>}</td>
                 <td className="px-5 py-3 text-slate-600 dark:text-slate-300 align-top">{r.email}</td>
                 <td className="px-5 py-3 align-top"><RolePeran r={r} /></td>
                 <td className="px-5 py-3 align-top"><AktifToggle r={r} /></td>
@@ -184,16 +177,16 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
       </div>
 
       {/* Mobile: kartu */}
-      <ul className="md:hidden space-y-3">
+      <ul className="bergilir md:hidden space-y-3">
         {filteredRows.map(r => (
-          <li key={r.id} className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+          <li key={r.id} className="p-4 rounded-kartu bg-bq-surface border border-bq-garis shadow-kartu space-y-3">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0"><p className="font-bold truncate">{r.nama}{r.id === currentUserId && <span className="ml-2 text-[11px] font-semibold text-teal-600">(Anda)</span>}</p>
+              <div className="min-w-0"><p className="font-bold truncate">{r.nama}{r.id === currentUserId && <span className="ml-2 text-xs font-semibold text-teal-600">(Anda)</span>}</p>
                 <p className="text-xs text-slate-500 truncate">{r.email}</p></div>
             </div>
             <RolePeran r={r} />
             <div className="flex flex-wrap items-center gap-2"><AktifToggle r={r} /><HapusButton r={r} /></div>
-            <p className="text-[11px] text-slate-500">Terakhir masuk: {fmtMasuk(r)}</p>
+            <p className="text-xs text-slate-500">Terakhir masuk: {fmtMasuk(r)}</p>
           </li>
         ))}
         {!loading && filteredRows.length === 0 && <li className="px-5 py-8 text-center text-slate-500">Belum ada pengguna.</li>}
@@ -204,7 +197,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
       {konfirmHapus && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" role="alertdialog" aria-modal="true" aria-labelledby="hapus-title">
           <button type="button" aria-label="Batal" onClick={() => setKonfirmHapus(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
-          <div className="relative w-full sm:max-w-sm bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
+          <div className="relative w-full sm:max-w-sm bg-bq-surface rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
             <div className="flex items-center gap-2 text-rose-600"><Warning size={22} weight="duotone" /><h2 id="hapus-title" className="font-extrabold text-lg">Hapus pengguna?</h2></div>
             <p className="text-sm text-slate-600 dark:text-slate-300">
               <span className="font-bold">{konfirmHapus.nama}</span> ({konfirmHapus.email}) akan kehilangan akses dan datanya dihapus dari daftar. Tindakan ini tidak dapat dibatalkan.
