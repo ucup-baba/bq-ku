@@ -6,6 +6,7 @@ import { statusBerkas } from '@/lib/santri/ringkasan';
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
 import { ChipPilihan } from '@/components/ui/ChipPilihan';
 import { TautanUtama } from '@/components/ui/Tombol';
+import { useMedia } from '@/components/ui/useMedia';
 import { SantriPosterCv } from './SantriPosterCv';
 import { TabBerkas } from './TabBerkas';
 import { MenuSantri } from './MenuSantri';
@@ -17,6 +18,8 @@ export function DetailSantri({ santri }: { santri: Santri }) {
   const pathname = usePathname();
   const tab: Tab = useSearchParams().get('tab') === 'berkas' ? 'berkas' : 'cv';
   const st = statusBerkas(santri.documents);
+  // Desktop: CV & Berkas berdampingan tanpa tab. HP: bertab.
+  const desktop = useMedia('(min-width: 1024px)');
   const pilih = (t: Tab) => router.replace(pathname + (t === 'berkas' ? '?tab=berkas' : ''), { scroll: false });
 
   return (
@@ -27,12 +30,23 @@ export function DetailSantri({ santri }: { santri: Santri }) {
             <TautanUtama href={`/santri/${santri.id}/edit`} ikon={PencilSimple}>Edit</TautanUtama>
             <MenuSantri nama={santri.namaLengkap} />
           </>} />
-        <ChipPilihan<Tab> label="Bagian profil" nilai={tab} onPilih={pilih}
-          opsi={[{ value: 'cv', label: 'CV' }, { value: 'berkas', label: `Berkas ${st.ada}/${st.total}` }]} />
+        {!desktop && (
+          <ChipPilihan<Tab> label="Bagian profil" nilai={tab} onPilih={pilih}
+            opsi={[{ value: 'cv', label: 'CV' }, { value: 'berkas', label: `Berkas ${st.ada}/${st.total}` }]} />
+        )}
       </div>
-      <div key={tab} className="animate-halaman">
-        {tab === 'cv' ? <SantriPosterCv santri={santri as never} /> : <TabBerkas santri={santri} />}
-      </div>
+      {desktop ? (
+        <div className="grid grid-cols-[minmax(0,1fr)_380px] items-start gap-6">
+          <SantriPosterCv santri={santri as never} />
+          <aside className="sticky top-6 space-y-3 print:hidden" aria-label="Kelengkapan berkas">
+            <TabBerkas santri={santri} />
+          </aside>
+        </div>
+      ) : (
+        <div key={tab} className="animate-halaman">
+          {tab === 'cv' ? <SantriPosterCv santri={santri as never} /> : <TabBerkas santri={santri} />}
+        </div>
+      )}
     </div>
   );
 }

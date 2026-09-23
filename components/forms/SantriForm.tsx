@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { CaretLeft, CaretRight, FloppyDisk } from '@phosphor-icons/react';
 import { DocumentGuardModal } from '@/components/modals/DocumentGuardModal';
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
+import { useMedia } from '@/components/ui/useMedia';
 import { PesanGalat } from '@/components/ui/PesanGalat';
 import { TombolUtama } from '@/components/ui/Tombol';
 import { LANGKAH, validasiLangkah, langkahUntukGalat, type IdLangkah } from '@/lib/santri/langkah';
@@ -33,6 +34,8 @@ function fokusKe(field: string | undefined) {
  * Kembali selalu bisa. Mode edit membuka semua langkah sejak awal.
  */
 export function SantriForm({ initialData, isEditing = false, onSuccess }: SantriFormProps) {
+  // Desktop: satu halaman panjang (layar lega). HP: wizard 4 langkah yang urut.
+  const desktop = useMedia('(min-width: 1024px)');
   const [aktif, setAktif] = useState<IdLangkah>(1);
   const [tertinggi, setTertinggi] = useState<IdLangkah>(isEditing ? 4 : 1);
 
@@ -45,6 +48,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
   const f = useSantriForm({
     initialData, isEditing, onSuccess,
     onGalatServer: (fields) => {
+      if (desktop) { fokusKe(Object.keys(fields)[0]); return; }
       const l = langkahUntukGalat(fields);
       if (l) { setAktif(l); setTimeout(() => fokusKe(Object.keys(fields)[0]), 300); }
     },
@@ -63,6 +67,45 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
 
   const info = LANGKAH[aktif - 1];
   const kembaliKe = isEditing && initialData?.id ? `/santri/${initialData.id}` : '/santri';
+
+  const galatUmum = f.errorMessage && (
+    <div className="space-y-1">
+      <PesanGalat pesan={f.errorMessage} />
+      {f.duplicateNik && (
+        <a href={`/santri/${f.duplicateNik.existingId}`} className="px-1 text-sm font-bold text-bq-biru underline">
+          Buka data santri yang sudah ada →
+        </a>
+      )}
+    </div>
+  );
+  const penjaga = (
+    <DocumentGuardModal data={f.mismatchData} onCancel={f.handleGuardCancel} onOpenNewRegistration={f.handleGuardOpenNewRegistration} />
+  );
+
+  if (desktop) {
+    return (
+      <div className="mx-auto max-w-5xl space-y-5">
+        <KepalaHalaman
+          judul={isEditing ? 'Edit data santri' : 'Santri baru'}
+          sub="Lengkapi data santri, lalu simpan."
+          kembali={{ href: kembaliKe, label: isEditing ? 'Kembali ke profil santri' : 'Kembali ke direktori' }}
+        />
+        <div className="bergilir space-y-5">
+          <LangkahBerkas f={f} />
+          <LangkahSantri f={f} />
+          <LangkahKeluarga f={f} />
+          <LangkahSekolah f={f} />
+        </div>
+        {galatUmum}
+        <div className="sticky bottom-4 z-20 flex justify-end">
+          <TombolUtama ikon={FloppyDisk} onClick={f.simpan} disabled={f.isSubmitting} className="h-12 px-8 shadow-angkat">
+            {f.isSubmitting ? 'Menyimpan…' : isEditing ? 'Simpan perubahan' : 'Simpan data santri'}
+          </TombolUtama>
+        </div>
+        {penjaga}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4 pb-28 md:pb-0">
@@ -84,16 +127,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         {aktif === 4 && <LangkahSekolah f={f} />}
       </div>
 
-      {f.errorMessage && (
-        <div className="space-y-1">
-          <PesanGalat pesan={f.errorMessage} />
-          {f.duplicateNik && (
-            <a href={`/santri/${f.duplicateNik.existingId}`} className="px-1 text-sm font-bold text-bq-biru underline">
-              Buka data santri yang sudah ada →
-            </a>
-          )}
-        </div>
-      )}
+      {galatUmum}
 
       {/* Bar aksi: menempel di bawah layar pada HP, biasa di desktop */}
       <div className="fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-bq-garis bg-bq-surface/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur md:static md:justify-end md:border-0 md:bg-transparent md:p-0">
@@ -114,11 +148,7 @@ export function SantriForm({ initialData, isEditing = false, onSuccess }: Santri
         )}
       </div>
 
-      <DocumentGuardModal
-        data={f.mismatchData}
-        onCancel={f.handleGuardCancel}
-        onOpenNewRegistration={f.handleGuardOpenNewRegistration}
-      />
+      {penjaga}
     </div>
   );
 }

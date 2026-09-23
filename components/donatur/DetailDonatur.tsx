@@ -14,14 +14,16 @@ const kelasChip = 'inline-flex max-w-full items-center gap-1.5 rounded-full bg-s
 export function DetailDonatur({ donatur }: { donatur: Donatur & { donasi: Donasi[] } }) {
   const r = ringkasRiwayat(donatur.donasi);
   return (
-    <div className="max-w-3xl space-y-4 md:space-y-5">
+    <div className="space-y-4 md:space-y-5">
       <KepalaHalaman
         judul={`${labelSapaan(donatur.sapaan)} ${donatur.nama}`}
         kembali={{ href: '/donatur/daftar', label: 'Kembali ke daftar donatur' }}
         aksi={<TautanUtama href={`/donatur/surat/baru?donaturId=${donatur.id}`} ikon={ArrowClockwise}>Donasi lagi</TautanUtama>}
       />
 
-      <Kartu className="space-y-3 p-4">
+      {/* Desktop: profil & angka di kiri (menempel), riwayat di kanan */}
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[360px_minmax(0,1fr)] lg:gap-6">
+      <Kartu className="space-y-3 p-4 lg:sticky lg:top-6">
         <dl className="grid grid-cols-3 gap-2 text-center">
           <div><dt className="text-xs text-bq-redup">Total uang</dt><dd className="truncate text-sm font-black text-bq-tinta">Rp {formatRupiah(r.totalUang)}</dd></div>
           <div><dt className="text-xs text-bq-redup">Donasi</dt><dd className="text-sm font-black text-bq-tinta">{r.jumlah}</dd></div>
@@ -62,6 +64,7 @@ export function DetailDonatur({ donatur }: { donatur: Donatur & { donasi: Donasi
           </ol>
         )}
       </section>
+      </div>
     </div>
   );
 }
