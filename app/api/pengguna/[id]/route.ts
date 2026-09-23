@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
         if (error) throw error;
         return NextResponse.json({ success: true, data: { email, dihapus: true } });
       }
-      const { data, error } = await admin.from('allowed_emails').update({ roles, role: roles?.[0] }).eq('email', email).select().single();
+      const { data, error } = await admin.from('allowed_emails').update({ roles }).eq('email', email).select().single();
       if (error) throw error;
       return NextResponse.json({ success: true, data });
     }
@@ -32,14 +32,15 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
       return NextResponse.json({ error: 'Anda tidak dapat menonaktifkan atau menurunkan akun sendiri' }, { status: 400 });
     }
     const patch: Record<string, unknown> = { updatedAt: new Date().toISOString() };
-    if (roles !== undefined) { patch.roles = roles; patch.role = roles[0]; }
+    // Kolom lama `role` diturunkan dari `roles` oleh trigger DB (migrasi 0005).
+    if (roles !== undefined) patch.roles = roles;
     if (aktif !== undefined) patch.aktif = aktif;
     const { data, error } = await admin.from('profiles').update(patch).eq('id', id).select().single();
     if (error) throw error;
     // Sinkronkan daftar izin agar konsisten jika akun masuk ulang
-    if (roles !== undefined) await admin.from('allowed_emails').update({ roles, role: roles[0] }).eq('email', data.email);
+    if (roles !== undefined) await admin.from('allowed_emails').update({ roles }).eq('email', data.email);
     if (aktif === false) await admin.from('allowed_emails').delete().eq('email', data.email);
-    if (aktif === true) await admin.from('allowed_emails').upsert({ email: data.email, nama: data.nama, roles: data.roles, role: data.role });
+    if (aktif === true) await admin.from('allowed_emails').upsert({ email: data.email, nama: data.nama, roles: data.roles });
     // Lapisan kedua di sisi Auth
     if (aktif !== undefined) {
       await admin.auth.admin.updateUserById(id, { ban_duration: aktif ? 'none' : '876000h' }).catch(() => {});

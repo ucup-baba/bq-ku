@@ -32,7 +32,10 @@ export async function GET() {
   }
 }
 
-/** Tambah email yang diizinkan masuk (upsert). Jika akun sudah pernah masuk, trigger DB langsung mengaktifkannya. */
+/**
+ * Tambah email yang diizinkan masuk (upsert). Jika akun sudah pernah masuk, trigger DB langsung mengaktifkannya.
+ * Kolom lama `role` tidak ditulis: trigger `sinkron_role_roles` (migrasi 0005) menurunkannya dari `roles`.
+ */
 export async function POST(req: NextRequest) {
   try {
     await requireUser(['SUPERADMIN']);
@@ -40,7 +43,7 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return validationResponse(parsed.error);
     const { nama, email, roles } = parsed.data;
     const admin = createAdminSupabase();
-    const { error } = await admin.from('allowed_emails').upsert({ email, nama, roles, role: roles[0] });
+    const { error } = await admin.from('allowed_emails').upsert({ email, nama, roles });
     if (error) throw error;
     return NextResponse.json({ success: true, data: { email, nama, roles } }, { status: 201 });
   } catch (e: any) {
