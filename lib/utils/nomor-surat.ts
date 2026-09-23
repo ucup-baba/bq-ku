@@ -12,7 +12,9 @@ export function formatNomorSurat(urut: number, tanggal: Date | string): string {
 }
 
 export function parseNomorSurat(nomor: string): { urut: number; bulan: number; tahun: number } | null {
-  const m = /^(\d+)\/PBQ\/([IVX]+)\/(\d{4})$/.exec(nomor.trim());
+  // Urut 1..999999 tanpa nol di depan: '01/...' dan '1/...' adalah string
+  // berbeda sehingga lolos constraint unik nomorSurat padahal nomornya sama.
+  const m = /^([1-9]\d{0,5})\/PBQ\/([IVX]+)\/(\d{4})$/.exec(nomor.trim());
   if (!m) return null;
   const bulan = ROMAWI.indexOf(m[2]);
   if (bulan < 1) return null;

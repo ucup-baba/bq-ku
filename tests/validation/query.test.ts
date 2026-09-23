@@ -8,6 +8,14 @@ describe('isTanggalIso', () => {
   it('tidak valid untuk tanggal/bulan di luar jangkauan kalender', () => {
     expect(isTanggalIso('2026-13-45')).toBe(false);
   });
+  it('menolak tanggal yang tidak ada di kalender (tidak digeser ke bulan berikutnya)', () => {
+    expect(isTanggalIso('2026-02-30')).toBe(false);
+    expect(isTanggalIso('2026-02-29')).toBe(false);
+    expect(isTanggalIso('2026-04-31')).toBe(false);
+  });
+  it('menerima 29 Februari pada tahun kabisat', () => {
+    expect(isTanggalIso('2024-02-29')).toBe(true);
+  });
   it('tidak valid untuk format bukan tanggal', () => {
     expect(isTanggalIso('abc')).toBe(false);
   });

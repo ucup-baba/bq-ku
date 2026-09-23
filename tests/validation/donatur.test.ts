@@ -30,6 +30,12 @@ describe('donasiSchema', () => {
   it('menolak tanggal di masa depan', () => {
     expect(donasiSchema.safeParse({ ...dasar, tanggal: '2999-01-01', bentuk: 'UANG', nominal: 1000 }).success).toBe(false);
   });
+  it('menolak tanggal yang tidak ada di kalender, menerima 29 Feb tahun kabisat', () => {
+    const r = donasiSchema.safeParse({ ...dasar, tanggal: '2026-02-30', bentuk: 'UANG', nominal: 1000 });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues.map(i => i.message)).toContain('Tanggal tidak valid');
+    expect(donasiSchema.safeParse({ ...dasar, tanggal: '2024-02-29', bentuk: 'UANG', nominal: 1000 }).success).toBe(true);
+  });
 });
 
 describe('rekapQuerySchema', () => {
@@ -51,11 +57,21 @@ describe('rekapQuerySchema', () => {
   it('menolak format tanggal tidak valid', () => {
     expect(rekapQuerySchema.safeParse({ dari: '2026/09/01', sampai: '2026-09-30' }).success).toBe(false);
   });
+  it('menolak tanggal kalender tidak ada (2026-02-30), menerima 2024-02-29', () => {
+    expect(rekapQuerySchema.safeParse({ dari: '2026-02-01', sampai: '2026-02-30' }).success).toBe(false);
+    expect(rekapQuerySchema.safeParse({ dari: '2024-02-01', sampai: '2024-02-29' }).success).toBe(true);
+  });
 });
 
 describe('suratSchema', () => {
   it('menerima nomor surat berformat benar', () => {
     expect(suratSchema.safeParse({ donasiId: 'x', nomorSurat: '271/PBQ/IX/2026', tanggalSurat: '2026-09-22' }).success).toBe(true);
+  });
+  it('menolak nomor urut dengan nol di depan', () => {
+    expect(suratSchema.safeParse({ donasiId: 'x', nomorSurat: '01/PBQ/IX/2026', tanggalSurat: '2026-09-22' }).success).toBe(false);
+  });
+  it('menolak tanggal surat yang tidak ada di kalender', () => {
+    expect(suratSchema.safeParse({ donasiId: 'x', nomorSurat: '271/PBQ/II/2026', tanggalSurat: '2026-02-30' }).success).toBe(false);
   });
   it('menolak nomor surat asal-asalan', () => {
     expect(suratSchema.safeParse({ donasiId: 'x', nomorSurat: '271', tanggalSurat: '2026-09-22' }).success).toBe(false);

@@ -1,8 +1,15 @@
 const TANGGAL_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Validasi format tanggal YYYY-MM-DD dan bahwa tanggalnya valid secara kalender. */
+/**
+ * Validasi format tanggal YYYY-MM-DD dan bahwa tanggalnya valid secara kalender.
+ * Date.parse saja tidak cukup: '2026-02-30' diterima dan digeser ke 2 Maret,
+ * jadi hasil parse (UTC) harus menghasilkan tahun/bulan/hari yang sama persis.
+ */
 export function isTanggalIso(value: string): boolean {
-  return TANGGAL_RE.test(value) && !Number.isNaN(Date.parse(value));
+  if (!TANGGAL_RE.test(value)) return false;
+  const t = Date.parse(value);
+  if (Number.isNaN(t)) return false;
+  return new Date(t).toISOString().slice(0, 10) === value;
 }
 
 /** Parse query `limit`: hanya dipakai bila integer 1..500, selain itu diabaikan (undefined). */

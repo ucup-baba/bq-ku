@@ -1,18 +1,21 @@
 import { z } from 'zod';
 import { normalizeWa } from '@/lib/validation/santri';
 import { parseNomorSurat } from '@/lib/utils/nomor-surat';
+import { isTanggalIso } from '@/lib/validation/query';
 
 const teksOpsional = z.string().trim().transform(v => (v === '' ? null : v)).nullable().optional();
+// isTanggalIso memeriksa round-trip kalender ('2026-02-30' ditolak, bukan
+// digeser diam-diam ke 2 Maret oleh Date.parse).
 const tanggalIso = z.string().trim()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD')
-  .refine(v => !Number.isNaN(Date.parse(v)), 'Tanggal tidak valid')
+  .refine(isTanggalIso, 'Tanggal tidak valid')
   .refine(v => Date.parse(v) <= Date.now() + 86_400_000, 'Tanggal tidak boleh di masa depan');
 
 // Khusus rentang rekap: akhir periode (mis. akhir bulan berjalan) wajar berada
 // di masa depan, jadi tanpa larangan masa depan seperti tanggalIso di atas.
 const tanggalIsoBebas = z.string().trim()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD')
-  .refine(v => !Number.isNaN(Date.parse(v)), 'Tanggal tidak valid');
+  .refine(isTanggalIso, 'Tanggal tidak valid');
 
 export const sapaanEnum = z.enum(['BAPAK', 'IBU', 'SDR', 'SDRI', 'BAPAK_IBU']);
 export const jenisEnum = z.enum(['ZAKAT', 'INFAQ', 'SHADAQAH', 'LAINNYA']);

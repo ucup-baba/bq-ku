@@ -30,6 +30,17 @@ describe('nomor surat', () => {
       expect(hasil).toEqual({ urut: 123, bulan, tahun: 2026 });
     }
   });
+  it('parse menolak nomor urut dengan nol di depan, nol, atau lebih dari 6 digit', () => {
+    // '01/...' berbeda string dari '1/...' sehingga akan lolos constraint unik
+    expect(parseNomorSurat('01/PBQ/IX/2026')).toBeNull();
+    expect(parseNomorSurat('0/PBQ/IX/2026')).toBeNull();
+    expect(parseNomorSurat('1234567/PBQ/IX/2026')).toBeNull();
+  });
+  it('parse tetap menerima urut 1..999999', () => {
+    expect(parseNomorSurat('271/PBQ/IX/2026')).toEqual({ urut: 271, bulan: 9, tahun: 2026 });
+    expect(parseNomorSurat('1/PBQ/I/2026')).toEqual({ urut: 1, bulan: 1, tahun: 2026 });
+    expect(parseNomorSurat('999999/PBQ/XII/2026')).toEqual({ urut: 999999, bulan: 12, tahun: 2026 });
+  });
   it('format tanggal awal tahun tanpa geser zona waktu', () => {
     expect(formatNomorSurat(1, '2026-01-01')).toBe('1/PBQ/I/2026');
   });
