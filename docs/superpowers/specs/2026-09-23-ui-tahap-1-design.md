@@ -38,7 +38,7 @@ Tidak termasuk: perubahan API, skema database, atau isi PNG surat. `/donatur/rek
 | Buat Surat di HP | **C — pratinjau surat besar + panel isian yang ditarik dari bawah** |
 | Beranda Donatur | Sesuai `beranda.html` (±1,3 layar di HP) |
 | Animasi | **Halus & bermakna**, 150–350 ms, mati otomatis dengan `prefers-reduced-motion` |
-| Pustaka | `vaul` (panel bawah), `embla-carousel-react` (carousel ber-dots), `animejs` v4 (stagger, hitung naik, doodle), CSS untuk hover/tekan |
+| Pustaka | `vaul` (panel bawah), `embla-carousel-react` (carousel ber-dots), `animejs` v4 (hitung naik, doodle & sparkline tergambar), CSS untuk hover/tekan |
 
 ## 4. Sistem Desain Bersama
 
@@ -57,9 +57,9 @@ Didefinisikan di `app/globals.css` sebagai CSS variable + dipetakan di `tailwind
 | `Kartu` | Permukaan kartu standar (surface, radius, shadow-card), varian `hero` bergradien hijau→biru |
 | `AngkaNaik` | Angka yang menghitung naik saat pertama terlihat (anime.js), format rupiah/angka |
 | `Carousel` | Embla + dots (dot aktif memanjang), geser, keyboard, `aria-roledescription="carousel"` |
-| `PanelBawah` | Pembungkus `vaul` Drawer dengan snap points dan pegangan tarik |
+| `LembarBawah` / `PanelTetap` | Pembungkus `vaul` Drawer: `LembarBawah` = lembar modal (desktop tampil di tengah, lebar maks. 28rem); `PanelTetap` = panel non-modal dengan snap points untuk Buat Surat |
 | `ChipPilihan` | Segmented chip (periode, filter status) dengan `aria-pressed` |
-| `TampilBergilir` | Pembungkus yang memberi stagger fade-up pada anak-anaknya saat masuk (anime.js), menghormati reduced-motion |
+| kelas CSS `bergilir` | Stagger fade-up pada anak-anak elemen saat masuk, murni CSS (tanpa kedip saat hidrasi), otomatis mati dengan reduced-motion |
 | `TombolUtama` / `TombolIkon` | Tombol dengan umpan balik tekan (scale .96, 120 ms); `TombolIkon` wajib `aria-label` |
 
 ### 4.3 Aturan konten
@@ -92,6 +92,7 @@ Semua animasi JS memeriksa `matchMedia('(prefers-reduced-motion: reduce)')`; CSS
 - `components/layout/BottomNav.tsx` menggantikan `MobileBottomNav` dan `DonaturBottomNav`, isi dari `lib/nav/menu.ts`.
 - Ruang Donatur: Beranda · Donatur · **+ Surat** (tombol mengambang tengah) · Pindah · Akun. Ruang Santri: Beranda · Direktori · **+ Berkas** · Pindah · Akun. Bila akun hanya punya satu ruangan, "Pindah" digantikan item menu ruangan (Donatur: Surat; Santri: Pengguna untuk superadmin / tidak ada).
 - Tombol tema di drawer Akun (sudah ada).
+- Di halaman Buat Surat (HP), bottom nav disembunyikan: layar itu fokus pada satu tugas, tombol Simpan menempel di dasar layar, dan kembali lewat tombol ← di header.
 - Tidak ada lagi tautan ke tujuan yang sama di header halaman bila sudah ada di bottom nav.
 
 ### 5.3 Transisi halaman
@@ -102,7 +103,7 @@ Semua animasi JS memeriksa `matchMedia('(prefers-reduced-motion: reduce)')`; CSS
 ### 6.1 Beranda (`/donatur`) — lihat `beranda.html`
 - **Header:** judul + salam; avatar kecil (desktop: tombol utama "Buat Surat" di kanan).
 - **Kartu hero:** total donasi uang periode ini (`AngkaNaik`), `ChipPilihan` periode (Bulan / 3 bln / Tahun / ⋯), keterangan perbandingan, sparkline tren.
-- **"⋯" periode** membuka `PanelBawah` (desktop: popover) berisi rentang tanggal manual (satu ikon kalender) dan tombol Export CSV.
+- **"⋯" periode** membuka `LembarBawah` berisi rentang tanggal manual (satu ikon kalender) dan tombol Export CSV.
 - **Carousel angka** (HP; desktop grid 3–4 kolom): Donasi uang, Donasi barang, Surat terkirim (x/y), Komposisi akad.
 - **"Perlu dikirim ke WhatsApp"**: carousel kartu surat belum terkirim (maks. 5) di HP maupun desktop, masing-masing tombol Kirim WA (memakai `TombolKirimWa`). Gambar PNG hanya disiapkan untuk slide yang sedang aktif agar beranda tidak merender 5 PNG sekaligus. Tautan di judul: "n surat" → Daftar Surat filter Belum dikirim; bila kosong, "Arsip surat" → Daftar Surat, dan kartu diganti pesan sukses kecil.
 - **Donasi terbaru**: 2 baris di HP (desktop 5), ikon "donasi lagi" (↻) ber-`aria-label`; "Lihat semua" ke Daftar Donatur.
@@ -111,12 +112,12 @@ Semua animasi JS memeriksa `matchMedia('(prefers-reduced-motion: reduce)')`; CSS
 - Target: ≤1,5 layar di 390×844.
 
 ### 6.2 Buat Surat (`/donatur/surat/baru`) — lihat `buat-surat.html` (C)
-- **HP:** pratinjau surat (`PratinjauSurat`) mengisi layar; `PanelBawah` dengan snap `[0.28, 0.6, 1]`; di dalamnya tiga bagian yang dapat digeser (Carousel tanpa autoplay, dots berlabel): **Donatur** (pilih/baru), **Donasi** (jenis, bentuk, nominal/barang, tanggal, keterangan), **Surat** (tanggal surat, nomor, gaya tulisan). Fokus pada input → panel naik ke snap 1; blur → kembali ke 0.6. Tombol Simpan menempel di bawah panel pada semua snap. Error 400 memindahkan panel ke bagian yang salah.
+- **HP:** pratinjau surat (`PratinjauSurat`) mengisi layar; `PanelTetap` dengan snap `[0.28, 0.6, 1]`; di dalamnya tiga bagian yang dapat digeser (Carousel tanpa autoplay, dots berlabel): **Donatur** (pilih/baru), **Donasi** (jenis, bentuk, nominal/barang, tanggal, keterangan), **Surat** (tanggal surat, nomor, gaya tulisan). Fokus pada input → panel naik ke snap 1; blur → kembali ke 0.6. Tombol Simpan menempel di bawah panel pada semua snap. Error 400 memindahkan panel ke bagian yang salah.
 - **Desktop:** dua kolom — form kiri dikelompokkan dalam 3 kartu, pratinjau kanan `sticky`.
 - Logika form (FormSurat) tidak berubah; hanya tata letak & komponen.
 
 ### 6.3 Daftar Donatur (`/donatur/daftar`)
-Cari menempel (sticky) di atas; kartu padat (avatar inisial, nama, WA, ↻); tambah donatur = `TombolIkon` di header yang membuka `PanelBawah` (desktop: dialog). Target ≤1,2 layar untuk 10 donatur pertama (daftar memuat lebih lanjut dengan scroll alami).
+Cari menempel (sticky) di atas; kartu padat (avatar inisial, nama, WA, ↻); tambah donatur = `TombolIkon` di header yang membuka `LembarBawah`. Target ≤1,2 layar untuk 10 donatur pertama (daftar memuat lebih lanjut dengan scroll alami).
 
 ### 6.4 Detail Donatur
 Kartu profil ringkas + timeline riwayat donasi; satu tombol "Donasi lagi".
@@ -132,7 +133,7 @@ Disamakan dengan gaya A: tabel di desktop, kartu di HP; tombol tambah email = `T
 
 ## 7. Penanganan Error & Aksesibilitas
 - Carousel: tombol dot punya `aria-label="Slide n dari m"`, dapat difokus; geser keyboard dengan panah.
-- PanelBawah: fokus terperangkap saat terbuka, Esc menutup (vaul), `aria-labelledby`.
+- LembarBawah/PanelTetap: fokus terperangkap saat terbuka, Esc menutup (vaul), `aria-labelledby`.
 - Semua `TombolIkon` wajib `aria-label` (dicek di test).
 - Kontras teks ≥ 4.5:1 di kedua tema untuk teks < 18 px.
 
