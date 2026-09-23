@@ -94,3 +94,12 @@ export type SantriInputParsed = z.infer<typeof santriInputSchema>;
 export const santriClientSchema = santriBase
   .pick({ namaLengkap: true, nik: true, noKk: true, nisn: true, tempatLahir: true, tanggalLahir: true, jenisKelamin: true, jenjang: true, kelas: true, sekolahSekarang: true, kontakWali: true })
   .refine(kelasCocokJenjang, { path: ['kelas'], message: 'Kelas tidak sesuai jenjang (SMP 7–9, SMA/SMK 10–12)' });
+
+/** Skema per langkah wizard santri (subset santriBase yang sama dengan server). */
+export const skemaLangkahSantri = {
+  1: santriBase.pick({ namaLengkap: true }),
+  2: santriBase.pick({ nik: true, noKk: true, nisn: true, tempatLahir: true, tanggalLahir: true, jenisKelamin: true }),
+  3: santriBase.pick({ kontakWali: true }),
+  4: santriBase.pick({ jenjang: true, kelas: true, sekolahSekarang: true })
+    .refine(kelasCocokJenjang, { path: ['kelas'], message: 'Kelas tidak sesuai jenjang (SMP 7–9, SMA/SMK 10–12)' }),
+} as const;
