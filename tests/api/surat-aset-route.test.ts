@@ -26,6 +26,6 @@ describe('GET /api/donatur/surat/aset/[nama]', () => {
   });
   it('tanpa akses ruang donatur → ditolak', async () => {
     requireRoom.mockRejectedValueOnce(new Error('tolak'));
-    expect((await panggil('ttd.png')).status).toBe(403);
+    expect((await panggil('ttd-rotasi.png')).status).toBe(403);
   });
 });

@@ -71,7 +71,7 @@ describe('loadSuratAssets — aset surat dibaca dari folder non-publik', () => {
     const dibaca = fsMod.readFile.mock.calls.map((c: any[]) => String(c[0]));
     const dir = path.join(process.cwd(), 'assets', 'surat') + path.sep;
     expect(dibaca.sort()).toEqual(
-      ['doa-cdr.png', 'kop.png', 'logo.webp', 'stempel.webp', 'ttd.png'].map((f) => dir + f),
+      ['doa-cdr.png', 'kop.png', 'logo.webp', 'stempel.webp', 'ttd-rotasi.png'].map((f) => dir + f),
     );
     vi.doUnmock('sharp');
   });

@@ -7,7 +7,7 @@ import type { SuratAssets } from '@/lib/surat/assets';
 export const ASET_KLIEN: Record<string, readonly [folder: '' | 'fonts', mime: string]> = {
   'kop.png': ['', 'image/png'],
   'doa-cdr.png': ['', 'image/png'],
-  'ttd.png': ['', 'image/png'],
+  'ttd-rotasi.png': ['', 'image/png'],
   'logo.webp': ['', 'image/webp'],
   'stempel.webp': ['', 'image/webp'],
   'Arimo-Regular.ttf': ['fonts', 'font/ttf'],
@@ -28,7 +28,7 @@ const url = (nama: string) => `/api/donatur/surat/aset/${nama}`;
 export const ASET_PRATINJAU: SuratAssets = {
   kop: url('kop.png'),
   doaCdr: url('doa-cdr.png'),
-  ttd: url('ttd.png'),
+  ttd: url('ttd-rotasi.png'),
   logo: url('logo.webp'),
   stempel: url('stempel.webp'),
 };

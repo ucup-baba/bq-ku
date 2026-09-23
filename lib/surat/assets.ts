@@ -37,8 +37,9 @@ async function buildSuratAssets(): Promise<SuratAssets> {
   const [logo, stempel, ttd, kop, doaCdr] = await Promise.all([
     asPngDataUriFromWebp('logo.webp'),
     asPngDataUriFromWebp('stempel.webp'),
-    asDataUri('ttd.png', 'image/png'),
-    // Kop & doa sudah berupa PNG hasil ekspor CorelDRAW asli (lihat AGENTS.md
+    asDataUri('ttd-rotasi.png', 'image/png'),
+    // TTD memakai ttd-rotasi.png (diputar 90° ke kiri & dipangkas). Kop & doa sudah berupa
+    // PNG hasil ekspor CorelDRAW asli (lihat AGENTS.md
     // pengurus), dimuat apa adanya sebagai <img>.
     asDataUri('kop.png', 'image/png'),
     asDataUri('doa-cdr.png', 'image/png'),

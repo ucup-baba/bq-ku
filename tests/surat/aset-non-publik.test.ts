@@ -5,7 +5,7 @@ import path from 'path';
 
 // TTD & stempel resmi tidak boleh tersaji publik (semua isi public/ bisa
 // diunduh tanpa login). Aset surat harus berada di assets/surat/.
-const ASET = ['ttd.png', 'stempel.webp', 'logo.webp', 'kop.png', 'doa-cdr.png'];
+const ASET = ['ttd.png', 'ttd-rotasi.png', 'stempel.webp', 'logo.webp', 'kop.png', 'doa-cdr.png'];
 
 describe('aset surat tidak berada di public/', () => {
   it.each(ASET)('%s ada di assets/surat dan tidak ada di public/', (nama) => {

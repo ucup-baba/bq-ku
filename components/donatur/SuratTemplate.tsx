@@ -133,11 +133,12 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 420 }}>
               <div style={{ display: 'flex', fontSize: 22 }}>Pengurus Panti Asuhan</div>
               <div style={{ display: 'flex', fontSize: 22 }}>Baitul Qowwam</div>
-              <div style={{ display: 'flex', position: 'relative', height: 150, width: 380, alignItems: 'center', justifyContent: 'center' }}>
-                <img src={assets.stempel} width={210} height={210} style={{ width: 210, height: 210, position: 'absolute', left: 20, top: -20, opacity: 0.9 }} />
-                <img src={assets.ttd} width={150} height={150} style={{ width: 150, height: 150, position: 'absolute', left: 150, top: -6 }} />
+              {/* TTD (diputar & dipangkas, rasio 382×267) tepat di tengah, sejajar dengan "Baitul Qowwam"; stempel menimpa sisi kiri */}
+              <div style={{ display: 'flex', position: 'relative', height: 176, width: 380, alignItems: 'center', justifyContent: 'center' }}>
+                <img src={assets.stempel} width={190} height={190} style={{ width: 190, height: 190, position: 'absolute', left: -6, top: -8, opacity: 0.9 }} />
+                <img src={assets.ttd} width={240} height={168} style={{ width: 240, height: 168, position: 'absolute', left: 70, top: 4 }} />
               </div>
-              <div style={{ display: 'flex', fontSize: 24, fontWeight: 700 }}>Dr. H. Agus Triyanta</div>
+              <div style={{ display: 'flex', fontSize: 24, fontWeight: 700 }}>Aris Eko Purwanto, S.T</div>
             </div>
           </div>
         </div>
