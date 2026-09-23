@@ -60,6 +60,11 @@ do $$
 declare t text;
 begin
   foreach t in array array['donatur','donasi','surat','nomor_surat_counter'] loop
+    -- drop dulu agar migrasi ini aman dijalankan ulang
+    execute format('drop policy if exists "%1$s: baca" on public.%1$I', t);
+    execute format('drop policy if exists "%1$s: tulis" on public.%1$I', t);
+    execute format('drop policy if exists "%1$s: ubah" on public.%1$I', t);
+    execute format('drop policy if exists "%1$s: hapus" on public.%1$I', t);
     execute format('create policy "%1$s: baca" on public.%1$I for select to authenticated using (public.has_role(''SUPERADMIN'') or public.has_role(''ADMIN_DONATUR''))', t);
     execute format('create policy "%1$s: tulis" on public.%1$I for insert to authenticated with check (public.has_role(''SUPERADMIN'') or public.has_role(''ADMIN_DONATUR''))', t);
     execute format('create policy "%1$s: ubah" on public.%1$I for update to authenticated using (public.has_role(''SUPERADMIN'') or public.has_role(''ADMIN_DONATUR'')) with check (public.has_role(''SUPERADMIN'') or public.has_role(''ADMIN_DONATUR''))', t);
