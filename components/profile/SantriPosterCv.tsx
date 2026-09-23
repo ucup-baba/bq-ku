@@ -1,28 +1,8 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import Link from 'next/link';
-import { 
-  User, 
-  Printer, 
-  PencilSimple, 
-  ShareNetwork, 
-  FileText, 
-  CheckCircle, 
-  WarningCircle, 
-  GraduationCap, 
-  BookOpen, 
-  Sparkle, 
-  Buildings,
-  MapPin,
-  Phone,
-  ArrowLeft,
-  IdentificationCard,
-  Eye,
-  ArrowSquareOut
-} from '@phosphor-icons/react';
-import { DoodleArrow, DoodleBadgeTape, DoodleSparkle, DoodleSpeechBubble, DoodleUnderline } from '@/components/ui/DoodleStickers';
-import { DocumentPreviewModal } from '@/components/ui/DocumentPreviewModal';
+import React, { useRef } from 'react';
+import { User, GraduationCap, BookOpen, Sparkle, Buildings, IdentificationCard } from '@phosphor-icons/react';
+import { DoodleBadgeTape, DoodleSparkle, DoodleSpeechBubble } from '@/components/ui/DoodleStickers';
 import { calculateAge, formatDateIndonesian } from '@/lib/utils/formatters';
 
 
@@ -66,95 +46,18 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
   const posterRef = useRef<HTMLDivElement>(null);
   const isIkhwan = santri.jenisKelamin === 'IKHWAN';
 
-  const [activePreview, setActivePreview] = useState<{
-    isOpen: boolean;
-    title: string;
-    fileUrl: string;
-    badge?: string;
-  }>({
-    isOpen: false,
-    title: '',
-    fileUrl: '',
-    badge: '',
-  });
-
-
   const skillsList = santri.keahlian 
     ? (typeof santri.keahlian === 'string' ? JSON.parse(santri.keahlian) : santri.keahlian)
     : [];
 
   const displayPhoto = santri.fotoProfilUrl || santri.fotoFormalUrl;
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: `Profil Santri - ${santri.namaLengkap}`,
-        text: `Lihat profil santri dan berkas administrasi ${santri.namaLengkap}`,
-        url: window.location.href,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      alert('Link profil telah disalin ke clipboard!');
-    }
-  };
-
-  // Required documents check
-  const requiredCategories = [
-    { key: 'KARTU_KELUARGA', label: 'Kartu Keluarga' },
-    { key: 'AKTA_KELAHIRAN', label: 'Akta Kelahiran' },
-    { key: 'KTP_ORTU', label: 'KTP Orang Tua' },
-    { key: 'SKL_IJAZAH', label: 'SKL / Ijazah' },
-  ];
-
-  const docs = santri.documents || [];
-
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-20">
-      {/* Top Action Toolbar (Hidden during Print) */}
-      <div className="print:hidden flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <Link
-          href="/santri"
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-teal-600 transition-colors"
-        >
-          <ArrowLeft size={16} />
-          Kembali ke Direktori
-        </Link>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleShare}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-          >
-            <ShareNetwork size={14} />
-            Bagikan
-          </button>
-          <button
-            type="button"
-            onClick={handlePrint}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-slate-800 dark:bg-slate-700 text-white text-xs font-bold hover:bg-slate-900 transition-colors shadow-sm"
-          >
-            <Printer size={14} weight="bold" />
-            Cetak / PDF
-          </button>
-          <Link
-            href={`/santri/${santri.id}/edit`}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-teal-600 text-white text-xs font-bold hover:bg-teal-700 transition-colors shadow-sm"
-          >
-            <PencilSimple size={14} weight="bold" />
-            Edit Data
-          </Link>
-        </div>
-      </div>
-
+    <div className="mx-auto max-w-4xl">
       {/* POSTER CARD (Creative Poster Style - Fully Adaptive Light & Dark Mode) */}
       <div 
         ref={posterRef}
-        className={`relative overflow-hidden rounded-[2.5rem] border-4 shadow-2xl p-6 sm:p-10 transition-all ${
+        className={`relative overflow-hidden rounded-[2rem] border-4 shadow-2xl p-4 sm:p-10 transition-all ${
           isIkhwan 
             ? 'bg-gradient-to-b from-white via-slate-50 to-slate-100/70 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 border-lime-500 dark:border-lime-400 text-slate-800 dark:text-slate-100 shadow-lime-500/10' 
             : 'bg-gradient-to-b from-white via-slate-50 to-slate-100/70 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 border-rose-400 dark:border-rose-300 text-slate-800 dark:text-slate-100 shadow-rose-500/10'
@@ -345,7 +248,7 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
                     {santri.tempatLahir}, {formatDateIndonesian(santri.tanggalLahir) || santri.tanggalLahir}
                   </span>
                   {calculateAge(santri.tanggalLahir) && (
-                    <span className="ml-1.5 inline-block text-[10px] font-extrabold px-1.5 py-0.5 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 rounded border border-teal-200 dark:border-teal-800">
+                    <span className="ml-1.5 inline-block text-xs font-extrabold px-1.5 py-0.5 bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 rounded border border-teal-200 dark:border-teal-800">
                       {calculateAge(santri.tanggalLahir)?.text}
                     </span>
                   )}
@@ -369,104 +272,14 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
           </div>
         </div>
 
-        {/* DOCUMENT ARCHIVE STATUS (Full Width Block) */}
-        <div className="mt-5 p-5 rounded-3xl bg-white dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/10 shadow-sm backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 flex items-center gap-1.5">
-              <FileText size={16} weight="duotone" />
-              Kelengkapan Berkas Administrasi
-            </span>
-            <span className="font-handwriting text-lg text-emerald-700 dark:text-lime-300 font-bold">
-              Arsip Digital
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {requiredCategories.map((reqCat) => {
-              const uploadedDoc = docs.find(d => d.kategori === reqCat.key);
-              const isUploaded = !!uploadedDoc;
-
-              return (
-                <div
-                  key={reqCat.key}
-                  onClick={() => {
-                    if (uploadedDoc?.fileUrl) {
-                      setActivePreview({
-                        isOpen: true,
-                        title: `${reqCat.label} - ${santri.namaLengkap}`,
-                        fileUrl: uploadedDoc.fileUrl,
-                        badge: 'Terverifikasi'
-                      });
-                    }
-                  }}
-                  className={`p-3 rounded-2xl border text-xs flex flex-col justify-between transition-all ${
-                    isUploaded 
-                      ? 'bg-emerald-50/90 dark:bg-teal-950/40 border-emerald-300 dark:border-teal-500/50 text-emerald-900 dark:text-teal-200 cursor-pointer hover:border-emerald-500 dark:hover:border-teal-400 hover:bg-emerald-100/70 dark:hover:bg-teal-900/30 shadow-sm hover:shadow-md' 
-                      : 'bg-slate-100/80 dark:bg-white/5 border-slate-200 dark:border-white/10 text-slate-500 dark:text-slate-400'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-bold text-slate-900 dark:text-white text-[11px]">{reqCat.label}</span>
-                    {isUploaded ? (
-                      <CheckCircle size={16} weight="fill" className="text-emerald-600 dark:text-emerald-400" />
-                    ) : (
-                      <WarningCircle size={16} className="text-amber-500 dark:text-amber-400" />
-                    )}
-                  </div>
-                  <span className="text-[10px] font-medium text-slate-600 dark:text-slate-300">
-                    {isUploaded ? 'Terverifikasi' : 'Belum Ada'}
-                  </span>
-                  {uploadedDoc?.fileUrl && (
-                    <div className="mt-2.5 pt-2 border-t border-emerald-200 dark:border-teal-500/20 flex items-center justify-between gap-1">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActivePreview({
-                            isOpen: true,
-                            title: `${reqCat.label} - ${santri.namaLengkap}`,
-                            fileUrl: uploadedDoc.fileUrl,
-                            badge: 'Terverifikasi'
-                          });
-                        }}
-                        className="text-[11px] font-bold text-emerald-800 dark:text-teal-300 hover:text-emerald-950 dark:hover:text-white flex items-center gap-1.5 py-1 px-2.5 rounded-xl bg-emerald-200/70 dark:bg-teal-500/20 hover:bg-emerald-200 dark:hover:bg-teal-500/30 transition-colors cursor-pointer"
-                      >
-                        <Eye size={13} weight="bold" /> Pratinjau
-                      </button>
-                      <a
-                        href={uploadedDoc.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        title="Buka Dokumen di Tab Baru"
-                        className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
-                      >
-                        <ArrowSquareOut size={14} />
-                      </a>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Footer Signature Bar */}
-        <div className="mt-8 pt-4 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-slate-500 dark:text-slate-400">
+        <div data-audit-abaikan className="mt-8 pt-4 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
           <span>Dicetak dari Sistem Administrasi Santri Baitul Qowwam</span>
           <span className="font-mono font-medium">NIK: {santri.nik} • ID: {santri.id}</span>
         </div>
       </div>
 
 
-      {/* Pop-up Document Preview Modal */}
-      <DocumentPreviewModal
-        isOpen={activePreview.isOpen}
-        onClose={() => setActivePreview((prev) => ({ ...prev, isOpen: false }))}
-        title={activePreview.title}
-        fileUrl={activePreview.fileUrl}
-        badge={activePreview.badge}
-      />
     </div>
   );
 }

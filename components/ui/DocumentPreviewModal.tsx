@@ -90,7 +90,7 @@ export function DocumentPreviewModal({
                   {title}
                 </h3>
                 {badge && (
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
+                  <span className="hidden sm:inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300">
                     <CheckCircle size={12} weight="fill" /> {badge}
                   </span>
                 )}
@@ -115,7 +115,7 @@ export function DocumentPreviewModal({
                 >
                   <MagnifyingGlassMinus size={16} />
                 </button>
-                <span className="text-[11px] font-mono px-2 text-slate-300">
+                <span className="text-xs font-mono px-2 text-slate-300">
                   {Math.round(zoom * 100)}%
                 </span>
                 <button
@@ -194,7 +194,7 @@ export function DocumentPreviewModal({
                 title={title}
                 onLoad={() => setIsLoading(false)}
               />
-              <div className="py-2 px-3 text-center text-[11px] text-slate-400">
+              <div className="py-2 px-3 text-center text-xs text-slate-400">
                 Pratinjau PDF interaktif • Jika tampilan terhalang oleh pengaturan keamanan browser HP, Anda dapat{' '}
                 <a 
                   href={fileUrl} 
