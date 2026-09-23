@@ -76,4 +76,17 @@ describe('suratSchema', () => {
   it('menolak nomor surat asal-asalan', () => {
     expect(suratSchema.safeParse({ donasiId: 'x', nomorSurat: '271', tanggalSurat: '2026-09-22' }).success).toBe(false);
   });
+
+  const dasarSurat = { donasiId: 'x', nomorSurat: '271/PBQ/IX/2026', tanggalSurat: '2026-09-22' };
+  it('menerima gayaTulisan PATRICK', () => {
+    const r = suratSchema.safeParse({ ...dasarSurat, gayaTulisan: 'PATRICK' });
+    expect(r.success && r.data.gayaTulisan).toBe('PATRICK');
+  });
+  it('menolak gayaTulisan yang tidak dikenal', () => {
+    expect(suratSchema.safeParse({ ...dasarSurat, gayaTulisan: 'COMIC' }).success).toBe(false);
+  });
+  it('default gayaTulisan KALAM bila tidak diisi', () => {
+    const r = suratSchema.safeParse(dasarSurat);
+    expect(r.success && r.data.gayaTulisan).toBe('KALAM');
+  });
 });

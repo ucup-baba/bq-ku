@@ -90,7 +90,7 @@ describe('POST /api/donatur/surat', () => {
     expect(createDonasi).toHaveBeenCalledWith(fakeSupabase, donasiInput, fakeUser.id);
     expect(createSurat).toHaveBeenCalledWith(
       fakeSupabase,
-      { donasiId: 'donasi-1', nomorSurat: '5/PBQ/IX/2026', tanggalSurat: '2026-09-01' },
+      { donasiId: 'donasi-1', nomorSurat: '5/PBQ/IX/2026', tanggalSurat: '2026-09-01', gayaTulisan: 'KALAM' },
       fakeUser.id,
     );
     expect(bumpNomorUrut).toHaveBeenCalledWith(fakeSupabase, 2026, 9, 5);

@@ -31,8 +31,8 @@ run('donatur-repo (integrasi Supabase)', () => {
     dibuat.push(d.id);
     const donasi = await createDonasi(client, { donaturId: d.id, tanggal: '2026-09-03', jenis: 'ZAKAT', bentuk: 'UANG', nominal: 1000 } as any, '00000000-0000-0000-0000-000000000000');
     const nomor = `9${Date.now() % 100000}/PBQ/IX/2026`;
-    await createSurat(client, { donasiId: donasi.id, nomorSurat: nomor, tanggalSurat: '2026-09-03' }, '00000000-0000-0000-0000-000000000000');
-    await expect(createSurat(client, { donasiId: donasi.id, nomorSurat: nomor, tanggalSurat: '2026-09-03' }, '00000000-0000-0000-0000-000000000000'))
+    await createSurat(client, { donasiId: donasi.id, nomorSurat: nomor, tanggalSurat: '2026-09-03', gayaTulisan: 'KALAM' }, '00000000-0000-0000-0000-000000000000');
+    await expect(createSurat(client, { donasiId: donasi.id, nomorSurat: nomor, tanggalSurat: '2026-09-03', gayaTulisan: 'KALAM' }, '00000000-0000-0000-0000-000000000000'))
       .rejects.toBeInstanceOf(NomorSuratDipakaiError);
   });
 });

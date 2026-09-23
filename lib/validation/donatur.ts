@@ -48,10 +48,13 @@ export const donasiSchema = z.object({
   }
 });
 
+export const gayaTulisanEnum = z.enum(['KALAM', 'PATRICK']);
+
 export const suratSchema = z.object({
   donasiId: z.string().trim().min(1),
   nomorSurat: z.string().trim().refine(v => parseNomorSurat(v) !== null, 'Format nomor surat harus 271/PBQ/IX/2026'),
   tanggalSurat: tanggalIso,
+  gayaTulisan: gayaTulisanEnum.default('KALAM'),
 });
 
 export const rekapQuerySchema = z.object({

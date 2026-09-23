@@ -13,6 +13,7 @@ const bodySchema = z.object({
   donasiId: z.string().trim().min(1).optional(),
   nomorSurat: suratSchema.shape.nomorSurat,
   tanggalSurat: suratSchema.shape.tanggalSurat,
+  gayaTulisan: suratSchema.shape.gayaTulisan,
 }).refine(d => d.donasi || d.donasiId, { path: ['donasi'], message: 'Data donasi wajib ada' });
 
 /** Balasan 409 standar berikut usulan nomor pengganti (hanya mengintip, tidak menaikkan counter). */
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     const { supabase, user } = await requireRoom('donatur');
     const parsed = bodySchema.safeParse(await req.json());
     if (!parsed.success) return validationResponse(parsed.error);
-    const { donasi, donasiId, nomorSurat, tanggalSurat } = parsed.data;
+    const { donasi, donasiId, nomorSurat, tanggalSurat, gayaTulisan } = parsed.data;
 
     // Lapisan 1: nomorSurat dikirim klien, jadi bentrok sering terjadi
     // (dua admin, formulir lama) bukan cuma saat balapan murni. Periksa
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
     // RLS hanya mengizinkan SUPERADMIN menghapus donasi; bila gagal karena
     // izin, jangan gagalkan respons ini, cukup catat di log.
     try {
-      const surat = await createSurat(supabase, { donasiId: idDonasi, nomorSurat, tanggalSurat }, user.id);
+      const surat = await createSurat(supabase, { donasiId: idDonasi, nomorSurat, tanggalSurat, gayaTulisan }, user.id);
 
       // Menaikkan counter nomor surat adalah housekeeping, bukan syarat sah
       // surat tersimpan (constraint unik di database sudah mencegah nomor
