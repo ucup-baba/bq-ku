@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const createDonasi = vi.fn();
 const createSurat = vi.fn();
 const peekNomorUrut = vi.fn();
-const nextNomorUrut = vi.fn();
 const bumpNomorUrut = vi.fn();
 const listSurat = vi.fn();
 
@@ -15,7 +14,6 @@ vi.mock('@/lib/db/donatur-repo', () => {
     createDonasi: (...args: any[]) => createDonasi(...args),
     createSurat: (...args: any[]) => createSurat(...args),
     peekNomorUrut: (...args: any[]) => peekNomorUrut(...args),
-    nextNomorUrut: (...args: any[]) => nextNomorUrut(...args),
     bumpNomorUrut: (...args: any[]) => bumpNomorUrut(...args),
     listSurat: (...args: any[]) => listSurat(...args),
     NomorSuratDipakaiError,
@@ -62,7 +60,6 @@ beforeEach(() => {
   createDonasi.mockReset();
   createSurat.mockReset();
   peekNomorUrut.mockReset();
-  nextNomorUrut.mockReset();
   bumpNomorUrut.mockReset();
   listSurat.mockReset();
   fromFn.mockClear();
@@ -99,7 +96,7 @@ describe('POST /api/donatur/surat', () => {
     expect(bumpNomorUrut).toHaveBeenCalledWith(fakeSupabase, 2026, 9, 5);
   });
 
-  it('createSurat melempar NomorSuratDipakaiError -> 409 dengan nomorUsulan dari peekNomorUrut, nextNomorUrut tidak dipanggil, donasi baru dihapus', async () => {
+  it('createSurat melempar NomorSuratDipakaiError -> 409 dengan nomorUsulan dari peekNomorUrut, donasi baru dihapus', async () => {
     const donasiRow = { id: 'donasi-2' };
     createDonasi.mockResolvedValue(donasiRow);
     createSurat.mockRejectedValue(new NomorSuratDipakaiError('5/PBQ/IX/2026'));
@@ -115,7 +112,6 @@ describe('POST /api/donatur/surat', () => {
     expect(res.status).toBe(409);
     expect(json.nomorUsulan).toBe('7/PBQ/IX/2026');
     expect(peekNomorUrut).toHaveBeenCalledWith(fakeSupabase, 2026, 9);
-    expect(nextNomorUrut).not.toHaveBeenCalled();
     expect(bumpNomorUrut).not.toHaveBeenCalled();
     expect(fromFn).toHaveBeenCalledWith('donasi');
     expect(eqDelete).toHaveBeenCalledWith('id', 'donasi-2');

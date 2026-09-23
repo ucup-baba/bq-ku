@@ -99,12 +99,6 @@ export async function createDonasi(client: SupabaseClient, input: DonasiInput, u
   return data as Donasi;
 }
 
-export async function nextNomorUrut(client: SupabaseClient, tahun: number, bulan: number): Promise<number> {
-  const { data, error } = await client.rpc('next_nomor_surat', { p_tahun: tahun, p_bulan: bulan });
-  if (error) throw new Error(`Gagal mengambil nomor surat: ${error.message}`);
-  return data as number;
-}
-
 /** Hanya mengintip nomor urut berikutnya tanpa menaikkan counter di database. */
 export async function peekNomorUrut(client: SupabaseClient, tahun: number, bulan: number): Promise<number> {
   const { data, error } = await client.from('nomor_surat_counter')
