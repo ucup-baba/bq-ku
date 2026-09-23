@@ -94,32 +94,34 @@ export function DaftarSurat() {
         </>} />
 
       <div className="sticky top-0 z-20 -mx-4 flex flex-col gap-2 bg-bq-bg/90 px-4 py-2 backdrop-blur sm:-mx-8 sm:px-8 md:flex-row md:items-center">
-        <ChipPilihan<StatusFilter> label="Saring status" nilai={status} onPilih={setStatus} className="self-start"
-          opsi={[
-            { value: 'SEMUA', label: 'Semua', jumlah: hitung?.semua },
-            { value: 'BELUM', label: 'Belum dikirim', labelPendek: 'Belum', jumlah: hitung?.belum },
-            { value: 'SUDAH', label: 'Sudah dikirim', labelPendek: 'Sudah', jumlah: hitung?.sudah },
-          ]} />
+        <div className="flex flex-wrap items-center gap-2">
+          <ChipPilihan<StatusFilter> label="Saring status" nilai={status} onPilih={setStatus}
+            opsi={[
+              { value: 'SEMUA', label: 'Semua', jumlah: hitung?.semua },
+              { value: 'BELUM', label: 'Belum dikirim', labelPendek: 'Belum', jumlah: hitung?.belum },
+              { value: 'SUDAH', label: 'Sudah dikirim', labelPendek: 'Sudah', jumlah: hitung?.sudah },
+            ]} />
 
-        {/* Toggle Otomatis Tandai WA */}
-        <div className="flex items-center gap-2 self-start rounded-2xl border border-bq-garis bg-bq-surface px-3 py-1.5 text-xs text-bq-redup shadow-xs md:self-auto">
-          <span className="font-semibold text-bq-tinta whitespace-nowrap">Otomatis tandai WA</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={otomatisTandai}
-            onClick={() => ubahOtomatisTandai(!otomatisTandai)}
-            title="Otomatis tandai surat sebagai sudah terkirim saat klik Kirim WA"
-            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              otomatisTandai ? 'bg-[#0E9F54]' : 'bg-slate-300 dark:bg-slate-700'
-            }`}
-          >
-            <span
-              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
-                otomatisTandai ? 'translate-x-4' : 'translate-x-0'
+          {/* Toggle Otomatis Tandai WA */}
+          <div className="inline-flex h-9 items-center gap-2 rounded-full border border-bq-garis bg-bq-surface px-3 text-xs text-bq-redup shadow-xs">
+            <span className="font-semibold text-bq-tinta whitespace-nowrap">Otomatis tandai WA</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={otomatisTandai}
+              onClick={() => ubahOtomatisTandai(!otomatisTandai)}
+              title="Otomatis tandai surat sebagai sudah terkirim saat klik Kirim WA"
+              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                otomatisTandai ? 'bg-[#0E9F54]' : 'bg-slate-300 dark:bg-slate-700'
               }`}
-            />
-          </button>
+            >
+              <span
+                className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                  otomatisTandai ? 'translate-x-4' : 'translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
         </div>
 
         <div className="relative md:ml-auto md:w-72">
