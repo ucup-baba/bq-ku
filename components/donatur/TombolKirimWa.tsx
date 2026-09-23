@@ -1,20 +1,30 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { WhatsappLogo, DownloadSimple, CheckCircle, ArrowClockwise } from '@phosphor-icons/react';
+import { WhatsappLogo, ArrowClockwise, CheckCircle } from '@phosphor-icons/react';
+import { twMerge } from 'tailwind-merge';
 import { pesanUcapan, waWebLink } from '@/lib/surat/pesan';
 import { labelSapaan } from '@/lib/surat/data';
+import { tandaiTerkirim } from '@/lib/donatur/tandai-terkirim';
+import { TombolIkon } from '@/components/ui/Tombol';
 import type { SuratWithRelasi } from '@/lib/db/donatur-repo';
 
-type StatusFile = 'memuat' | 'siap' | 'gagal';
+type StatusFile = 'menunggu' | 'memuat' | 'siap' | 'gagal';
 
-export function TombolKirimWa({ surat, onTerkirim }: { surat: SuratWithRelasi; onTerkirim?: () => void }) {
+/**
+ * Tombol kirim surat sebagai gambar lewat WhatsApp. `aktif=false` menunda pengambilan PNG
+ * (dipakai carousel beranda agar hanya slide aktif yang merender PNG).
+ */
+export function TombolKirimWa({ surat, onTerkirim, aktif = true, className }: {
+  surat: SuratWithRelasi; onTerkirim?: () => void; aktif?: boolean; className?: string;
+}) {
   const router = useRouter();
-  const [statusFile, setStatusFile] = useState<StatusFile>('memuat');
+  const [statusFile, setStatusFile] = useState<StatusFile>(aktif ? 'memuat' : 'menunggu');
   const [percobaan, setPercobaan] = useState(0);
   const fileRef = useRef<File | null>(null);
   const [menandai, setMenandai] = useState(false);
   const [terkirimLokal, setTerkirimLokal] = useState(surat.terkirimWa);
+  const [sudahDicoba, setSudahDicoba] = useState(false);
   const [pesanInfo, setPesanInfo] = useState<string | null>(null);
   const [pesanError, setPesanError] = useState<string | null>(null);
   const [tautanManual, setTautanManual] = useState<string | null>(null);
@@ -23,11 +33,14 @@ export function TombolKirimWa({ surat, onTerkirim }: { surat: SuratWithRelasi; o
   const teks = pesanUcapan(sapaanNama, surat.nomorSurat);
   const namaFile = `${surat.nomorSurat.replace(/\//g, '-')}.png`;
 
-  // Ambil PNG lebih awal (saat komponen dipasang / dicoba ulang), BUKAN di
-  // dalam handler klik — di Safari iOS dan sebagian browser, menunggu
-  // jaringan di dalam handler klik menghabiskan "aktivasi pengguna" sehingga
-  // navigator.share() gagal dengan NotAllowedError meski dipanggil sesudahnya.
+  // Ambil PNG lebih awal (bukan di dalam handler klik) — di Safari iOS, menunggu
+  // jaringan di handler klik menghabiskan "aktivasi pengguna" sehingga share() gagal.
   useEffect(() => {
+    if (!aktif) {
+      if (!fileRef.current) setStatusFile('menunggu');
+      return;
+    }
+    if (fileRef.current) return;
     let batal = false;
     setStatusFile('memuat');
     fetch(`/api/donatur/surat/${surat.id}/png`)
@@ -40,38 +53,30 @@ export function TombolKirimWa({ surat, onTerkirim }: { surat: SuratWithRelasi; o
         fileRef.current = new File([blob], namaFile, { type: 'image/png' });
         setStatusFile('siap');
       })
-      .catch(() => {
-        if (!batal) setStatusFile('gagal');
-      });
+      .catch(() => { if (!batal) setStatusFile('gagal'); });
     return () => { batal = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [surat.id, percobaan]);
+  }, [surat.id, percobaan, aktif]);
 
-  /** Jalur cadangan (dipakai di desktop, dan bila share() gagal selain dibatalkan pengguna). */
+  /** Jalur cadangan (desktop, dan bila share() gagal selain dibatalkan pengguna). */
   const jalurCadangan = (file: File) => {
-    // window.open dipanggil PALING AWAL, sebelum operasi lain, supaya tidak
-    // diblokir popup blocker (yang menganggap klik sudah "basi" setelah ada
-    // pekerjaan lain di antaranya).
+    // window.open PALING AWAL agar tidak diblokir popup blocker.
     const link = waWebLink(donatur.noWa, teks);
     const waWindow = link ? window.open(link, '_blank') : null;
-    if (waWindow) waWindow.opener = null; // setara rel=noopener tanpa kehilangan referensi untuk deteksi blokir
+    if (waWindow) waWindow.opener = null;
 
     const url = URL.createObjectURL(file);
     const a = document.createElement('a');
     a.href = url;
     a.download = namaFile;
     a.click();
-    // Tunda pelepasan URL objek — beberapa browser masih memprosesnya sesaat
-    // setelah click() dipanggil; revoke terlalu cepat bisa menggagalkan unduhan.
     setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-    navigator.clipboard?.writeText(teks).catch(() => {
-      // Clipboard bisa ditolak browser — tidak fatal, teks tetap ada di pesan info.
-    });
+    navigator.clipboard?.writeText(teks).catch(() => { /* tidak fatal */ });
 
     if (link && !waWindow) {
       setTautanManual(link);
-      setPesanInfo('Gambar sudah diunduh dan teks disalin. Popup diblokir — klik tautan di bawah untuk membuka WhatsApp Web, lalu tempel gambarnya (Ctrl+V).');
+      setPesanInfo('Gambar sudah diunduh dan teks disalin. Popup diblokir — buka WhatsApp Web lewat tautan di bawah, lalu tempel gambarnya (Ctrl+V).');
     } else {
       setPesanInfo('Gambar sudah diunduh dan teks disalin. Tempel gambarnya (Ctrl+V) di chat WhatsApp yang terbuka.');
     }
@@ -83,13 +88,13 @@ export function TombolKirimWa({ surat, onTerkirim }: { surat: SuratWithRelasi; o
     setPesanError(null);
     setPesanInfo(null);
     setTautanManual(null);
+    setSudahDicoba(true);
 
     const bisaShare = typeof navigator !== 'undefined' && !!navigator.canShare?.({ files: [file] });
     if (bisaShare) {
-      // Panggilan SINKRON, tanpa await apa pun sebelumnya, agar aktivasi
-      // pengguna dari klik ini masih berlaku saat share() dipanggil.
-      navigator.share({ files: [file], text: teks }).catch((e: any) => {
-        if (e?.name === 'AbortError') return; // pembatalan oleh pengguna, bukan error
+      // Panggilan SINKRON agar aktivasi pengguna dari klik ini masih berlaku.
+      navigator.share({ files: [file], text: teks }).catch((e: { name?: string }) => {
+        if (e?.name === 'AbortError') return;
         jalurCadangan(file);
       });
     } else {
@@ -97,90 +102,44 @@ export function TombolKirimWa({ surat, onTerkirim }: { surat: SuratWithRelasi; o
     }
   };
 
-  const cobaLagi = () => setPercobaan(p => p + 1);
-
   const tandai = async () => {
     setMenandai(true);
     setPesanError(null);
-    try {
-      const res = await fetch(`/api/donatur/surat/${surat.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ terkirimWa: true }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        setPesanError(data?.error || 'Gagal menandai surat sebagai terkirim');
-        return;
-      }
-      setTerkirimLokal(true);
-      if (onTerkirim) {
-        onTerkirim();
-      } else {
-        router.refresh();
-      }
-    } catch {
-      setPesanError('Tidak dapat terhubung ke server.');
-    } finally {
-      setMenandai(false);
-    }
+    const galat = await tandaiTerkirim(surat.id);
+    setMenandai(false);
+    if (galat) { setPesanError(galat); return; }
+    setTerkirimLokal(true);
+    if (onTerkirim) onTerkirim(); else router.refresh();
   };
 
-  const labelKirim = statusFile === 'memuat' ? 'Menyiapkan gambar…' : 'Kirim WhatsApp';
+  const labelKirim = statusFile === 'memuat' ? 'Menyiapkan gambar…' : 'Kirim WA';
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={kirim}
-          disabled={statusFile !== 'siap' || !donatur.noWa}
+    <div className={twMerge('space-y-2', className)}>
+      <div className="flex gap-2">
+        <button type="button" onClick={kirim} disabled={statusFile !== 'siap' || !donatur.noWa}
           aria-label="Kirim surat sebagai gambar lewat WhatsApp"
-          className="h-12 px-5 rounded-2xl bg-[#0E9F54] hover:bg-[#0c8a49] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold inline-flex items-center gap-2"
-        >
-          <WhatsappLogo size={22} weight="bold" aria-hidden="true" /> {labelKirim}
+          className="tekan inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-2xl bg-[#0E9F54] px-4 text-sm font-bold text-white shadow-[0_8px_16px_-8px_rgb(14_159_84/0.7)] hover:bg-[#0c8a49] disabled:cursor-not-allowed disabled:opacity-50">
+          <WhatsappLogo size={20} weight="bold" aria-hidden="true" /> {labelKirim}
         </button>
         {statusFile === 'gagal' && (
-          <button
-            type="button"
-            onClick={cobaLagi}
-            aria-label="Coba lagi memuat gambar surat"
-            className="h-12 px-5 rounded-2xl border border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-300 font-bold inline-flex items-center gap-2"
-          >
-            <ArrowClockwise size={20} weight="bold" aria-hidden="true" /> Coba lagi
-          </button>
-        )}
-        <a
-          href={`/api/donatur/surat/${surat.id}/png`}
-          download={namaFile}
-          aria-label="Unduh surat sebagai gambar PNG"
-          className="h-12 px-5 rounded-2xl border border-slate-200 dark:border-slate-700 font-bold inline-flex items-center gap-2"
-        >
-          <DownloadSimple size={20} weight="bold" aria-hidden="true" /> Unduh PNG
-        </a>
-        {!terkirimLokal && (
-          <button
-            type="button"
-            onClick={tandai}
-            disabled={menandai}
-            aria-label="Tandai surat sudah terkirim"
-            className="h-12 px-5 rounded-2xl border border-emerald-200 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300 disabled:opacity-50 font-bold inline-flex items-center gap-2"
-          >
-            <CheckCircle size={20} weight="bold" aria-hidden="true" /> {menandai ? 'Menandai…' : 'Tandai sudah terkirim'}
-          </button>
+          <TombolIkon ikon={ArrowClockwise} label="Coba lagi memuat gambar surat" onClick={() => setPercobaan(p => p + 1)} />
         )}
       </div>
-      {statusFile === 'gagal' && (
-        <p role="alert" className="text-xs text-rose-600">Gagal memuat gambar surat. Coba lagi.</p>
+      {sudahDicoba && !terkirimLokal && (
+        <div role="status" className="flex items-center justify-between gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-bq-tinta dark:bg-emerald-950/30">
+          <span>Sudah terkirim ke donatur?</span>
+          <button type="button" onClick={tandai} disabled={menandai}
+            className="tekan inline-flex items-center gap-1 font-bold text-bq-hijau disabled:opacity-50">
+            <CheckCircle size={16} weight="bold" aria-hidden="true" /> {menandai ? 'Menandai…' : 'Tandai'}
+          </button>
+        </div>
       )}
-      {!donatur.noWa && (
-        <p className="text-xs text-amber-600">
-          Donatur belum punya nomor WhatsApp — lengkapi dulu di data donatur agar surat bisa dikirim.
-        </p>
-      )}
-      {pesanInfo && <p role="status" className="text-xs text-slate-600 dark:text-slate-300">{pesanInfo}</p>}
+      {statusFile === 'gagal' && <p role="alert" className="text-xs text-rose-600">Gagal memuat gambar surat. Coba lagi.</p>}
+      {!donatur.noWa && <p className="text-xs text-bq-jingga">Nomor WhatsApp donatur belum diisi.</p>}
+      {pesanInfo && <p role="status" className="text-xs text-bq-redup">{pesanInfo}</p>}
       {tautanManual && (
-        <a href={tautanManual} target="_blank" rel="noopener" className="text-xs font-bold text-[#0B5FA5] underline underline-offset-2">
+        <a href={tautanManual} target="_blank" rel="noopener" className="text-xs font-bold text-bq-biru underline underline-offset-2">
           Buka WhatsApp Web
         </a>
       )}
