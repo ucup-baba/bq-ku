@@ -27,7 +27,7 @@ const OPSI_SAPAAN: Array<{ value: Sapaan; label: string }> = [
   { value: 'BAPAK_IBU', label: 'Bapak/Ibu' },
 ];
 
-const field = 'w-full px-4 py-3 rounded-2xl border bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B5FA5] min-h-11';
+const field = 'w-full px-4 py-3 rounded-2xl border bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B5FA5] min-h-11 text-base md:text-sm';
 const borderNormal = 'border-slate-200 dark:border-slate-700';
 const borderError = 'border-rose-400';
 
@@ -190,7 +190,7 @@ export function PilihDonatur({
               <p className="font-bold text-slate-900 dark:text-white truncate">
                 {sapaanTeks} {value.nama}
               </p>
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
                 donaturBaruTersimpan
                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
                   : 'bg-sky-100 text-[#0B5FA5] dark:bg-sky-950/60 dark:text-sky-300'
@@ -274,7 +274,7 @@ export function PilihDonatur({
             {errors?.noWa && <span className="block text-xs text-rose-600 font-medium">{errors.noWa}</span>}
           </label>
         </div>
-        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           💡 Donatur baru ini akan otomatis disimpan ke database saat surat ucapan dibuat.
         </p>
       </div>
@@ -368,7 +368,7 @@ export function PilihDonatur({
 
           {!mencari && hasil.length > 0 && (
             <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-              <div className="px-3.5 py-1.5 bg-slate-50/80 dark:bg-slate-800/60 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <div className="px-3.5 py-1.5 bg-slate-50/80 dark:bg-slate-800/60 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Donatur Terdaftar ({hasil.length})
               </div>
               {hasil.map(d => {
