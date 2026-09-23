@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { donaturSchema, donasiSchema, suratSchema } from '@/lib/validation/donatur';
+import { donaturSchema, donasiSchema, suratSchema, rekapQuerySchema } from '@/lib/validation/donatur';
 
 const donaturValid = { nama: 'H. Pradana', sapaan: 'BAPAK', noWa: '0812-3456-7890' };
 
@@ -29,6 +29,27 @@ describe('donasiSchema', () => {
   });
   it('menolak tanggal di masa depan', () => {
     expect(donasiSchema.safeParse({ ...dasar, tanggal: '2999-01-01', bentuk: 'UANG', nominal: 1000 }).success).toBe(false);
+  });
+});
+
+describe('rekapQuerySchema', () => {
+  it('menerima rentang bulan berjalan yang berakhir di masa depan', () => {
+    const r = rekapQuerySchema.safeParse({ dari: '2026-09-01', sampai: '2026-09-30' });
+    expect(r.success).toBe(true);
+  });
+  it('menerima rentang yang berakhir jauh di masa depan', () => {
+    expect(rekapQuerySchema.safeParse({ dari: '2026-01-01', sampai: '2099-12-31' }).success).toBe(true);
+  });
+  it('menolak dari > sampai', () => {
+    const r = rekapQuerySchema.safeParse({ dari: '2026-09-30', sampai: '2026-09-01' });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues[0].path).toEqual(['sampai']);
+      expect(r.error.issues[0].message).toBe('Tanggal awal harus sebelum atau sama dengan tanggal akhir');
+    }
+  });
+  it('menolak format tanggal tidak valid', () => {
+    expect(rekapQuerySchema.safeParse({ dari: '2026/09/01', sampai: '2026-09-30' }).success).toBe(false);
   });
 });
 

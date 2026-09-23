@@ -55,3 +55,28 @@ export function rentangPeriode(pilihan: PilihanPeriode, hariIni: Date): { dari: 
     sampai: `${tahun}-12-31`,
   };
 }
+
+export type PerBulan = { bulan: string; total: number };
+
+/**
+ * Melengkapi setiap bulan dalam rentang [dari, sampai] (format YYYY-MM-DD)
+ * yang belum ada di `perBulan` dengan total 0, agar grafik tetap menampilkan
+ * seluruh bulan dalam rentang meskipun sebagian tidak punya donasi uang.
+ * Data asli untuk bulan yang sudah ada tetap dipakai apa adanya.
+ */
+export function isiBulanKosong(perBulan: PerBulan[], dari: string, sampai: string): PerBulan[] {
+  const peta = new Map(perBulan.map(p => [p.bulan, p.total]));
+  const [tahunAwal, bulanAwal] = dari.split('-').slice(0, 2).map(Number);
+  const [tahunAkhir, bulanAkhir] = sampai.split('-').slice(0, 2).map(Number);
+
+  const hasil: PerBulan[] = [];
+  let y = tahunAwal;
+  let m = bulanAwal;
+  while (y < tahunAkhir || (y === tahunAkhir && m <= bulanAkhir)) {
+    const key = `${y}-${dua(m)}`;
+    hasil.push({ bulan: key, total: peta.get(key) ?? 0 });
+    m += 1;
+    if (m > 12) { m = 1; y += 1; }
+  }
+  return hasil;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { labelBulan, rentangPeriode } from '@/lib/utils/rekap';
+import { labelBulan, rentangPeriode, isiBulanKosong } from '@/lib/utils/rekap';
 
 describe('labelBulan', () => {
   it('mengubah YYYY-MM menjadi label bulan Indonesia singkat', () => {
@@ -38,5 +38,34 @@ describe('rentangPeriode', () => {
   it('menangani bulan Februari tahun kabisat dengan benar untuk bulan-ini', () => {
     const hariIni = new Date(2028, 1, 10); // Februari 2028 (kabisat)
     expect(rentangPeriode('bulan-ini', hariIni)).toEqual({ dari: '2028-02-01', sampai: '2028-02-29' });
+  });
+});
+
+describe('isiBulanKosong', () => {
+  it('mengisi nol untuk bulan yang tidak ada datanya dalam rentang', () => {
+    const hasil = isiBulanKosong([{ bulan: '2026-09', total: 500000 }], '2026-07-01', '2026-09-30');
+    expect(hasil).toEqual([
+      { bulan: '2026-07', total: 0 },
+      { bulan: '2026-08', total: 0 },
+      { bulan: '2026-09', total: 500000 },
+    ]);
+  });
+
+  it('menghasilkan entri berurutan saat rentang melintasi pergantian tahun', () => {
+    const hasil = isiBulanKosong([{ bulan: '2025-12', total: 100 }], '2025-11-01', '2026-01-31');
+    expect(hasil).toEqual([
+      { bulan: '2025-11', total: 0 },
+      { bulan: '2025-12', total: 100 },
+      { bulan: '2026-01', total: 0 },
+    ]);
+  });
+
+  it('mengembalikan satu entri saat rentang hanya satu bulan', () => {
+    expect(isiBulanKosong([], '2026-09-01', '2026-09-30')).toEqual([{ bulan: '2026-09', total: 0 }]);
+  });
+
+  it('tidak mengubah data yang sudah ada untuk bulan yang tersedia', () => {
+    const data = [{ bulan: '2026-07', total: 10 }, { bulan: '2026-08', total: 20 }, { bulan: '2026-09', total: 30 }];
+    expect(isiBulanKosong(data, '2026-07-01', '2026-09-30')).toEqual(data);
   });
 });

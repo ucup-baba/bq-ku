@@ -8,6 +8,12 @@ const tanggalIso = z.string().trim()
   .refine(v => !Number.isNaN(Date.parse(v)), 'Tanggal tidak valid')
   .refine(v => Date.parse(v) <= Date.now() + 86_400_000, 'Tanggal tidak boleh di masa depan');
 
+// Khusus rentang rekap: akhir periode (mis. akhir bulan berjalan) wajar berada
+// di masa depan, jadi tanpa larangan masa depan seperti tanggalIso di atas.
+const tanggalIsoBebas = z.string().trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal harus YYYY-MM-DD')
+  .refine(v => !Number.isNaN(Date.parse(v)), 'Tanggal tidak valid');
+
 export const sapaanEnum = z.enum(['BAPAK', 'IBU', 'SDR', 'SDRI', 'BAPAK_IBU']);
 export const jenisEnum = z.enum(['ZAKAT', 'INFAQ', 'SHADAQAH', 'LAINNYA']);
 export const bentukEnum = z.enum(['UANG', 'BARANG']);
@@ -46,8 +52,11 @@ export const suratSchema = z.object({
 });
 
 export const rekapQuerySchema = z.object({
-  dari: tanggalIso,
-  sampai: tanggalIso,
+  dari: tanggalIsoBebas,
+  sampai: tanggalIsoBebas,
+}).refine(d => d.dari <= d.sampai, {
+  message: 'Tanggal awal harus sebelum atau sama dengan tanggal akhir',
+  path: ['sampai'],
 });
 
 export type DonaturInput = z.infer<typeof donaturSchema>;

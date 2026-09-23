@@ -5,7 +5,7 @@ import type { Rekap as RekapData } from '@/lib/db/donatur-repo';
 import { formatRupiah } from '@/lib/utils/terbilang';
 import { formatDateIndonesian } from '@/lib/utils/formatters';
 import { toCsv } from '@/lib/utils/csv';
-import { labelBulan, rentangPeriode, type PilihanPeriode } from '@/lib/utils/rekap';
+import { labelBulan, rentangPeriode, isiBulanKosong, type PilihanPeriode } from '@/lib/utils/rekap';
 
 const OPSI_CEPAT: Array<{ value: PilihanPeriode; label: string }> = [
   { value: 'bulan-ini', label: 'Bulan ini' },
@@ -32,7 +32,7 @@ function unduhCsv(data: RekapData, dari: string, sampai: string) {
   ].join('\n');
 
   // BOM UTF-8 di awal agar Excel versi Indonesia membaca karakter dengan benar.
-  const blob = new Blob(['﻿' + bagian], { type: 'text/csv;charset=utf-8;' });
+  const blob = new Blob(['\uFEFF' + bagian], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -43,14 +43,18 @@ function unduhCsv(data: RekapData, dari: string, sampai: string) {
   URL.revokeObjectURL(url);
 }
 
-function GrafikBulanan({ perBulan }: { perBulan: RekapData['perBulan'] }) {
+function GrafikBulanan({ perBulan, dari, sampai }: { perBulan: RekapData['perBulan']; dari: string; sampai: string }) {
   if (perBulan.length === 0) {
     return <p className="text-sm text-slate-500 px-1">Belum ada donasi uang pada periode ini.</p>;
   }
-  const max = Math.max(...perBulan.map(p => p.total), 1);
+  // Lengkapi bulan yang tidak punya donasi uang dengan 0 agar grafik tetap
+  // menampilkan seluruh bulan dalam rentang (mis. "3 bulan terakhir" tidak
+  // hanya menampilkan satu batang bila dua bulan lain kosong).
+  const lengkap = isiBulanKosong(perBulan, dari, sampai);
+  const max = Math.max(...lengkap.map(p => p.total), 1);
   return (
     <div className="flex items-end gap-2 sm:gap-3 h-48 px-1 overflow-x-auto">
-      {perBulan.map(p => {
+      {lengkap.map(p => {
         const persen = Math.max((p.total / max) * 100, 2);
         const nilai = `Rp ${formatRupiah(p.total)}`;
         return (
@@ -88,7 +92,12 @@ export function Rekap() {
         const res = await fetch(`/api/donatur/rekap?dari=${encodeURIComponent(dari)}&sampai=${encodeURIComponent(sampai)}`);
         const json = await res.json();
         if (id !== requestIdRef.current) return; // respons basi, abaikan
-        if (!res.ok) { setError(json.error || 'Gagal memuat rekap donasi.'); setData(null); return; }
+        if (!res.ok) {
+          const rincian = json.fields ? Object.values<string>(json.fields).join(' ') : '';
+          setError([json.error || 'Gagal memuat rekap donasi.', rincian].filter(Boolean).join(' — '));
+          setData(null);
+          return;
+        }
         setData(json.data);
       } catch {
         if (id !== requestIdRef.current) return;
@@ -194,7 +203,7 @@ export function Rekap() {
                 <DownloadSimple size={18} weight="bold" aria-hidden="true" /> Export CSV
               </button>
             </div>
-            <GrafikBulanan perBulan={data.perBulan} />
+            <GrafikBulanan perBulan={data.perBulan} dari={dari} sampai={sampai} />
           </div>
 
           <div className="space-y-3">
