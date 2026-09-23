@@ -30,6 +30,7 @@ export type Rekap = {
   jumlahDonasiUang: number;
   perBulan: Array<{ bulan: string; total: number }>;   // bulan = 'YYYY-MM'
   barang: Array<{ tanggal: string; donatur: string; deskripsi: string }>;
+  perJenis?: Array<{ jenis: JenisDonasi; total: number; jumlah: number }>;
 };
 
 export class NomorSuratDipakaiError extends Error {
@@ -165,6 +166,21 @@ export async function rekap(client: SupabaseClient, dari: string, sampai: string
     const key = r.tanggal.slice(0, 7);
     perBulanMap.set(key, (perBulanMap.get(key) ?? 0) + (r.nominal ?? 0));
   }
+  const perJenisMap = new Map<JenisDonasi, { total: number; jumlah: number }>();
+  for (const r of rows) {
+    const curr = perJenisMap.get(r.jenis) ?? { total: 0, jumlah: 0 };
+    curr.jumlah += 1;
+    if (r.bentuk === 'UANG' && r.nominal) {
+      curr.total += r.nominal;
+    }
+    perJenisMap.set(r.jenis, curr);
+  }
+  const perJenis = Array.from(perJenisMap.entries()).map(([jenis, d]) => ({
+    jenis,
+    total: d.total,
+    jumlah: d.jumlah,
+  })).sort((a, b) => b.total - a.total);
+
   return {
     totalUang: uang.reduce((s, r) => s + (r.nominal ?? 0), 0),
     jumlahDonasiUang: uang.length,
@@ -172,5 +188,6 @@ export async function rekap(client: SupabaseClient, dari: string, sampai: string
     barang: rows.filter(r => r.bentuk === 'BARANG').map(r => ({
       tanggal: r.tanggal, donatur: r.donatur?.nama ?? '-', deskripsi: r.deskripsiBarang ?? '-',
     })),
+    perJenis,
   };
 }
