@@ -20,15 +20,12 @@ describe('slotHp', () => {
     expect(s.map(x => x.jenis)).toEqual(['tautan', 'tautan', 'tautan', 'pindah', 'akun']);
     expect(s[2]).toMatchObject({ jenis: 'tautan', utama: true, item: { href: '/donatur/surat/baru' } });
   });
-  it('donatur satu ruangan: Pindah diganti Daftar Surat', () => {
-    const s = slotHp('donatur', { canManageUsers: false, jumlahRuang: 1 });
-    expect(s).toHaveLength(5);
-    expect(s[3]).toMatchObject({ jenis: 'tautan', utama: false, item: { href: '/donatur/surat' } });
-  });
-  it('santri satu ruangan: 4 slot tanpa Pindah', () => {
-    const s = slotHp('santri', { canManageUsers: false, jumlahRuang: 1 });
-    expect(s.map(x => x.jenis)).toEqual(['tautan', 'tautan', 'tautan', 'akun']);
-    expect(s[2]).toMatchObject({ utama: true, item: { href: '/tambah' } });
+  it('satu ruangan (donatur maupun santri): Pindah diganti tombol tema, tetap 5 slot', () => {
+    for (const room of ['donatur', 'santri'] as const) {
+      const s = slotHp(room, { canManageUsers: false, jumlahRuang: 1 });
+      expect(s.map(x => x.jenis)).toEqual(['tautan', 'tautan', 'tautan', 'tema', 'akun']);
+    }
+    expect(slotHp('santri', { canManageUsers: false, jumlahRuang: 1 })[2]).toMatchObject({ utama: true, item: { href: '/tambah' } });
   });
   it('tidak ada tujuan ganda dalam satu bottom nav', () => {
     for (const room of ['donatur', 'santri'] as const) {

@@ -28,16 +28,20 @@ export function menuRail(room: Room, o: OpsiMenu): ItemMenu[] {
 export type SlotHp =
   | { jenis: 'tautan'; item: ItemMenu; utama: boolean }
   | { jenis: 'pindah' }
+  | { jenis: 'tema' }
   | { jenis: 'akun' };
 
-/** Susunan bottom nav HP: 2 tautan, tombol utama di tengah, Pindah (atau penggantinya), Akun. */
+/**
+ * Susunan bottom nav HP (selalu 5 slot): 2 tautan, tombol utama di tengah, lalu Pindah ruangan
+ * bila akun punya 2 ruangan — bila hanya 1 ruangan, slot itu menjadi tombol mode gelap/terang — dan Akun.
+ */
 export function slotHp(room: Room, o: OpsiMenu): SlotHp[] {
   const tautan = (item: ItemMenu, utama = false): SlotHp => ({ jenis: 'tautan', item, utama });
-  const [a, b, tengah, pengganti]: [ItemMenu, ItemMenu, ItemMenu, ItemMenu | null] = room === 'donatur'
-    ? [BERANDA_DONATUR, DAFTAR_DONATUR, BUAT_SURAT, DAFTAR_SURAT]
-    : [BERANDA_SANTRI, DIREKTORI, TAMBAH_BERKAS, null];
-  const keempat: SlotHp[] = o.jumlahRuang > 1 ? [{ jenis: 'pindah' }] : pengganti ? [tautan(pengganti)] : [];
-  return [tautan(a), tautan(b), tautan(tengah, true), ...keempat, { jenis: 'akun' }];
+  const [a, b, tengah] = room === 'donatur'
+    ? [BERANDA_DONATUR, DAFTAR_DONATUR, BUAT_SURAT]
+    : [BERANDA_SANTRI, DIREKTORI, TAMBAH_BERKAS];
+  const keempat: SlotHp = o.jumlahRuang > 1 ? { jenis: 'pindah' } : { jenis: 'tema' };
+  return [tautan(a), tautan(b), tautan(tengah, true), keempat, { jenis: 'akun' }];
 }
 
 const BERANDA = new Set(['/', '/donatur']);

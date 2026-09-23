@@ -35,10 +35,11 @@ describe('BottomNav', () => {
     expect(h).not.toContain('aria-current="page"');
   });
 
-  it('satu ruangan: Pindah diganti Daftar Surat', () => {
+  it('satu ruangan: Pindah diganti tombol mode gelap/terang, tetap 5 item', () => {
     s.rooms = ['donatur'];
     const h = renderToStaticMarkup(<BottomNav room="donatur" />);
-    expect(h).toContain('href="/donatur/surat"');
+    expect(h.match(/<li/g)).toHaveLength(5);
+    expect(h).toContain('aria-label="Ganti ke mode gelap"');
     expect(h).not.toContain('Pindah');
   });
 
