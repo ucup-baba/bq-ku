@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams('status=BELUM') }));
+vi.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams('status=BELUM'),
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
 vi.mock('next/link', () => ({
   default: ({ href, children, ...p }: { href: string; children: React.ReactNode }) => <a href={href} {...p}>{children}</a>,
 }));

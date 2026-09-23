@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Plus, CalendarBlank, MagnifyingGlass, X, FileText, Trash } from '@phosphor-icons/react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Plus, CalendarBlank, MagnifyingGlass, X, FileText, Trash, WhatsappLogo, ArrowUpRight } from '@phosphor-icons/react';
 import { twMerge } from 'tailwind-merge';
 import type { SuratWithRelasi } from '@/lib/db/donatur-repo';
 import { labelSapaan } from '@/lib/surat/data';
@@ -23,6 +23,7 @@ import { StatusSurat } from '@/components/donatur/StatusSurat';
 import { DialogHapusSurat, type InfoHapusSurat } from '@/components/donatur/DialogHapusSurat';
 
 export function DaftarSurat() {
+  const router = useRouter();
   const sp = useSearchParams();
   const [status, setStatus] = useState<StatusFilter>(() => statusDariParam(sp.get('status')));
   const [bulan, setBulan] = useState(() => bulanDari(new Date()));
@@ -31,7 +32,26 @@ export function DaftarSurat() {
   const [surat, setSurat] = useState<SuratWithRelasi[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [akanDihapus, setAkanDihapus] = useState<InfoHapusSurat | null>(null);
+  const [otomatisTandai, setOtomatisTandai] = useState(true);
   const { dari, sampai } = useMemo(() => rentangBulan(bulan), [bulan]);
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem('bq_auto_tandai_wa');
+      if (v !== null) setOtomatisTandai(v === 'true');
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const ubahOtomatisTandai = (baru: boolean) => {
+    setOtomatisTandai(baru);
+    try {
+      localStorage.setItem('bq_auto_tandai_wa', String(baru));
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     let batal = false;
@@ -58,7 +78,7 @@ export function DaftarSurat() {
   });
   const tombolHapus = (s: SuratWithRelasi) => (
     <TombolIkon ikon={Trash} label={`Hapus surat ${s.nomorSurat}`} ukuran="sm" varian="polos"
-      onClick={() => setAkanDihapus(infoHapus(s))} className="text-bq-redup hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40" />
+      onClick={(e) => { e.stopPropagation(); setAkanDihapus(infoHapus(s)); }} className="text-bq-redup hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40" />
   );
   const tersaring = surat ? saringSurat(surat, status, cari) : null;
 
@@ -80,6 +100,28 @@ export function DaftarSurat() {
             { value: 'BELUM', label: 'Belum dikirim', labelPendek: 'Belum', jumlah: hitung?.belum },
             { value: 'SUDAH', label: 'Sudah dikirim', labelPendek: 'Sudah', jumlah: hitung?.sudah },
           ]} />
+
+        {/* Toggle Otomatis Tandai WA */}
+        <div className="flex items-center gap-2 self-start rounded-2xl border border-bq-garis bg-bq-surface px-3 py-1.5 text-xs text-bq-redup shadow-xs md:self-auto">
+          <span className="font-semibold text-bq-tinta whitespace-nowrap">Otomatis tandai WA</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={otomatisTandai}
+            onClick={() => ubahOtomatisTandai(!otomatisTandai)}
+            title="Otomatis tandai surat sebagai sudah terkirim saat klik Kirim WA"
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              otomatisTandai ? 'bg-[#0E9F54]' : 'bg-slate-300 dark:bg-slate-700'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                otomatisTandai ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
         <div className="relative md:ml-auto md:w-72">
           <MagnifyingGlass size={16} weight="bold" aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-bq-redup" />
           <input type="search" value={cari} onChange={e => setCari(e.target.value)} placeholder="Cari nomor atau donatur…"
@@ -140,7 +182,8 @@ export function DaftarSurat() {
                 {tersaring.map((s, i) => {
                   const d = s.donasi.donatur;
                   return (
-                    <tr key={s.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                    <tr key={s.id} onClick={() => router.push(`/donatur/surat/${s.id}`)}
+                      className="group cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
                       <td className="px-5 py-3 font-mono text-xs font-bold">
                         <Link href={`/donatur/surat/${s.id}`} className="text-bq-biru hover:underline">{s.nomorSurat}</Link>
                       </td>
@@ -149,14 +192,39 @@ export function DaftarSurat() {
                         {s.createdAt && <div className="text-[11px] text-bq-redup">Pukul {formatJam(s.createdAt)}</div>}
                       </td>
                       <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
+                        <Link href={`/donatur/surat/${s.id}`} className="flex items-center gap-3">
                           <InisialUbin nama={d.nama} indeks={i} className="h-8 w-8" />
-                          <span className="truncate font-bold text-bq-tinta">{labelSapaan(d.sapaan)} {d.nama}</span>
-                        </div>
+                          <span className="truncate font-bold text-bq-tinta group-hover:text-bq-biru group-hover:underline">
+                            {labelSapaan(d.sapaan)} {d.nama}
+                          </span>
+                        </Link>
                       </td>
                       <td className="px-5 py-3 font-bold text-bq-tinta">{formatNilaiDonasi(s.donasi)}</td>
                       <td className="px-5 py-3"><StatusSurat terkirim={s.terkirimWa} /></td>
-                      <td className="px-3 py-2 text-right">{tombolHapus(s)}</td>
+                      <td className="px-5 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
+                          {!s.terkirimWa ? (
+                            <Link
+                              href={`/donatur/surat/${s.id}`}
+                              className="tekan inline-flex h-8 items-center gap-1.5 rounded-xl bg-[#0E9F54] px-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#0c8a49]"
+                              title="Kirim via WhatsApp"
+                            >
+                              <WhatsappLogo size={14} weight="bold" />
+                              <span>Kirim WA</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href={`/donatur/surat/${s.id}`}
+                              className="tekan inline-flex h-8 items-center gap-1 rounded-xl border border-bq-garis px-2 text-xs font-bold text-bq-redup hover:border-bq-tinta hover:text-bq-tinta"
+                              title="Lihat detail surat"
+                            >
+                              <span>Detail</span>
+                              <ArrowUpRight size={13} weight="bold" />
+                            </Link>
+                          )}
+                          {tombolHapus(s)}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
