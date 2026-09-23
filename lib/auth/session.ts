@@ -2,6 +2,7 @@ import { cache } from 'react';
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { identitasDari } from '@/lib/auth/identitas';
 import type { UserRole } from '@/lib/auth/roles';
 import { roomsFor, type Room } from '@/lib/auth/rooms';
 
@@ -17,11 +18,11 @@ export class AuthError extends Error {
 
 /**
  * Pengecekan sesi tunggal yang di-cache per siklus render request (React cache).
- * Menghilangkan pemanggilan berulang ke auth.getUser() dan query profiles.
+ * Menghilangkan pemanggilan berulang ke Auth dan query profiles; identitas diverifikasi lewat getClaims.
  */
 const getCachedSessionState = cache(async (): Promise<{ user: SessionUser | null; pending: PendingUser | null }> => {
   const supabase = await createServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await identitasDari(supabase);
   if (!user) return { user: null, pending: null };
 
   const { data: profile } = await supabase

@@ -3,6 +3,7 @@ import { createServerClient } from '@supabase/ssr';
 import { isPublicPath } from '@/lib/auth/public-paths';
 import { roomsFor, roomOfPath, ROOM_HOME, ROOM_COOKIE } from '@/lib/auth/rooms';
 import type { UserRole } from '@/lib/auth/roles';
+import { identitasDari } from '@/lib/auth/identitas';
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -21,7 +22,8 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // getClaims: verifikasi JWT lokal (tanpa panggilan jaringan ke server Auth di setiap request).
+  const user = await identitasDari(supabase);
   const { pathname, search } = request.nextUrl;
 
   // `response` bisa dibuat ulang oleh `setAll` di atas saat sesi di-refresh; salin cookie-nya

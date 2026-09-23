@@ -9,7 +9,7 @@ import { labelJenis } from '@/lib/donatur/riwayat';
 import type { PorsiAkad } from '@/lib/donatur/beranda';
 import type { Ringkasan } from '@/lib/donatur/ringkasan';
 
-const kelasIsi = 'goyang-saat-hover block h-full p-2.5 transition-transform duration-200 hover:-translate-y-0.5 md:p-4';
+const kelasIsi = 'goyang-saat-hover block h-full p-2.5 pr-4 transition-transform duration-200 hover:-translate-y-0.5 md:p-4';
 
 function KartuAngka({ ikon, warna, doodle, nilai, label, href }: {
   ikon: Icon; warna: WarnaUbin; doodle?: JenisDoodle; nilai: React.ReactNode; label: string; href?: string;
@@ -37,7 +37,7 @@ const WARNA_AKAD: Record<string, string> = {
 
 function KartuAkad({ akad }: { akad: PorsiAkad[] }) {
   return (
-    <div className={kelasKartu('biasa', 'h-full space-y-1.5 p-2.5 md:space-y-2 md:p-4')}>
+    <div className={kelasKartu('biasa', 'h-full w-44 space-y-1.5 p-2.5 md:w-auto md:space-y-2 md:p-4')}>
       <p className="text-xs font-bold text-bq-tinta">Komposisi akad</p>
       <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
         {akad.map(a => <span key={a.jenis} className={WARNA_AKAD[a.jenis] ?? 'bg-slate-400'} style={{ width: `${Math.max(a.persen, 2)}%` }} />)}
@@ -68,7 +68,7 @@ export function CarouselAngka({ ringkasan, totalSurat, akad, memuat, className }
   const angka = (v: number | undefined) => (memuat || v === undefined ? '…' : <AngkaNaik nilai={v} />);
   return (
     <Carousel label="Ringkasan angka donasi" className={className} nonaktifMulai="md"
-      wadahClassName="md:grid md:grid-cols-4 md:gap-4" slideClassName="basis-[44%] md:basis-auto">
+      wadahClassName="md:grid md:grid-cols-4 md:gap-4" slideClassName="basis-auto">
       <KartuAngka ikon={Receipt} warna="biru" nilai={angka(ringkasan?.jumlahDonasi)} label="Donasi uang" />
       <KartuAngka ikon={Package} warna="jingga" nilai={angka(ringkasan?.jumlahBarang)} label="Donasi barang" />
       <KartuAngka ikon={PaperPlaneTilt} warna="hijau" doodle="bintang" href="/donatur/surat?status=SUDAH" label="Surat terkirim"

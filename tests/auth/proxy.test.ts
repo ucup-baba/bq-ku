@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
-const getUser = vi.fn();
+const getClaims = vi.fn();
 const maybeSingle = vi.fn();
 
 vi.mock('@supabase/ssr', () => ({
   createServerClient: () => ({
-    auth: { getUser },
+    auth: { getClaims },
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle }) }) }),
   }),
 }));
@@ -14,7 +14,7 @@ vi.mock('@supabase/ssr', () => ({
 import { proxy } from '@/proxy';
 
 beforeEach(() => {
-  getUser.mockReset();
+  getClaims.mockReset();
   maybeSingle.mockReset();
 });
 
@@ -23,7 +23,7 @@ function req(path: string) {
 }
 
 function loggedIn(roles: string[], aktif = true) {
-  getUser.mockResolvedValue({ data: { user: { id: 'u1', email: 'a@b.c' } } });
+  getClaims.mockResolvedValue({ data: { claims: { sub: 'u1', email: 'a@b.c' } }, error: null });
   maybeSingle.mockResolvedValue({ data: { roles, aktif } });
 }
 
