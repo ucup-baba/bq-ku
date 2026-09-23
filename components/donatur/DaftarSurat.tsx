@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Plus, CalendarBlank, MagnifyingGlass, X, FileText } from '@phosphor-icons/react';
+import { Plus, CalendarBlank, MagnifyingGlass, X, FileText, Trash } from '@phosphor-icons/react';
 import { twMerge } from 'tailwind-merge';
 import type { SuratWithRelasi } from '@/lib/db/donatur-repo';
 import { labelSapaan } from '@/lib/surat/data';
@@ -20,6 +20,7 @@ import { LembarBawah } from '@/components/ui/LembarBawah';
 import { PesanGalat } from '@/components/ui/PesanGalat';
 import { kelasInput, kelasLabel } from '@/components/ui/kelas';
 import { StatusSurat } from '@/components/donatur/StatusSurat';
+import { DialogHapusSurat, type InfoHapusSurat } from '@/components/donatur/DialogHapusSurat';
 
 export function DaftarSurat() {
   const sp = useSearchParams();
@@ -29,6 +30,7 @@ export function DaftarSurat() {
   const [bulanBuka, setBulanBuka] = useState(false);
   const [surat, setSurat] = useState<SuratWithRelasi[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [akanDihapus, setAkanDihapus] = useState<InfoHapusSurat | null>(null);
   const { dari, sampai } = useMemo(() => rentangBulan(bulan), [bulan]);
 
   useEffect(() => {
@@ -50,6 +52,14 @@ export function DaftarSurat() {
   }, [dari, sampai]);
 
   const hitung = surat ? hitungStatus(surat) : null;
+  const infoHapus = (s: SuratWithRelasi): InfoHapusSurat => ({
+    id: s.id, nomorSurat: s.nomorSurat, terkirim: s.terkirimWa,
+    namaDonatur: `${labelSapaan(s.donasi.donatur.sapaan)} ${s.donasi.donatur.nama}`, nilai: formatNilaiDonasi(s.donasi),
+  });
+  const tombolHapus = (s: SuratWithRelasi) => (
+    <TombolIkon ikon={Trash} label={`Hapus surat ${s.nomorSurat}`} ukuran="sm" varian="polos"
+      onClick={() => setAkanDihapus(infoHapus(s))} className="text-bq-redup hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40" />
+  );
   const tersaring = surat ? saringSurat(surat, status, cari) : null;
 
   return (
@@ -100,8 +110,8 @@ export function DaftarSurat() {
             {tersaring.map((s, i) => {
               const d = s.donasi.donatur;
               return (
-                <li key={s.id}>
-                  <Link href={`/donatur/surat/${s.id}`} className={kelasKartu('biasa', 'flex items-center gap-3 p-3')}>
+                <li key={s.id} className={kelasKartu('biasa', 'flex items-center gap-1 p-1.5 pr-1')}>
+                  <Link href={`/donatur/surat/${s.id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1.5">
                     <InisialUbin nama={d.nama} indeks={i} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold text-bq-tinta">{labelSapaan(d.sapaan)} {d.nama}</span>
@@ -109,6 +119,7 @@ export function DaftarSurat() {
                     </span>
                     <StatusSurat terkirim={s.terkirimWa} />
                   </Link>
+                  {tombolHapus(s)}
                 </li>
               );
             })}
@@ -120,7 +131,7 @@ export function DaftarSurat() {
               <thead>
                 <tr className="border-b border-bq-garis text-left text-xs font-bold uppercase tracking-wider text-bq-redup">
                   <th className="px-5 py-3">Nomor</th><th className="px-5 py-3">Tanggal</th><th className="px-5 py-3">Donatur</th>
-                  <th className="px-5 py-3">Nilai</th><th className="px-5 py-3">Status</th>
+                  <th className="px-5 py-3">Nilai</th><th className="px-5 py-3">Status</th><th className="px-5 py-3 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-bq-garis">
@@ -140,6 +151,7 @@ export function DaftarSurat() {
                       </td>
                       <td className="px-5 py-3 font-bold text-bq-tinta">{formatNilaiDonasi(s.donasi)}</td>
                       <td className="px-5 py-3"><StatusSurat terkirim={s.terkirimWa} /></td>
+                      <td className="px-3 py-2 text-right">{tombolHapus(s)}</td>
                     </tr>
                   );
                 })}
@@ -148,6 +160,9 @@ export function DaftarSurat() {
           </div>
         </>
       )}
+
+      <DialogHapusSurat surat={akanDihapus} onTutup={() => setAkanDihapus(null)}
+        onTerhapus={(id) => { setAkanDihapus(null); setSurat(l => l?.filter(x => x.id !== id) ?? l); }} />
 
       <LembarBawah buka={bulanBuka} onTutup={() => setBulanBuka(false)} judul="Pilih bulan">
         <label className="block space-y-1">
