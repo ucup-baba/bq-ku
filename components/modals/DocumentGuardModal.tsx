@@ -81,14 +81,14 @@ export function DocumentGuardModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Acuan Santri di Formulir (dari KK) */}
             <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider">
                 <IdentificationCard size={15} weight="duotone" />
                 <span>Acuan Kartu Keluarga</span>
               </div>
               <div className="text-sm font-bold text-slate-900 dark:text-slate-100 break-words">
                 {data.currentName}
               </div>
-              <div className="text-[11px] text-teal-600 dark:text-teal-400 font-medium flex items-center gap-1">
+              <div className="text-xs text-teal-600 dark:text-teal-400 font-medium flex items-center gap-1">
                 <CheckCircle size={13} weight="fill" />
                 <span>Dokumen Master Aktif</span>
               </div>
@@ -96,18 +96,18 @@ export function DocumentGuardModal({
 
             {/* Dokumen yang Baru Diunggah & Ditolak */}
             <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-1.5">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider">
                 <FileText size={15} weight="duotone" />
                 <span>Dokumen Ditolak</span>
               </div>
               <div className="text-sm font-bold text-rose-950 dark:text-rose-200 break-words">
                 {data.detectedName}
               </div>
-              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              <div className="text-xs text-slate-500 dark:text-slate-400 truncate">
                 File: {data.fileName || 'Dokumen'} • ({data.kategori.replace(/_/g, ' ')})
               </div>
               {detectedParent && (
-                <div className="text-[11px] text-rose-800 dark:text-rose-300 font-medium truncate">
+                <div className="text-xs text-rose-800 dark:text-rose-300 font-medium truncate">
                   Ortu: {detectedParent}
                 </div>
               )}

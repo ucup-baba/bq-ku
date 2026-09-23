@@ -352,7 +352,7 @@ export function DocumentUploadBox({
                 {uploadedMandatoryCount} dari {mandatoryCategories.length} Selesai ({mandatoryPercent}%)
               </span>
             </span>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
               Total Berkas: {uploadedDocuments.length}
             </span>
           </div>
@@ -380,7 +380,7 @@ export function DocumentUploadBox({
         >
           <Sparkle size={16} weight="fill" className="text-amber-300" />
           <span>✨ Multi-Scan Sekaligus</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-white/20 text-white">
+          <span className="text-xs px-1.5 py-0.5 rounded-full font-bold bg-white/20 text-white">
             Batch AI
           </span>
         </button>
@@ -422,25 +422,25 @@ export function DocumentUploadBox({
                   </div>
                   
                   {isUploaded ? (
-                    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-700">
+                    <span className="inline-flex items-center gap-0.5 text-xs font-bold px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-700">
                       <CheckCircle size={11} weight="fill" /> Terunggah
                     </span>
                   ) : cat.id === 'KARTU_KELUARGA' ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-300 dark:border-teal-700">
+                    <span className="inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-wider text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-300 dark:border-teal-700">
                       <ShieldCheck size={11} weight="fill" /> Wajib #1
                     </span>
                   ) : cat.wajib ? (
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
+                    <span className="text-xs font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900/50">
                       Wajib
                     </span>
                   ) : (
-                    <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+                    <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
                       Opsional
                     </span>
                   )}
                 </div>
                 <span className="text-xs font-bold line-clamp-1">{cat.label}</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{cat.desc}</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">{cat.desc}</span>
               </button>
             );
           })}
@@ -494,7 +494,7 @@ export function DocumentUploadBox({
                   {currentExistingDoc.fileUrl.split('/').pop() || 'Dokumen Terunggah'}
                 </p>
                 {currentExistingDoc.nomorDokumen && (
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     No Dokumen: <span className="font-semibold text-slate-700 dark:text-slate-300">{currentExistingDoc.nomorDokumen}</span>
                   </p>
                 )}
@@ -641,10 +641,10 @@ export function DocumentUploadBox({
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center p-2 bg-gradient-to-b from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 text-slate-700 dark:text-slate-300">
                     <FilePdf size={36} weight="fill" className="text-red-500 mb-1" />
-                    <span className="text-[10px] font-bold text-center uppercase tracking-wider">Preview PDF</span>
+                    <span className="text-xs font-bold text-center uppercase tracking-wider">Preview PDF</span>
                   </div>
                 )}
-                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[11px] font-bold gap-1 transition-opacity">
+                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-xs font-bold gap-1 transition-opacity">
                   <Eye size={16} weight="bold" /> Pop-up
                 </div>
                 {isScanning && (
@@ -681,7 +681,7 @@ export function DocumentUploadBox({
                 </label>
 
                 {compressionStats && compressionStats.savingsPercent > 0 && (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
                     <Lightning size={13} weight="fill" className="text-amber-500" />
                     Terkompresi: {(compressionStats.compressedSize / 1024).toFixed(0)} KB (Hemat {compressionStats.savingsPercent}%)
                   </span>
@@ -747,7 +747,7 @@ export function DocumentUploadBox({
                     <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
                       Selesai! Data berhasil diekstrak dan langsung terisi otomatis ke formulir di bawah.
                     </p>
-                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                    <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
                       Anda tetap bisa mengubah, menambah, atau menghapus setiap kolom sesuai kebutuhan.
                     </p>
                   </div>
@@ -759,7 +759,7 @@ export function DocumentUploadBox({
                     <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
                       Dokumen berhasil diunggah, namun sistem belum dapat membaca data teks dari berkas ini.
                     </p>
-                    <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
                       Silakan isi formulir secara manual atau coba unggah berkas/scan dengan resolusi lebih tinggi.
                     </p>
                   </div>
@@ -824,7 +824,7 @@ export function DocumentUploadBox({
               <CheckCircle size={15} weight="fill" className="text-emerald-500" />
               Daftar Berkas Terlampir ({uploadedDocuments.length})
             </h4>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
               Klik &apos;Lihat&apos; untuk membuka pratinjau pop-up
             </span>
           </div>
@@ -846,7 +846,7 @@ export function DocumentUploadBox({
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
                         {catMeta?.label || doc.kategori}
                       </p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                         {doc.nomorDokumen ? `No: ${doc.nomorDokumen}` : 'Siap disimpan'}
                       </p>
                     </div>

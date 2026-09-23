@@ -239,7 +239,7 @@ export function BatchScanModal({
             <div>
               <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <span>Magic Multi-Scan</span>
-                <span className="text-[10px] bg-teal-100 dark:bg-teal-900/70 text-teal-800 dark:text-teal-300 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-xs bg-teal-100 dark:bg-teal-900/70 text-teal-800 dark:text-teal-300 px-2 py-0.5 rounded-full font-bold">
                   AI OCR
                 </span>
               </h3>
@@ -280,7 +280,7 @@ export function BatchScanModal({
                     <p className="font-bold text-slate-900 dark:text-slate-100">
                       Nama Santri Belum Diisi di Formulir
                     </p>
-                    <p className="text-[11px] text-amber-800 dark:text-amber-300 font-normal mt-0.5">
+                    <p className="text-xs text-amber-800 dark:text-amber-300 font-normal mt-0.5">
                       Mohon tutup modal ini dan ketik <strong>Nama Lengkap Calon Santri</strong> pada formulir Langkah 1 terlebih dahulu sebagai patokan verifikasi dokumen.
                     </p>
                   </div>
@@ -350,7 +350,7 @@ export function BatchScanModal({
                       <p className="text-xs font-black text-teal-950 dark:text-teal-100 truncate">
                         {selectedFiles.length} Berkas Siap Dipindai
                       </p>
-                      <p className="text-[10px] text-teal-700 dark:text-teal-300">
+                      <p className="text-xs text-teal-700 dark:text-teal-300">
                         Klik tombol untuk mulai proses OCR AI
                       </p>
                     </div>
@@ -400,12 +400,12 @@ export function BatchScanModal({
                   {selectedFiles.length > 0 ? '+ Tambah Berkas Lainnya (Tarik / Klik)' : 'Atau Tarik Semua Berkas ke Sini'}
                 </h4>
                 {selectedFiles.length === 0 && (
-                  <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-2 leading-relaxed">
+                  <p className="text-xs sm:text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-2 leading-relaxed">
                     Foto dokumen (KK, Akta, SKL, KTP) atau 1 PDF gabungan. Gemini AI otomatis membaca isinya.
                   </p>
                 )}
 
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-[10px] font-bold mt-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-xl bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300 text-xs font-bold mt-1">
                   <Lightning size={11} weight="fill" />
                   <span>Maksimal 10 berkas</span>
                 </div>
@@ -419,7 +419,7 @@ export function BatchScanModal({
                     <button
                       type="button"
                       onClick={() => setSelectedFiles([])}
-                      className="text-slate-400 hover:text-rose-500 text-[11px]"
+                      className="text-slate-400 hover:text-rose-500 text-xs"
                     >
                       Hapus Semua
                     </button>
@@ -439,7 +439,7 @@ export function BatchScanModal({
                             </div>
                             <div className="min-w-0">
                               <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">{file.name}</p>
-                              <p className="text-[10px] text-slate-400">{(file.size / 1024).toFixed(0)} KB</p>
+                              <p className="text-xs text-slate-400">{(file.size / 1024).toFixed(0)} KB</p>
                             </div>
                           </div>
                           <button
@@ -465,7 +465,7 @@ export function BatchScanModal({
                       <Sparkle size={18} weight="fill" />
                       <span>{isProcessing ? 'Memproses Berkas...' : `Mulai Pindai ${selectedFiles.length} Berkas Sekarang`}</span>
                     </button>
-                    <p className="text-[11px] text-center text-slate-500 dark:text-slate-400 mt-1.5">
+                    <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-1.5">
                       Gemini AI akan membaca dan mengekstrak data santri secara otomatis
                     </p>
                   </div>
@@ -503,7 +503,7 @@ export function BatchScanModal({
                 <button
                   type="button"
                   onClick={handleResetModal}
-                  className="text-[11px] underline font-bold"
+                  className="text-xs underline font-bold"
                 >
                   Pindai Ulang
                 </button>
@@ -543,23 +543,23 @@ export function BatchScanModal({
                                 {catConfig.label}
                               </span>
                               {isMatch ? (
-                                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                <span className="text-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                                   <Check size={10} weight="bold" /> Cocok
                                 </span>
                               ) : (
-                                <span className="text-[10px] bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
+                                <span className="text-xs bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                                   <WarningCircle size={10} weight="bold" /> Nama Berbeda
                                 </span>
                               )}
                             </div>
 
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                               Berkas: {result.fileName}
                             </p>
 
                             {/* Extracted fields snippet */}
                             {result.extracted && (
-                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-600 dark:text-slate-300 pt-1">
+                              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-600 dark:text-slate-300 pt-1">
                                 {result.extracted.namaLengkap && (
                                   <span>Nama: <b>{toTitleCase(result.extracted.namaLengkap)}</b></span>
                                 )}
@@ -579,7 +579,7 @@ export function BatchScanModal({
                             )}
 
                             {hasError && (
-                              <p className="text-[11px] text-rose-600 font-semibold">{result.error}</p>
+                              <p className="text-xs text-rose-600 font-semibold">{result.error}</p>
                             )}
                           </div>
                         </div>
