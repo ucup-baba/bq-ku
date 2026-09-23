@@ -1,96 +1,67 @@
-import Link from 'next/link';
-import { ArrowLeft, WhatsappLogo, MapPin, NotePencil, ArrowClockwise, HandCoins } from '@phosphor-icons/react/dist/ssr';
+import { ArrowClockwise, WhatsappLogo, MapPin, NotePencil, HandCoins, Package } from '@phosphor-icons/react/dist/ssr';
 import type { Donatur, Donasi } from '@/lib/db/donatur-repo';
 import { labelSapaan } from '@/lib/surat/data';
 import { formatDateIndonesian } from '@/lib/utils/formatters';
-import { labelJenis, formatNilaiDonasi } from '@/lib/donatur/riwayat';
+import { formatRupiah } from '@/lib/utils/terbilang';
+import { labelJenis, formatNilaiDonasi, ringkasRiwayat } from '@/lib/donatur/riwayat';
+import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
+import { Kartu } from '@/components/ui/Kartu';
+import { IkonUbin } from '@/components/ui/IkonUbin';
+import { TautanUtama } from '@/components/ui/Tombol';
+
+const kelasChip = 'inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs text-bq-tinta dark:bg-slate-800';
 
 export function DetailDonatur({ donatur }: { donatur: Donatur & { donasi: Donasi[] } }) {
+  const r = ringkasRiwayat(donatur.donasi);
   return (
-    <div className="space-y-6 max-w-3xl">
-      <Link href="/donatur/daftar" className="inline-flex items-center gap-1.5 text-sm font-bold text-[#0B5FA5] hover:underline">
-        <ArrowLeft size={16} weight="bold" aria-hidden="true" /> Kembali ke daftar donatur
-      </Link>
+    <div className="max-w-3xl space-y-4 md:space-y-5">
+      <KepalaHalaman
+        judul={`${labelSapaan(donatur.sapaan)} ${donatur.nama}`}
+        kembali={{ href: '/donatur/daftar', label: 'Kembali ke daftar donatur' }}
+        aksi={<TautanUtama href={`/donatur/surat/baru?donaturId=${donatur.id}`} ikon={ArrowClockwise}>Donasi lagi</TautanUtama>}
+      />
 
-      <div className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="space-y-1.5">
-            <h1 className="text-2xl font-extrabold">{labelSapaan(donatur.sapaan)} {donatur.nama}</h1>
-            {donatur.noWa ? (
-              <p className="text-sm text-slate-500 flex items-center gap-1.5">
-                <WhatsappLogo size={16} weight="bold" aria-hidden="true" /> {donatur.noWa}
-              </p>
-            ) : (
-              <p className="text-sm text-slate-400">Nomor WhatsApp belum diisi</p>
-            )}
-            {donatur.alamat && (
-              <p className="text-sm text-slate-500 flex items-center gap-1.5">
-                <MapPin size={16} weight="bold" aria-hidden="true" /> {donatur.alamat}
-              </p>
-            )}
-            {donatur.catatan && (
-              <p className="text-sm text-slate-500 flex items-start gap-1.5">
-                <NotePencil size={16} weight="bold" aria-hidden="true" className="mt-0.5 shrink-0" /> {donatur.catatan}
-              </p>
-            )}
-          </div>
-          <Link
-            href={`/donatur/surat/baru?donaturId=${donatur.id}`}
-            className="h-12 px-5 rounded-2xl bg-[#0E9F54] hover:bg-[#0c8747] text-white font-bold flex items-center justify-center gap-2 shrink-0"
-          >
-            <ArrowClockwise size={20} weight="bold" aria-hidden="true" /> Donasi lagi
-          </Link>
+      <Kartu className="space-y-3 p-4">
+        <dl className="grid grid-cols-3 gap-2 text-center">
+          <div><dt className="text-xs text-bq-redup">Total uang</dt><dd className="truncate text-sm font-black text-bq-tinta">Rp {formatRupiah(r.totalUang)}</dd></div>
+          <div><dt className="text-xs text-bq-redup">Donasi</dt><dd className="text-sm font-black text-bq-tinta">{r.jumlah}</dd></div>
+          <div><dt className="text-xs text-bq-redup">Terakhir</dt><dd className="truncate text-sm font-black text-bq-tinta">{r.terakhir ? formatDateIndonesian(r.terakhir) : '-'}</dd></div>
+        </dl>
+        <div className="flex flex-wrap gap-2">
+          {donatur.noWa
+            ? <a href={`https://wa.me/${donatur.noWa}`} target="_blank" rel="noopener noreferrer" className={kelasChip}><WhatsappLogo size={14} weight="fill" className="text-emerald-600" aria-hidden="true" /><span className="truncate">{donatur.noWa}</span></a>
+            : <span className={kelasChip}>Nomor WhatsApp belum diisi</span>}
+          {donatur.alamat && <span className={kelasChip}><MapPin size={14} weight="bold" aria-hidden="true" /><span className="truncate">{donatur.alamat}</span></span>}
+          {donatur.catatan && <span className={kelasChip}><NotePencil size={14} weight="bold" aria-hidden="true" /><span className="truncate">{donatur.catatan}</span></span>}
         </div>
-      </div>
+      </Kartu>
 
-      <div className="space-y-3">
-        <h2 className="flex items-center gap-2 font-bold text-lg">
-          <HandCoins size={20} weight="duotone" className="text-[#0B5FA5]" aria-hidden="true" />
-          Riwayat donasi
-          <span className="text-sm font-normal text-slate-500">({donatur.donasi.length})</span>
+      <section aria-labelledby="judul-riwayat" className="space-y-3">
+        <h2 id="judul-riwayat" className="px-1 text-sm font-extrabold text-bq-tinta">
+          Riwayat donasi <span className="font-normal text-bq-redup">({r.jumlah})</span>
         </h2>
-
-        {donatur.donasi.length === 0 ? (
-          <p className="text-sm text-slate-500 px-1">Belum ada donasi dari donatur ini.</p>
+        {r.jumlah === 0 ? (
+          <p className="px-1 text-sm text-bq-redup">Belum ada donasi dari donatur ini.</p>
         ) : (
-          <>
-            {/* Tabel — desktop */}
-            <div className="hidden md:block overflow-x-auto rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800">
-                    <th className="px-4 py-3">Tanggal</th>
-                    <th className="px-4 py-3">Jenis</th>
-                    <th className="px-4 py-3">Nilai</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {donatur.donasi.map(d => (
-                    <tr key={d.id} className="border-b last:border-0 border-slate-100 dark:border-slate-800">
-                      <td className="px-4 py-3 text-slate-500">{formatDateIndonesian(d.tanggal)}</td>
-                      <td className="px-4 py-3">{labelJenis(d.jenis)}</td>
-                      <td className="px-4 py-3 font-bold">{formatNilaiDonasi(d)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Kartu — mobile */}
-            <div className="md:hidden space-y-3">
-              {donatur.donasi.map(d => (
-                <div key={d.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-slate-500">{formatDateIndonesian(d.tanggal)}</p>
-                    <span className="text-xs font-bold text-[#0B5FA5]">{labelJenis(d.jenis)}</span>
+          <ol className="bergilir relative ml-4 space-y-3 border-l-2 border-dashed border-bq-garis pl-6">
+            {donatur.donasi.map(d => (
+              <li key={d.id} className="relative">
+                <span className="absolute -left-[41px] top-2">
+                  <IkonUbin ikon={d.bentuk === 'UANG' ? HandCoins : Package} warna={d.bentuk === 'UANG' ? 'hijau' : 'jingga'} ukuran="sm" />
+                </span>
+                <Kartu className="p-3">
+                  <div className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-bq-redup">{formatDateIndonesian(d.tanggal)}</span>
+                    <span className="font-bold text-bq-biru">{labelJenis(d.jenis)}</span>
                   </div>
-                  <p className="font-bold">{formatNilaiDonasi(d)}</p>
-                </div>
-              ))}
-            </div>
-          </>
+                  <p className="truncate text-sm font-bold text-bq-tinta">{formatNilaiDonasi(d)}</p>
+                  {d.keterangan && <p className="truncate text-xs text-bq-redup">{d.keterangan}</p>}
+                </Kartu>
+              </li>
+            ))}
+          </ol>
         )}
-      </div>
+      </section>
     </div>
   );
 }
