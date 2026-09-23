@@ -1,121 +1,79 @@
 'use client';
+import { useMemo, useState } from 'react';
+import { MagnifyingGlass, X, Funnel, Users } from '@phosphor-icons/react';
+import { twMerge } from 'tailwind-merge';
+import type { Santri } from '@/lib/db/santri-repo';
+import { saringSantri, hitungGender, type FilterSantri } from '@/lib/santri/filter';
+import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
+import { Kartu } from '@/components/ui/Kartu';
+import { IkonUbin } from '@/components/ui/IkonUbin';
+import { ChipPilihan } from '@/components/ui/ChipPilihan';
+import { TombolIkon } from '@/components/ui/Tombol';
+import { LembarBawah } from '@/components/ui/LembarBawah';
+import { kelasInput } from '@/components/ui/kelas';
+import { BarisSantri } from '@/components/santri/BarisSantri';
 
-import React, { useState, useMemo } from 'react';
-import Link from 'next/link';
-import { FilterBar } from './FilterBar';
-import { SantriCard } from './SantriCard';
-import { UserPlus, Sparkle, Tray } from '@phosphor-icons/react';
-import { DoodleArrow, DoodleSpeechBubble } from '@/components/ui/DoodleStickers';
+const LABEL_JENJANG: Record<FilterSantri['jenjang'], string> = {
+  SEMUA: 'Semua', SMP: 'SMP', SMA: 'SMA', SMK: 'SMK', ALUMNI: 'Alumni',
+};
 
-export interface SantriDirectoryProps {
-  initialSantriList?: any[];
-}
+export function SantriDirectory({ initialSantriList }: { initialSantriList: Santri[] }) {
+  const [filter, setFilter] = useState<FilterSantri>({ q: '', gender: 'SEMUA', jenjang: 'SEMUA' });
+  const [jenjangBuka, setJenjangBuka] = useState(false);
+  const ubah = (p: Partial<FilterSantri>) => setFilter(f => ({ ...f, ...p }));
 
-export function SantriDirectory({ initialSantriList = [] }: SantriDirectoryProps) {
-  const [santriList, setSantriList] = useState<any[]>(initialSantriList);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGender, setSelectedGender] = useState<'ALL' | 'IKHWAN' | 'AKHWAT'>('ALL');
-  const [selectedJenjang, setSelectedJenjang] = useState<'ALL' | 'SMP' | 'SMA' | 'SMK' | 'ALUMNI'>('ALL');
-
-  // Counts for filter bar
-  const counts = useMemo(() => {
-    const total = santriList.length;
-    const ikhwan = santriList.filter(s => s.jenisKelamin === 'IKHWAN').length;
-    const akhwat = santriList.filter(s => s.jenisKelamin === 'AKHWAT').length;
-    return { total, ikhwan, akhwat };
-  }, [santriList]);
-
-  // Filtered list
-  const filteredList = useMemo(() => {
-    return santriList.filter(santri => {
-      // Gender filter
-      if (selectedGender !== 'ALL' && santri.jenisKelamin !== selectedGender) {
-        return false;
-      }
-
-      // Jenjang filter
-      if (selectedJenjang !== 'ALL' && santri.jenjang !== selectedJenjang) {
-        return false;
-      }
-
-      // Search query
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchNama = santri.namaLengkap?.toLowerCase().includes(q);
-        const matchPanggilan = santri.namaPanggilan?.toLowerCase().includes(q);
-        const matchNik = santri.nik?.includes(q);
-        const matchSekolah = santri.sekolahSekarang?.toLowerCase().includes(q) || santri.asalSekolahSebelumnya?.toLowerCase().includes(q);
-        if (!matchNama && !matchPanggilan && !matchNik && !matchSekolah) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [santriList, selectedGender, selectedJenjang, searchQuery]);
+  const tersaring = useMemo(() => saringSantri(initialSantriList, filter), [initialSantriList, filter]);
+  const jumlah = hitungGender(initialSantriList, filter.q, filter.jenjang);
 
   return (
-    <div className="space-y-6">
-      {/* Top Action Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-            Direktori Santri & Berkas
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 font-bold border border-teal-300/50">
-              {filteredList.length} Santri
-            </span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Arsip lengkap berkas administrasi dan kartu digital CV santri terbagi per kelompok
-          </p>
-        </div>
+    <div className="space-y-3 md:space-y-5">
+      <KepalaHalaman judul="Direktori Santri" sub="Cari santri, lihat CV & kelengkapan berkas." />
 
-        <Link
-          href="/tambah"
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white text-xs font-bold shadow-md transition-all self-start sm:self-auto"
-        >
-          <UserPlus size={16} weight="bold" />
-          Tambah Santri & Berkas Baru
-        </Link>
+      <div className="sticky top-0 z-20 -mx-4 space-y-2 bg-bq-bg/90 px-4 py-2 backdrop-blur sm:-mx-8 sm:px-8">
+        <div className="relative">
+          <MagnifyingGlass size={18} weight="bold" aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-bq-redup" />
+          <input type="search" value={filter.q} onChange={e => ubah({ q: e.target.value })}
+            placeholder="Cari nama, NIK, atau sekolah…" aria-label="Cari santri" className={twMerge(kelasInput, 'pl-11 pr-12')} />
+          {filter.q && (
+            <TombolIkon ikon={X} label="Hapus pencarian" ukuran="sm" varian="polos" onClick={() => ubah({ q: '' })}
+              className="absolute right-1 top-1/2 -translate-y-1/2" />
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <ChipPilihan<FilterSantri['gender']> label="Saring gender" nilai={filter.gender} onPilih={g => ubah({ gender: g })}
+            opsi={[
+              { value: 'SEMUA', label: 'Semua', jumlah: jumlah.SEMUA },
+              { value: 'IKHWAN', label: 'Ikhwan', jumlah: jumlah.IKHWAN },
+              { value: 'AKHWAT', label: 'Akhwat', jumlah: jumlah.AKHWAT },
+            ]} />
+          <TombolIkon ikon={Funnel} label="Filter jenjang" ukuran="sm" onClick={() => setJenjangBuka(true)} aria-pressed={filter.jenjang !== 'SEMUA'} />
+          {filter.jenjang !== 'SEMUA' && (
+            <button type="button" onClick={() => ubah({ jenjang: 'SEMUA' })} aria-label={`Hapus filter jenjang ${LABEL_JENJANG[filter.jenjang]}`}
+              className="tekan inline-flex h-8 items-center gap-1 rounded-full bg-sky-50 px-3 text-xs font-bold text-[#0B5FA5] dark:bg-sky-950/40 dark:text-sky-300">
+              {LABEL_JENJANG[filter.jenjang]} <X size={12} weight="bold" aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Filter Bar */}
-      <FilterBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedGender={selectedGender}
-        onGenderChange={setSelectedGender}
-        selectedJenjang={selectedJenjang}
-        onJenjangChange={setSelectedJenjang}
-        counts={counts}
-      />
-
-      {/* Cards Grid */}
-      {filteredList.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredList.map(santri => (
-            <SantriCard key={santri.id} santri={santri} />
-          ))}
-        </div>
-      ) : (
-        <div className="bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-3xl p-12 text-center flex flex-col items-center justify-center">
-          <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-3">
-            <Tray size={32} weight="duotone" />
-          </div>
-          <h3 className="text-base font-bold text-slate-700 dark:text-slate-200 mb-1">
-            Tidak ada santri yang cocok
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mb-4">
-            Coba ubah kata kunci pencarian atau sesuaikan filter jenis kelamin dan jenjang pendidikan.
+      {tersaring.length === 0 ? (
+        <Kartu className="flex flex-col items-center gap-3 p-8 text-center">
+          <IkonUbin ikon={Users} warna="biru" ukuran="lg" doodle="lingkaran" />
+          <p className="text-sm font-semibold text-bq-tinta">
+            {initialSantriList.length === 0 ? 'Belum ada santri terdaftar.' : 'Tidak ada santri yang cocok dengan pencarian.'}
           </p>
-          <Link
-            href="/tambah"
-            className="px-4 py-2 bg-teal-600 text-white text-xs font-bold rounded-xl hover:bg-teal-700 transition-colors"
-          >
-            + Daftarkan Santri Baru Sekarang
-          </Link>
-        </div>
+        </Kartu>
+      ) : (
+        <ul data-audit-daftar className="bergilir grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+          {tersaring.map((s, i) => <li key={s.id}><BarisSantri santri={s} indeks={i} /></li>)}
+        </ul>
       )}
+
+      <LembarBawah buka={jenjangBuka} onTutup={() => setJenjangBuka(false)} judul="Filter jenjang">
+        <ChipPilihan<FilterSantri['jenjang']> label="Pilih jenjang" nilai={filter.jenjang} className="flex-wrap"
+          onPilih={j => { ubah({ jenjang: j }); setJenjangBuka(false); }}
+          opsi={(Object.keys(LABEL_JENJANG) as FilterSantri['jenjang'][]).map(j => ({ value: j, label: LABEL_JENJANG[j] }))} />
+      </LembarBawah>
     </div>
   );
 }

@@ -8,9 +8,5 @@ export const revalidate = 0;
 export default async function SantriPage() {
   const santriList = await listSantri(await createServerSupabase());
 
-  return (
-    <div className="py-2">
-      <SantriDirectory initialSantriList={santriList} />
-    </div>
-  );
+  return <SantriDirectory initialSantriList={santriList} />;
 }
