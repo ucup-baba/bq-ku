@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { House, HandHeart, Plus, ChartBar, UserCircle } from '@phosphor-icons/react';
+import { House, HandHeart, Plus, UserCircle } from '@phosphor-icons/react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { AccountDrawer } from './AccountDrawer';
 import { RoomSwitchButton } from './RoomSwitchButton';
@@ -47,17 +47,6 @@ export function DonaturBottomNav() {
             <span className="text-[10px] font-extrabold text-[#0B5FA5] dark:text-sky-300 mt-0.5">
               + Surat
             </span>
-          </Link>
-
-          {/* Rekap */}
-          <Link
-            href="/donatur/rekap"
-            className={`flex flex-col items-center gap-1 p-1.5 transition-colors ${
-              pathname.startsWith('/donatur/rekap') ? 'text-[#0B5FA5] dark:text-sky-400' : 'text-slate-500 dark:text-slate-400'
-            }`}
-          >
-            <ChartBar size={22} weight={pathname.startsWith('/donatur/rekap') ? 'duotone' : 'regular'} />
-            <span className="text-[10px] font-bold">Rekap</span>
           </Link>
 
           {/* Pindah Ruangan */}

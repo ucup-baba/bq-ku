@@ -7,15 +7,15 @@ import { formatDateIndonesian } from '@/lib/utils/formatters';
 import { toCsv } from '@/lib/utils/csv';
 import { labelBulan, rentangPeriode, isiBulanKosong, type PilihanPeriode } from '@/lib/utils/rekap';
 
-const OPSI_CEPAT: Array<{ value: PilihanPeriode; label: string }> = [
+export const OPSI_CEPAT: Array<{ value: PilihanPeriode; label: string }> = [
   { value: 'bulan-ini', label: 'Bulan ini' },
   { value: '3-bulan', label: '3 bulan terakhir' },
   { value: 'tahun-ini', label: 'Tahun ini' },
 ];
 
-const dateField = 'h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B5FA5]';
+export const dateField = 'h-11 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0B5FA5]';
 
-function unduhCsv(data: RekapData, dari: string, sampai: string) {
+export function unduhCsv(data: RekapData, dari: string, sampai: string) {
   const barisUang = data.perBulan.map(pb => ({ bulan: labelBulan(pb.bulan), total: pb.total }));
   const barisBarang = data.barang.map(b => ({
     tanggal: formatDateIndonesian(b.tanggal),
@@ -43,7 +43,7 @@ function unduhCsv(data: RekapData, dari: string, sampai: string) {
   URL.revokeObjectURL(url);
 }
 
-function GrafikBulanan({ perBulan, dari, sampai }: { perBulan: RekapData['perBulan']; dari: string; sampai: string }) {
+export function GrafikBulanan({ perBulan, dari, sampai }: { perBulan: RekapData['perBulan']; dari: string; sampai: string }) {
   if (perBulan.length === 0) {
     return <p className="text-sm text-slate-500 px-1">Belum ada donasi uang pada periode ini.</p>;
   }

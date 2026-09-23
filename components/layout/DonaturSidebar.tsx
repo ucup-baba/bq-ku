@@ -8,7 +8,6 @@ import {
   HandHeart,
   Envelope,
   Scroll,
-  ChartBar,
   HandCoins,
 } from '@phosphor-icons/react';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -19,11 +18,10 @@ export function DonaturSidebar() {
   const pathname = usePathname();
 
   const navItems = [
-    { href: '/donatur', label: 'Beranda', icon: House },
+    { href: '/donatur', label: 'Beranda & Rekap', icon: House },
     { href: '/donatur/daftar', label: 'Daftar Donatur', icon: HandHeart },
     { href: '/donatur/surat/baru', label: 'Buat Surat', icon: Envelope },
     { href: '/donatur/surat', label: 'Daftar Surat', icon: Scroll },
-    { href: '/donatur/rekap', label: 'Rekap', icon: ChartBar },
   ];
 
   return (
@@ -53,7 +51,11 @@ export function DonaturSidebar() {
           </span>
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== '/donatur' && pathname.startsWith(item.href));
+            const isActive = item.href === '/donatur'
+              ? pathname === '/donatur'
+              : item.href === '/donatur/surat'
+                ? pathname === '/donatur/surat' || (pathname.startsWith('/donatur/surat/') && !pathname.startsWith('/donatur/surat/baru'))
+                : pathname === item.href || pathname.startsWith(item.href + '/');
 
             return (
               <Link
