@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   SignOut, Sun, Moon, CaretRight, WarningCircle, EnvelopeSimple, IdentificationBadge, ArrowsLeftRight,
-  Bell, CheckCircle, PaperPlaneTilt, WhatsappLogo, UserCirclePlus,
+  Bell, CheckCircle, PaperPlaneTilt, WhatsappLogo, UserCirclePlus, DeviceMobile, Export, PlusSquare,
 } from '@phosphor-icons/react';
+import { usePasangAplikasi } from '@/components/pwa/usePasangAplikasi';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { useNotifikasi } from '@/components/notifikasi/NotifikasiProvider';
@@ -32,6 +33,8 @@ export function HalamanAkun({ room }: { room: Room }) {
   const { daftar, muatUlang } = useNotifikasi();
   const [konfirmasiKeluar, setKonfirmasiKeluar] = useState(false);
   const [keluar, setKeluar] = useState(false);
+  const { status: statusPasang, pasang } = usePasangAplikasi();
+  const [caraIos, setCaraIos] = useState(false);
 
   // Halaman ini tempat notifikasi dibaca: selalu ambil yang terbaru.
   useEffect(() => { muatUlang(); }, [muatUlang]);
@@ -137,6 +140,47 @@ export function HalamanAkun({ room }: { room: Room }) {
 
           <section aria-labelledby="judul-pengaturan" className="space-y-2.5">
             <h2 id="judul-pengaturan" className={kelasJudulBagian}>Akses &amp; pengaturan</h2>
+
+            {statusPasang !== 'tersembunyi' && (
+              <div className="rounded-2xl border border-bq-garis p-3.5">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex min-w-0 items-center gap-3">
+                    <IkonUbin ikon={DeviceMobile} warna="hijau" />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-bold text-bq-tinta">Pasang aplikasi BQ-ku</span>
+                      <span className="block text-xs text-bq-redup">Buka langsung dari layar utama, tanpa browser</span>
+                    </span>
+                  </span>
+                  {statusPasang === 'bisa-dipasang' ? (
+                    <button type="button" onClick={pasang}
+                      className="tekan shrink-0 rounded-xl bg-[#0E9F54] px-3.5 py-2 text-xs font-bold text-white hover:bg-[#0c8a49]">
+                      Pasang
+                    </button>
+                  ) : (
+                    <button type="button" onClick={() => setCaraIos(v => !v)} aria-expanded={caraIos}
+                      className="tekan shrink-0 rounded-xl border border-bq-garis px-3.5 py-2 text-xs font-bold text-bq-tinta hover:bg-slate-100 dark:hover:bg-slate-800">
+                      Caranya
+                    </button>
+                  )}
+                </div>
+                {statusPasang === 'ios' && caraIos && (
+                  <ol className="mt-3 space-y-2 border-t border-bq-garis pt-3 text-xs text-bq-tinta">
+                    <li className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 font-bold text-[#0E9F54] dark:bg-emerald-950/40">1</span>
+                      Buka halaman ini di <strong>Safari</strong>, lalu ketuk tombol Bagikan <Export size={16} weight="bold" aria-label="(ikon Bagikan)" />
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 font-bold text-[#0E9F54] dark:bg-emerald-950/40">2</span>
+                      Pilih <strong>Tambahkan ke Layar Utama</strong> <PlusSquare size={16} weight="bold" aria-hidden="true" />
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-50 font-bold text-[#0E9F54] dark:bg-emerald-950/40">3</span>
+                      Ketuk <strong>Tambah</strong> — ikon BQ muncul di layar utama
+                    </li>
+                  </ol>
+                )}
+              </div>
+            )}
 
             {ruangLain && (
               <Link href={ROOM_HOME[ruangLain]} className={kelasBaris}>

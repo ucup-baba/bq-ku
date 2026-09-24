@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowClockwise, WifiSlash } from '@phosphor-icons/react';
+import { pasangPendengarInstal } from './usePasangAplikasi';
 
 /**
  * Mendaftarkan service worker (produksi saja), menampilkan penanda offline, memuat ulang
@@ -12,6 +13,8 @@ export function PwaKlien() {
   const [offline, setOffline] = useState(false);
   const [menunggu, setMenunggu] = useState<ServiceWorker | null>(null);
   const muatUlangDiminta = useRef(false);
+
+  useEffect(() => { pasangPendengarInstal(); }, []);
 
   useEffect(() => {
     setOffline(!navigator.onLine);
