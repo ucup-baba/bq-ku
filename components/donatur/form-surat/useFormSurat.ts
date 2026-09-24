@@ -4,7 +4,29 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { formatRupiah } from '@/lib/utils/terbilang';
 import type { JenisDonasi, GayaTulisan, SuratWithRelasi } from '@/lib/db/donatur-repo';
 import type { PilihDonaturValue } from '@/components/donatur/PilihDonatur';
+import { simpanDraf, bacaDraf, hapusDraf, labelWaktuDraf } from '@/lib/draf';
 import { hitungPratinjau, petakanErrorField, hariIni, FIELD_DONATUR_DIKENAL, FIELD_SURAT_DIKENAL, type FormState } from './logika';
+
+const KUNCI_DRAF = 'surat_baru';
+
+type IsiDrafSurat = {
+  donatur: PilihDonaturValue; jenis: JenisDonasi; bentuk: 'UANG' | 'BARANG'; nominal: number;
+  deskripsiBarang: string; tanggalDonasi: string; tanggalSurat: string; tanggalSuratManual: boolean;
+  keterangan: string; gayaTulisan: GayaTulisan;
+};
+
+/** Draf layak disimpan/ditawarkan bila ada isian nyata (bukan form kosong bawaan). */
+export function drafBermakna(d: Pick<IsiDrafSurat, 'donatur' | 'nominal' | 'deskripsiBarang'>): boolean {
+  return !!(d.donatur.nama.trim() || d.nominal > 0 || d.deskripsiBarang.trim());
+}
+
+/** Pesan saat permintaan gagal karena jaringan. */
+function pesanGagalJaringan(adaDraf: boolean): string {
+  if (typeof navigator === 'undefined' || navigator.onLine) return 'Tidak dapat terhubung ke server.';
+  return adaDraf
+    ? 'Kamu sedang offline. Isian aman tersimpan sebagai draf — tekan Simpan lagi saat sinyal kembali.'
+    : 'Kamu sedang offline. Jangan tutup halaman ini — tekan Simpan lagi saat sinyal kembali.';
+}
 
 /**
  * State & logika form surat. Dengan `awal`, form berjalan dalam mode edit: donatur &
@@ -94,6 +116,40 @@ export function useFormSurat(awal?: SuratWithRelasi) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tanggalSurat]);
 
+  // ── Draf (surat baru saja): isian disimpan di perangkat, ditawarkan dipulihkan saat dibuka lagi.
+  const [drafTersedia, setDrafTersedia] = useState<{ nama: string; waktu: string; isi: IsiDrafSurat } | null>(null);
+  const drafDicek = useRef(false);
+  useEffect(() => {
+    if (modeEdit) return;
+    const d = bacaDraf<IsiDrafSurat>(KUNCI_DRAF);
+    if (d && drafBermakna(d.isi)) {
+      setDrafTersedia({ nama: d.isi.donatur.nama.trim(), waktu: labelWaktuDraf(d.savedAt), isi: d.isi });
+    }
+    drafDicek.current = true;
+  }, [modeEdit]);
+
+  useEffect(() => {
+    // Jangan menimpa draf lama yang belum diputuskan (pulihkan/buang).
+    if (modeEdit || !drafDicek.current || drafTersedia) return;
+    const isi: IsiDrafSurat = { donatur, jenis, bentuk, nominal, deskripsiBarang, tanggalDonasi, tanggalSurat, tanggalSuratManual, keterangan, gayaTulisan };
+    if (!drafBermakna(isi)) return;
+    const t = setTimeout(() => simpanDraf(KUNCI_DRAF, isi), 600);
+    return () => clearTimeout(t);
+  }, [modeEdit, drafTersedia, donatur, jenis, bentuk, nominal, deskripsiBarang, tanggalDonasi, tanggalSurat, tanggalSuratManual, keterangan, gayaTulisan]);
+
+  const pulihkanDraf = () => {
+    if (!drafTersedia) return;
+    const d = drafTersedia.isi;
+    dipilihManualRef.current = true;
+    setDonatur(d.donatur); setJenis(d.jenis); setBentuk(d.bentuk);
+    setNominal(d.nominal); setNominalTeks(d.nominal ? formatRupiah(d.nominal) : '');
+    setDeskripsiBarang(d.deskripsiBarang); setTanggalDonasi(d.tanggalDonasi);
+    setTanggalSuratMentah(d.tanggalSurat); setTanggalSuratManual(d.tanggalSuratManual);
+    setKeterangan(d.keterangan); setGayaTulisan(d.gayaTulisan);
+    setDrafTersedia(null);
+  };
+  const buangDraf = () => { hapusDraf(KUNCI_DRAF); setDrafTersedia(null); };
+
   const pakaiNomorOtomatis = () => { setNomorSurat(nomorOtomatis); setNomorDiedit(false); };
   const ubahNomorSurat = (v: string) => { setNomorSurat(v); setNomorDiedit(true); };
 
@@ -140,7 +196,7 @@ export function useFormSurat(awal?: SuratWithRelasi) {
         router.push('/donatur/surat/' + awal.id);
         router.refresh();
       } catch {
-        setError('Tidak dapat terhubung ke server.');
+        setError(pesanGagalJaringan(false));
       } finally {
         setBusy(false);
       }
@@ -198,9 +254,10 @@ export function useFormSurat(awal?: SuratWithRelasi) {
       }
       if (!res.ok) { setError(data.error || 'Gagal membuat surat.'); return; }
 
+      hapusDraf(KUNCI_DRAF);
       router.push('/donatur/surat/' + data.data.id);
     } catch {
-      setError('Tidak dapat terhubung ke server.');
+      setError(pesanGagalJaringan(true));
     } finally {
       setBusy(false);
     }
@@ -223,6 +280,7 @@ export function useFormSurat(awal?: SuratWithRelasi) {
     gayaTulisan, setGayaTulisan,
     fieldErrors, donaturFieldErrors, error, nomorUsulan, pakaiNomorUsulan, busy,
     pratinjau, simpan, modeEdit,
+    drafTersedia: drafTersedia ? { nama: drafTersedia.nama, waktu: drafTersedia.waktu } : null, pulihkanDraf, buangDraf,
   };
 }
 

@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { PendingGate } from "@/components/auth/PendingGate";
 import { getSessionState } from "@/lib/auth/session";
+import { PwaKlien } from "@/components/pwa/PwaKlien";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -41,6 +42,7 @@ export default async function RootLayout({
         <ThemeProvider>
           <AuthProvider user={user}>
             {pending ? <PendingGate email={pending.email} /> : children}
+            <PwaKlien />
           </AuthProvider>
         </ThemeProvider>
       </body>

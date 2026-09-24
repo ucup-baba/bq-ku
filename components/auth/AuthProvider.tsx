@@ -5,6 +5,7 @@ import { canDeleteSantri, canEditSantri, canManageDonatur, canManageUsers, type 
 import { roomsFor, type Room } from '@/lib/auth/rooms';
 import type { SessionUser } from '@/lib/auth/session';
 import { createBrowserSupabase } from '@/lib/supabase/client';
+import { hapusSemuaDraf } from '@/lib/draf';
 
 type AuthContextType = {
   user: SessionUser | null; roles: UserRole[];
@@ -23,11 +24,12 @@ export function AuthProvider({ user, children }: { user: SessionUser | null; chi
   React.useEffect(() => {
     if (!user) return;
     const { data: sub } = createBrowserSupabase().auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') { router.push('/login'); router.refresh(); }
+      if (event === 'SIGNED_OUT') { hapusSemuaDraf(); router.push('/login'); router.refresh(); }
     });
     return () => sub.subscription.unsubscribe();
   }, [user, router]);
   const logout = async () => {
+    hapusSemuaDraf();
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login'); router.refresh();
   };

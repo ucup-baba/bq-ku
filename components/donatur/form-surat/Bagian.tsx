@@ -40,6 +40,17 @@ export function BagianDonatur({ f }: { f: FormSuratCtx }) {
   }
   return (
     <div className="space-y-2">
+      {f.drafTersedia && (
+        <div role="status" className="flex flex-col gap-2 rounded-2xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-950 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-100 sm:flex-row sm:items-center">
+          <p className="min-w-0 flex-1">
+            <strong>Ada draf surat</strong>{f.drafTersedia.nama && <> untuk <strong>{f.drafTersedia.nama}</strong></>} yang belum disimpan (pukul {f.drafTersedia.waktu}).
+          </p>
+          <div className="flex shrink-0 gap-2">
+            <button type="button" onClick={f.pulihkanDraf} className="tekan rounded-xl bg-[#0B5FA5] px-3 py-2 font-bold text-white hover:bg-[#094d86]">Pulihkan</button>
+            <button type="button" onClick={f.buangDraf} className="tekan rounded-xl border border-bq-garis bg-bq-surface px-3 py-2 font-bold text-bq-tinta">Buang</button>
+          </div>
+        </div>
+      )}
       {f.pesanDonaturAwal && <p className="text-xs text-bq-jingga">{f.pesanDonaturAwal}</p>}
       <PilihDonatur value={f.donatur} onChange={f.ubahDonatur} errors={f.donaturFieldErrors} />
       <Galat pesan={f.fieldErrors.donaturId} />
