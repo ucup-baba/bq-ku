@@ -51,7 +51,15 @@ export function useFormSurat(awal?: SuratWithRelasi) {
   const [nominalTeks, setNominalTeks] = useState(d0?.nominal ? formatRupiah(d0.nominal) : '');
   const [deskripsiBarang, setDeskripsiBarang] = useState(d0?.deskripsiBarang ?? '');
   const [tanggalDonasi, setTanggalDonasi] = useState(d0?.tanggal ?? hariIni());
-  const [tanggalSurat, setTanggalSurat] = useState(awal?.tanggalSurat ?? hariIni());
+  const [tanggalSurat, setTanggalSuratMentah] = useState(awal?.tanggalSurat ?? hariIni());
+  // Surat baru: tanggal surat mengikuti tanggal diterima sampai diubah sendiri.
+  // Mode edit: keduanya lepas (tanggal surat lama tidak boleh bergeser diam-diam).
+  const [tanggalSuratManual, setTanggalSuratManual] = useState(!!awal);
+  const setTanggalSurat = (v: string) => { setTanggalSuratManual(true); setTanggalSuratMentah(v); };
+  const ubahTanggalDonasi = (v: string) => {
+    setTanggalDonasi(v);
+    if (!tanggalSuratManual && v) setTanggalSuratMentah(v);
+  };
   const [keterangan, setKeterangan] = useState(d0?.keterangan ?? '');
 
   const [nomorSurat, setNomorSurat] = useState(awal?.nomorSurat ?? '');
@@ -209,8 +217,8 @@ export function useFormSurat(awal?: SuratWithRelasi) {
   return {
     donatur, ubahDonatur, pesanDonaturAwal,
     jenis, setJenis, bentuk, setBentuk, nominal, nominalTeks, ubahNominal,
-    deskripsiBarang, setDeskripsiBarang, tanggalDonasi, setTanggalDonasi,
-    tanggalSurat, setTanggalSurat, keterangan, setKeterangan,
+    deskripsiBarang, setDeskripsiBarang, tanggalDonasi, setTanggalDonasi: ubahTanggalDonasi,
+    tanggalSurat, setTanggalSurat, tanggalSuratIkut: !tanggalSuratManual, keterangan, setKeterangan,
     nomorSurat, ubahNomorSurat, nomorOtomatis, nomorDiedit, pakaiNomorOtomatis,
     gayaTulisan, setGayaTulisan,
     fieldErrors, donaturFieldErrors, error, nomorUsulan, pakaiNomorUsulan, busy,

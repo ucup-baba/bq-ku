@@ -105,6 +105,7 @@ export function BagianSurat({ f }: { f: FormSuratCtx }) {
         <label className="block space-y-1">
           <span className={kelasLabel}>Tanggal surat</span>
           <input type="date" value={f.tanggalSurat} onChange={ev => f.setTanggalSurat(ev.target.value)} className={kelasField(e.tanggalSurat)} />
+          {f.tanggalSuratIkut && !e.tanggalSurat && <p className="text-xs text-bq-redup">Mengikuti tanggal diterima</p>}
           <Galat pesan={e.tanggalSurat} />
         </label>
         <label className="block space-y-1">
