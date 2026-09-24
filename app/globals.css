@@ -59,6 +59,9 @@ body {
 .bergilir > *:nth-child(6) { --urutan: 5; }
 .bergilir > *:nth-child(7) { --urutan: 6; }
 .bergilir > *:nth-child(n + 8) { --urutan: 7; }
+/* Animasi `both` menahan opacity → tiap anak jadi stacking context sendiri, dan anak
+   berikutnya menutupi dropdown/popover anak sebelumnya. Anak yang sedang dipakai naik ke atas. */
+.bergilir > *:focus-within { position: relative; z-index: 10; }
 
 /* Umpan balik tekan */
 /* Memakai properti `scale` (bukan `transform`) agar tidak menimpa translate/posisi elemen. */
