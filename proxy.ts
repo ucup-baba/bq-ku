@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { isPublicPath } from '@/lib/auth/public-paths';
-import { roomsFor, roomOfPath, ROOM_HOME, ROOM_COOKIE } from '@/lib/auth/rooms';
+import { roomsFor, roomOfPath, pathNetral, ROOM_HOME, ROOM_COOKIE } from '@/lib/auth/rooms';
 import type { UserRole } from '@/lib/auth/roles';
 import { identitasDari } from '@/lib/auth/identitas';
 
@@ -47,7 +47,7 @@ export async function proxy(request: NextRequest) {
     return withSessionCookies(NextResponse.redirect(url));
   }
 
-  if (user && !isPublicPath(pathname)) {
+  if (user && !isPublicPath(pathname) && !pathNetral(pathname)) {
     const { data: profile } = await supabase
       .from('profiles').select('roles, aktif').eq('id', user.id).maybeSingle();
     const roles = (profile?.aktif ? profile.roles : []) as UserRole[] | undefined ?? [];

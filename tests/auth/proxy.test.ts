@@ -50,6 +50,19 @@ describe('proxy: penjaga ruangan', () => {
     expect(new URL(res.headers.get('location')!).pathname).toBe('/donatur');
   });
 
+  it('ADMIN_DONATUR memanggil /api/notifikasi (path netral) → diteruskan, bukan 403', async () => {
+    loggedIn(['ADMIN_DONATUR']);
+    const res = await proxy(req('/api/notifikasi'));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('location')).toBeNull();
+  });
+
+  it('ADMIN_DONATUR membuka /donatur/akun → diteruskan', async () => {
+    loggedIn(['ADMIN_DONATUR']);
+    const res = await proxy(req('/donatur/akun'));
+    expect(res.headers.get('location')).toBeNull();
+  });
+
   it('SUPERADMIN membuka /donatur → diteruskan, cookie bq_room=donatur diset', async () => {
     loggedIn(['SUPERADMIN']);
     const res = await proxy(req('/donatur'));

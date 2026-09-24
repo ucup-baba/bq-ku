@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { RailSidebar } from './RailSidebar';
 import { BottomNav } from './BottomNav';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { NotifikasiProvider } from '@/components/notifikasi/NotifikasiProvider';
 import type { Room } from '@/lib/auth/rooms';
 
 export function AppShell({ room, children }: { room: Room; children: React.ReactNode }) {
@@ -11,6 +12,7 @@ export function AppShell({ room, children }: { room: Room; children: React.React
   const pathname = usePathname();
   if (!user) return <div className="min-h-screen bg-bq-bg">{children}</div>;
   return (
+    <NotifikasiProvider>
     <div className="flex min-h-screen bg-bq-bg text-bq-tinta transition-colors">
       <RailSidebar room={room} />
       <main className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-4 pb-28 pt-4 sm:px-8 md:pb-12 md:pt-8">
@@ -19,5 +21,6 @@ export function AppShell({ room, children }: { room: Room; children: React.React
       </main>
       <BottomNav room={room} />
     </div>
+    </NotifikasiProvider>
   );
 }

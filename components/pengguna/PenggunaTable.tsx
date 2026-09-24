@@ -145,7 +145,7 @@ export function PenggunaTable({ currentUserId }: { currentUserId: string }) {
 
   return (
     <section className="space-y-4">
-      <KepalaHalaman judul="Akun & Pengguna" sub="Izinkan email panitia, atur peran, blokir, atau hapus akun."
+      <KepalaHalaman judul="Kelola Pengguna" sub="Izinkan email panitia, atur peran, blokir, atau hapus akun."
         aksi={<TombolIkon ikon={UserPlus} label="Tambah email yang diizinkan" varian="utama" onClick={() => setModal(true)} />} />
       <div className="flex flex-wrap items-center gap-2">
         <ChipPilihan label="Filter ruangan" opsi={RUANGAN_FILTER} nilai={ruangan} onPilih={setRuangan} />

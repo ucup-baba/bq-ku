@@ -14,7 +14,7 @@ const BERANDA_SANTRI: ItemMenu = { href: '/', label: 'Beranda', labelPendek: 'Be
 const DIREKTORI: ItemMenu = { href: '/santri', label: 'Direktori Santri', labelPendek: 'Direktori', ikon: 'direktori', warna: 'biru' };
 const INPUT_BERKAS: ItemMenu = { href: '/tambah', label: 'Santri baru', labelPendek: 'Santri', ikon: 'berkas', warna: 'jingga' };
 const TAMBAH_BERKAS: ItemMenu = { ...INPUT_BERKAS, ikon: 'tambah', warna: 'hijau' };
-const PENGGUNA: ItemMenu = { href: '/pengguna', label: 'Akun & Pengguna', labelPendek: 'Pengguna', ikon: 'pengguna', warna: 'ungu' };
+const PENGGUNA: ItemMenu = { href: '/pengguna', label: 'Kelola Pengguna', labelPendek: 'Pengguna', ikon: 'pengguna', warna: 'ungu' };
 
 /**
  * Item rail desktop. Ruang Donatur sengaja tanpa "Buat Surat": aksi utama itu tampil
@@ -27,20 +27,21 @@ export function menuRail(room: Room, o: OpsiMenu): ItemMenu[] {
 
 export type SlotHp =
   | { jenis: 'tautan'; item: ItemMenu; utama: boolean }
-  | { jenis: 'pindah' }
   | { jenis: 'tema' }
   | { jenis: 'akun' };
 
 /**
- * Susunan bottom nav HP (selalu 5 slot): 2 tautan, tombol utama di tengah, lalu Pindah ruangan
- * bila akun punya 2 ruangan — bila hanya 1 ruangan, slot itu menjadi tombol mode gelap/terang — dan Akun.
+ * Susunan bottom nav HP (selalu 5 slot): 2 tautan, tombol utama di tengah, slot ke-4, lalu Akun.
+ * Pindah ruangan & tema ada di halaman Akun, jadi slot ke-4 dipakai tujuan yang sering dibuka:
+ * Daftar Surat (donatur) atau Pengguna (santri, pengelola akun). Tanpa tujuan itu → tombol tema.
  */
 export function slotHp(room: Room, o: OpsiMenu): SlotHp[] {
   const tautan = (item: ItemMenu, utama = false): SlotHp => ({ jenis: 'tautan', item, utama });
   const [a, b, tengah] = room === 'donatur'
     ? [BERANDA_DONATUR, DAFTAR_DONATUR, BUAT_SURAT]
     : [BERANDA_SANTRI, DIREKTORI, TAMBAH_BERKAS];
-  const keempat: SlotHp = o.jumlahRuang > 1 ? { jenis: 'pindah' } : { jenis: 'tema' };
+  const keempat: SlotHp = room === 'donatur' ? tautan(DAFTAR_SURAT)
+    : o.canManageUsers ? tautan(PENGGUNA) : { jenis: 'tema' };
   return [tautan(a), tautan(b), tautan(tengah, true), keempat, { jenis: 'akun' }];
 }
 

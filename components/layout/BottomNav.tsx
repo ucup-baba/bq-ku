@@ -1,5 +1,4 @@
 'use client';
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sun, Moon } from '@phosphor-icons/react';
@@ -8,17 +7,19 @@ import { useTheme } from '@/components/theme/ThemeProvider';
 import { slotHp, itemAktif, sembunyikanNavHp, type SlotHp } from '@/lib/nav/menu';
 import type { Room } from '@/lib/auth/rooms';
 import { IKON_MENU } from './ikon-menu';
-import { RoomSwitchButton } from './RoomSwitchButton';
-import { AccountDrawer } from './AccountDrawer';
+import { useNotifikasi } from '@/components/notifikasi/NotifikasiProvider';
+import { ROOM_AKUN } from '@/lib/auth/rooms';
+import { labelLencana } from '@/lib/notifikasi/jenis';
 
 /** Titik tengah slot ke-i dari n slot, dalam persen lebar bar. */
 export function posisiSlot(i: number, n: number): number {
   return ((i + 0.5) / n) * 100;
 }
 
-/** Indeks slot tautan (bukan tombol utama) yang aktif untuk path ini, atau -1. */
-export function slotAktif(slot: SlotHp[], pathname: string): number {
-  return slot.findIndex(s => s.jenis === 'tautan' && !s.utama && itemAktif(pathname, s.item.href));
+/** Indeks slot (tautan non-utama, atau Akun di halaman akun) yang aktif untuk path ini, atau -1. */
+export function slotAktif(slot: SlotHp[], pathname: string, hrefAkun?: string): number {
+  return slot.findIndex(s => (s.jenis === 'tautan' && !s.utama && itemAktif(pathname, s.item.href))
+    || (s.jenis === 'akun' && pathname === hrefAkun));
 }
 
 const kelasIkon = 'tekan flex h-12 w-12 items-center justify-center rounded-full text-white/65 transition-[color,opacity] duration-200 hover:text-white';
@@ -31,12 +32,13 @@ export function BottomNav({ room }: { room: Room }) {
   const pathname = usePathname();
   const { user, rooms, canManageUsers } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [akunBuka, setAkunBuka] = useState(false);
+  const { total } = useNotifikasi();
   if (sembunyikanNavHp(pathname)) return null;
 
+  const hrefAkun = ROOM_AKUN[room];
   const slot = slotHp(room, { canManageUsers, jumlahRuang: rooms.length });
   const n = slot.length;
-  const aktif = slotAktif(slot, pathname);
+  const aktif = slotAktif(slot, pathname, hrefAkun);
   const iUtama = slot.findIndex(s => s.jenis === 'tautan' && s.utama);
   const inisial = user?.nama?.trim().charAt(0).toUpperCase() || 'A';
   const itemAktifSekarang = aktif >= 0 ? slot[aktif] : null;
@@ -49,7 +51,6 @@ export function BottomNav({ room }: { room: Room }) {
   } as React.CSSProperties;
 
   const render = (s: SlotHp, i: number) => {
-    if (s.jenis === 'pindah') return <RoomSwitchButton variant="ikon" className={kelasIkon} />;
     if (s.jenis === 'tema') {
       const gelap = theme === 'dark';
       return (
@@ -60,10 +61,18 @@ export function BottomNav({ room }: { room: Room }) {
       );
     }
     if (s.jenis === 'akun') {
+      const aktifIni = i === aktif;
+      const label = total > 0 ? `Akun, ${total} notifikasi` : 'Akun';
       return (
-        <button type="button" onClick={() => setAkunBuka(true)} aria-label="Menu akun" aria-expanded={akunBuka} className={kelasIkon}>
+        <Link href={hrefAkun} aria-label={label} title={label} aria-current={aktifIni ? 'page' : undefined}
+          className={`${kelasIkon} relative ${aktifIni ? 'opacity-0' : ''}`}>
           <span aria-hidden="true" className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-xs font-extrabold text-white">{inisial}</span>
-        </button>
+          {total > 0 && (
+            <span aria-hidden="true" className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-extrabold leading-none text-white ring-2 ring-[#152A26] dark:ring-[#0B1513]">
+              {labelLencana(total)}
+            </span>
+          )}
+        </Link>
       );
     }
     const Ikon = IKON_MENU[s.item.ikon];
@@ -85,7 +94,6 @@ export function BottomNav({ room }: { room: Room }) {
   };
 
   return (
-    <>
       <nav aria-label="Navigasi bawah" style={gaya}
         className="nav-takik fixed inset-x-3 bottom-3 z-40 pb-[env(safe-area-inset-bottom)] md:hidden">
         <div className="relative h-16">
@@ -94,13 +102,12 @@ export function BottomNav({ room }: { room: Room }) {
           <span aria-hidden="true"
             className={`gelembung-takik absolute top-0 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#A3E635] text-[#152A26] shadow-[0_8px_18px_-6px_rgb(163_230_53/0.8)] ${aktif >= 0 ? 'opacity-100' : 'scale-50 opacity-0'}`}>
             {IkonAktif && <IkonAktif size={24} weight="fill" />}
+            {itemAktifSekarang?.jenis === 'akun' && <span className="text-sm font-extrabold">{inisial}</span>}
           </span>
           <ul className="relative grid h-full items-center" style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}>
             {slot.map((s, i) => <li key={i} className="relative flex h-full items-center justify-center">{render(s, i)}</li>)}
           </ul>
         </div>
       </nav>
-      <AccountDrawer isOpen={akunBuka} onClose={() => setAkunBuka(false)} />
-    </>
   );
 }

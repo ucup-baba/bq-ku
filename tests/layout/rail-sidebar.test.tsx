@@ -21,9 +21,9 @@ describe('RailSidebar', () => {
     expect(h).not.toContain('href="/donatur/surat/baru"');
     expect(h).not.toContain('Toggle theme');
   });
-  it('punya tombol pindah ruang, akun, dan pin', () => {
+  it('punya tombol pindah ruang, tautan ke halaman Akun ruangan ini, dan pin', () => {
     expect(h).toContain('Pindah ke Ruang Santri');
-    expect(h).toContain('aria-label="Menu akun"');
+    expect(h).toMatch(/href="\/donatur\/akun" aria-label="Akun"/);
     expect(h).toContain('aria-pressed="false"');
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { donaturSchema, donasiSchema, suratSchema, rekapQuerySchema } from '@/lib/validation/donatur';
+import { donaturSchema, donaturUpdateSchema, donasiSchema, suratSchema, rekapQuerySchema } from '@/lib/validation/donatur';
 
 const donaturValid = { nama: 'H. Pradana', sapaan: 'BAPAK', noWa: '0812-3456-7890' };
 
@@ -8,8 +8,16 @@ describe('donaturSchema', () => {
     const r = donaturSchema.safeParse(donaturValid);
     expect(r.success && r.data.noWa).toBe('6281234567890');
   });
-  it('menerima donatur tanpa WA', () => {
-    expect(donaturSchema.safeParse({ nama: 'Hamba Allah', sapaan: 'BAPAK' }).success).toBe(true);
+  it('nomor WA wajib (kosong maupun tidak dikirim ditolak)', () => {
+    for (const noWa of [undefined, '', '   ']) {
+      const r = donaturSchema.safeParse({ nama: 'Hamba Allah', sapaan: 'BAPAK', noWa });
+      expect(r.success).toBe(false);
+      if (!r.success) expect(r.error.issues[0].message).toBe('Nomor WhatsApp wajib diisi');
+    }
+  });
+  it('ubah donatur: field boleh sebagian, tapi WA tidak boleh dikosongkan', () => {
+    expect(donaturUpdateSchema.safeParse({ nama: 'Hamba Allah' }).success).toBe(true);
+    expect(donaturUpdateSchema.safeParse({ noWa: '' }).success).toBe(false);
   });
   it('menolak nama terlalu pendek', () => {
     expect(donaturSchema.safeParse({ ...donaturValid, nama: 'A' }).success).toBe(false);

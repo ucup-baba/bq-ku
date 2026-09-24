@@ -7,10 +7,11 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { IkonUbin } from '@/components/ui/IkonUbin';
 import { menuRail, itemAktif } from '@/lib/nav/menu';
 import { bacaPin, simpanPin, storageAman } from '@/lib/ui/pin-rail';
-import { ROOM_HOME, type Room } from '@/lib/auth/rooms';
+import { ROOM_HOME, ROOM_AKUN, type Room } from '@/lib/auth/rooms';
+import { useNotifikasi } from '@/components/notifikasi/NotifikasiProvider';
 import { IKON_MENU } from './ikon-menu';
 import { RoomSwitchButton } from './RoomSwitchButton';
-import { AccountDrawer } from './AccountDrawer';
+import { labelLencana } from '@/lib/notifikasi/jenis';
 
 /**
  * Rail 76px yang melebar ke 240px saat hover/fokus (melayang di atas konten).
@@ -20,7 +21,7 @@ export function RailSidebar({ room }: { room: Room }) {
   const pathname = usePathname();
   const { user, rooms, canManageUsers } = useAuth();
   const [pin, setPin] = useState(false);
-  const [akunBuka, setAkunBuka] = useState(false);
+  const { total } = useNotifikasi();
 
   useEffect(() => { setPin(bacaPin(storageAman())); }, []);
   const ubahPin = () => {
@@ -57,14 +58,22 @@ export function RailSidebar({ room }: { room: Room }) {
 
         <div className="mt-auto flex flex-col gap-1 border-t border-bq-garis pt-3">
           <RoomSwitchButton variant="rail" labelClassName={kelasLabel} />
-          <button type="button" onClick={() => setAkunBuka(true)} aria-label="Menu akun"
-            className={`${kelasBaris} text-left hover:bg-slate-100 dark:hover:bg-slate-800/60`}>
-            <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0E9F54] to-[#0B5FA5] font-extrabold text-white">{inisial}</span>
+          <Link href={ROOM_AKUN[room]} aria-label={total > 0 ? `Akun, ${total} notifikasi` : 'Akun'}
+            aria-current={pathname === ROOM_AKUN[room] ? 'page' : undefined}
+            className={`${kelasBaris} ${pathname === ROOM_AKUN[room] ? 'bg-emerald-50 dark:bg-emerald-950/40' : 'hover:bg-slate-100 dark:hover:bg-slate-800/60'}`}>
+            <span aria-hidden="true" className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#0E9F54] to-[#0B5FA5] font-extrabold text-white">
+              {inisial}
+              {total > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-extrabold leading-none text-white ring-2 ring-bq-surface">
+                  {labelLencana(total)}
+                </span>
+              )}
+            </span>
             <span className={`${kelasLabel} flex flex-col`}>
               <span className="truncate text-bq-tinta">{user?.nama}</span>
-              <span className="truncate text-xs font-normal text-bq-redup">Akun &amp; tema</span>
+              <span className="truncate text-xs font-normal text-bq-redup">{total > 0 ? `${total} notifikasi` : 'Akun & pengaturan'}</span>
             </span>
-          </button>
+          </Link>
           <button type="button" onClick={ubahPin} aria-pressed={pin} aria-label={pin ? 'Lepas sematan menu' : 'Sematkan menu'}
             className={`${kelasBaris} h-11 text-bq-redup hover:bg-slate-100 hover:text-bq-tinta dark:hover:bg-slate-800/60`}>
             <span className="flex h-10 w-10 shrink-0 items-center justify-center">
@@ -74,7 +83,6 @@ export function RailSidebar({ room }: { room: Room }) {
           </button>
         </div>
       </nav>
-      <AccountDrawer isOpen={akunBuka} onClose={() => setAkunBuka(false)} />
     </>
   );
 }

@@ -13,6 +13,14 @@ export function roomsFor(roles: UserRole[]): Room[] {
   return out;
 }
 
+/** Path milik semua ruangan (mis. notifikasi akun): tidak dicek/diarahkan per ruangan. */
+export function pathNetral(pathname: string): boolean {
+  return pathname === '/api/notifikasi';
+}
+
+/** Halaman Akun di dalam ruangan aktif (nav & rail tetap milik ruangan itu). */
+export const ROOM_AKUN: Record<Room, string> = { santri: '/akun', donatur: '/donatur/akun' };
+
 /** Ruangan yang dituju sebuah path. Default: santri. */
 export function roomOfPath(pathname: string): Room {
   return pathname === '/donatur' || pathname.startsWith('/donatur/') || pathname.startsWith('/api/donatur')

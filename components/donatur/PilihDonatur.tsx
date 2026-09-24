@@ -263,7 +263,7 @@ export function PilihDonatur({
           </label>
 
           <label className="block space-y-1">
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">No. WhatsApp (opsional)</span>
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">No. WhatsApp</span>
             <input
               value={value.noWa}
               onChange={e => onChange({ ...value, noWa: e.target.value })}

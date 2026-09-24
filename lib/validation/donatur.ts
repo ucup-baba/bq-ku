@@ -24,8 +24,11 @@ export const bentukEnum = z.enum(['UANG', 'BARANG']);
 export const donaturSchema = z.object({
   nama: z.string().trim().min(3, 'Nama donatur minimal 3 huruf'),
   sapaan: sapaanEnum.default('BAPAK'),
-  noWa: z.string().trim().transform(v => (v === '' ? null : normalizeWa(v))).nullable().optional()
-    .refine(v => v == null || /^62\d{8,13}$/.test(v), 'Nomor WhatsApp tidak valid'),
+  // Wajib: surat terima kasih dikirim lewat WhatsApp. Donatur lama tanpa nomor tetap ada
+  // di DB (kolom nullable) dan dilengkapi lewat Ubah donatur.
+  noWa: z.string({ error: 'Nomor WhatsApp wajib diisi' }).trim().min(1, 'Nomor WhatsApp wajib diisi')
+    .transform(normalizeWa)
+    .refine(v => /^62\d{8,13}$/.test(v), 'Nomor WhatsApp tidak valid'),
   alamat: teksOpsional,
   catatan: teksOpsional,
 });

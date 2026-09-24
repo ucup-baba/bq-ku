@@ -73,7 +73,22 @@ export async function updateDonatur(client: SupabaseClient, donaturId: string, p
   const { data, error } = await client.from('donatur')
     .update({ ...patch, updatedAt: now() }).eq('id', donaturId).select().single();
   if (error) throw new Error(`Gagal memperbarui donatur: ${error.message}`);
+  if (patch.nama !== undefined || patch.sapaan !== undefined) await segarkanPngSuratBelumTerkirim(client, donaturId);
   return data as Donatur;
+}
+
+/**
+ * Nama/sapaan di surat ikut berubah: kosongkan storagePath surat yang BELUM terkirim agar
+ * PNG-nya dirender ulang. Surat yang sudah terkirim dibiarkan sesuai yang diterima donatur.
+ */
+async function segarkanPngSuratBelumTerkirim(client: SupabaseClient, donaturId: string): Promise<void> {
+  const { data: donasi, error } = await client.from('donasi').select('id').eq('donaturId', donaturId);
+  if (error) throw new Error(`Gagal memuat donasi: ${error.message}`);
+  const ids = (donasi || []).map(d => d.id as string);
+  if (ids.length === 0) return;
+  const { error: uErr } = await client.from('surat').update({ storagePath: null })
+    .in('donasiId', ids).eq('terkirimWa', false);
+  if (uErr) console.error('Gagal menyegarkan PNG surat donatur:', uErr.message);
 }
 
 export async function listDonasi(
@@ -256,4 +271,52 @@ export async function ubahSurat(client: SupabaseClient, surat: SuratWithRelasi, 
     keterangan: d.keterangan ?? null,
   }).eq('id', surat.donasiId);
   if (dErr) throw new Error(`Gagal mengubah donasi: ${dErr.message}`);
+}
+
+/** Donatur masih punya donasi: hapus ditolak agar surat bernomor & rekap tidak ikut hilang. */
+export class DonaturPunyaDonasiError extends Error {
+  constructor(public jumlah: number) {
+    super('Donatur ini masih punya catatan donasi. Gabungkan ke donatur lain dulu.');
+    this.name = 'DonaturPunyaDonasiError';
+  }
+}
+
+/** Penghapusan donatur ditolak RLS (0 baris terhapus). */
+export class HapusDonaturDitolakError extends Error {
+  constructor() { super('Anda tidak memiliki izin menghapus donatur ini'); this.name = 'HapusDonaturDitolakError'; }
+}
+
+async function hitungDonasi(client: SupabaseClient, donaturId: string): Promise<number> {
+  const { count, error } = await client.from('donasi').select('id', { head: true, count: 'exact' }).eq('donaturId', donaturId);
+  if (error) throw new Error(`Gagal memeriksa donasi: ${error.message}`);
+  return count ?? 0;
+}
+
+async function hapusBarisDonatur(client: SupabaseClient, donaturId: string): Promise<void> {
+  const { data, error } = await client.from('donatur').delete().eq('id', donaturId).select('id');
+  // 23503: FK RESTRICT (migrasi 0009) — donasi baru masuk di antara pemeriksaan & penghapusan.
+  if (error?.code === '23503') throw new DonaturPunyaDonasiError(await hitungDonasi(client, donaturId));
+  if (error) throw new Error(`Gagal menghapus donatur: ${error.message}`);
+  if (!data || data.length === 0) throw new HapusDonaturDitolakError();
+}
+
+/** Menghapus donatur yang BELUM punya donasi. */
+export async function hapusDonatur(client: SupabaseClient, donaturId: string): Promise<void> {
+  const jumlah = await hitungDonasi(client, donaturId);
+  if (jumlah > 0) throw new DonaturPunyaDonasiError(jumlah);
+  await hapusBarisDonatur(client, donaturId);
+}
+
+/**
+ * Menggabungkan donatur dobel: semua donasi `dariId` dipindah ke `keId` (surat ikut, karena
+ * surat menempel ke donasi), lalu `dariId` dihapus. Mengembalikan jumlah donasi yang dipindah.
+ */
+export async function gabungDonatur(client: SupabaseClient, dariId: string, keId: string): Promise<number> {
+  if (dariId === keId) throw new Error('Pilih donatur lain sebagai tujuan');
+  const { data, error } = await client.from('donasi')
+    .update({ donaturId: keId }).eq('donaturId', dariId).select('id');
+  if (error) throw new Error(`Gagal memindahkan donasi: ${error.message}`);
+  await hapusBarisDonatur(client, dariId);
+  if (data && data.length > 0) await segarkanPngSuratBelumTerkirim(client, keId);
+  return data?.length ?? 0;
 }

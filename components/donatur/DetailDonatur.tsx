@@ -1,4 +1,5 @@
-import { ArrowClockwise, WhatsappLogo, MapPin, NotePencil, HandCoins, Package } from '@phosphor-icons/react/dist/ssr';
+import Link from 'next/link';
+import { ArrowClockwise, WhatsappLogo, MapPin, NotePencil, HandCoins, Package, Plus } from '@phosphor-icons/react/dist/ssr';
 import type { Donatur, Donasi } from '@/lib/db/donatur-repo';
 import { labelSapaan } from '@/lib/surat/data';
 import { formatDateIndonesian } from '@/lib/utils/formatters';
@@ -7,7 +8,8 @@ import { labelJenis, formatNilaiDonasi, ringkasRiwayat } from '@/lib/donatur/riw
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
 import { Kartu } from '@/components/ui/Kartu';
 import { IkonUbin } from '@/components/ui/IkonUbin';
-import { TautanUtama } from '@/components/ui/Tombol';
+import { TautanUtama, TombolIkon } from '@/components/ui/Tombol';
+import { MenuDonatur } from './MenuDonatur';
 
 const kelasChip = 'inline-flex max-w-full items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs text-bq-tinta dark:bg-slate-800';
 
@@ -18,7 +20,11 @@ export function DetailDonatur({ donatur }: { donatur: Donatur & { donasi: Donasi
       <KepalaHalaman
         judul={`${labelSapaan(donatur.sapaan)} ${donatur.nama}`}
         kembali={{ href: '/donatur/daftar', label: 'Kembali ke daftar donatur' }}
-        aksi={<TautanUtama href={`/donatur/surat/baru?donaturId=${donatur.id}`} ikon={ArrowClockwise}>Donasi lagi</TautanUtama>}
+        aksi={<>
+          <TautanUtama href={`/donatur/surat/baru?donaturId=${donatur.id}`} ikon={ArrowClockwise} className="hidden sm:inline-flex">Donasi lagi</TautanUtama>
+          <TombolIkon href={`/donatur/surat/baru?donaturId=${donatur.id}`} ikon={ArrowClockwise} label="Donasi lagi" varian="utama" className="sm:hidden" />
+          <MenuDonatur donatur={donatur} jumlahDonasi={r.jumlah} />
+        </>}
       />
 
       {/* Desktop: profil & angka di kiri (menempel), riwayat di kanan */}
@@ -32,7 +38,7 @@ export function DetailDonatur({ donatur }: { donatur: Donatur & { donasi: Donasi
         <div className="flex flex-wrap gap-2">
           {donatur.noWa
             ? <a href={`https://wa.me/${donatur.noWa}`} target="_blank" rel="noopener noreferrer" className={kelasChip}><WhatsappLogo size={14} weight="fill" className="text-emerald-600" aria-hidden="true" /><span className="truncate">{donatur.noWa}</span></a>
-            : <span className={kelasChip}>Nomor WhatsApp belum diisi</span>}
+            : <Link href="?ubah=1" scroll={false} className={`${kelasChip} bg-orange-50 font-semibold text-orange-800 hover:bg-orange-100 dark:bg-orange-950/40 dark:text-orange-200`}><Plus size={14} weight="bold" aria-hidden="true" />Tambah nomor WhatsApp</Link>}
           {donatur.alamat && <span className={kelasChip}><MapPin size={14} weight="bold" aria-hidden="true" /><span className="truncate">{donatur.alamat}</span></span>}
           {donatur.catatan && <span className={kelasChip}><NotePencil size={14} weight="bold" aria-hidden="true" /><span className="truncate">{donatur.catatan}</span></span>}
         </div>

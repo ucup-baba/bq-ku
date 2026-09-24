@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn(), refresh: vi.fn() }), useSearchParams: () => new URLSearchParams() }));
 vi.mock('next/link', () => ({
   default: ({ href, children, ...p }: { href: string; children: React.ReactNode }) => <a href={href} {...p}>{children}</a>,
 }));
@@ -17,11 +18,20 @@ const donatur = {
 describe('DetailDonatur', () => {
   const h = renderToStaticMarkup(<DetailDonatur donatur={donatur} />);
   it('satu tombol "Donasi lagi" dan tombol kembali berlabel', () => {
-    expect(h.match(/Donasi lagi/g)).toHaveLength(1);
+    expect(h.match(/>Donasi lagi</g)).toHaveLength(1);
+    expect(h).toContain('aria-label="Donasi lagi"');
     expect(h).toContain('aria-label="Kembali ke daftar donatur"');
   });
   it('riwayat sebagai timeline', () => {
     expect(h).toContain('<ol');
     expect(h).toContain('Rp 20.000');
+  });
+  it('menu donatur (ubah/hapus/gabung) tersedia', () => {
+    expect(h).toContain('aria-label="Menu donatur"');
+  });
+  it('donatur tanpa WA: ajakan melengkapi nomor membuka form ubah', () => {
+    const t = renderToStaticMarkup(<DetailDonatur donatur={{ ...donatur, noWa: null }} />);
+    expect(t).toContain('href="?ubah=1"');
+    expect(t).toContain('Tambah nomor WhatsApp');
   });
 });
