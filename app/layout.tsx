@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Caveat } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -19,6 +19,12 @@ const caveat = Caveat({
 export const metadata: Metadata = {
   title: "Administrasi Berkas & Profil Santri - Baitul Qowwam",
   description: "Sistem Administrasi Berkas Santri & Digital CV Profiler",
+  applicationName: "BQ-ku",
+  appleWebApp: { capable: true, title: "BQ-ku", statusBarStyle: "black-translucent" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0F231F",
 };
 
 export default async function RootLayout({
