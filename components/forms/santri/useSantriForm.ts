@@ -239,7 +239,8 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
     }
     if (extracted.statusSosial) {
       updated.statusSosial = extracted.statusSosial;
-      newOcrTags.statusSosial = true;
+      // REGULER itu nilai bawaan, bukan temuan — jangan beri label "terdeteksi".
+      if (extracted.statusSosial !== 'REGULER') newOcrTags.statusSosial = true;
     }
     if (extracted.alamat) {
       updated.alamat = extracted.alamat;
@@ -482,7 +483,7 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
         currentForm.kontakWali = ext.kontakWali;
         newOcrTags.kontakWali = true;
       }
-      if (ext.statusSosial && currentForm.statusSosial === 'REGULER') {
+      if (ext.statusSosial && ext.statusSosial !== 'REGULER' && currentForm.statusSosial === 'REGULER') {
         currentForm.statusSosial = ext.statusSosial;
         newOcrTags.statusSosial = true;
       }

@@ -32,9 +32,11 @@ export function LangkahKeluarga({ f }: { f: SantriFormCtx }) {
               <span className="flex items-center gap-1.5 font-bold">
                 Status Santri (Kondisi Sosial / Keluarga)
               </span>
-              {ocrFilledFields.statusSosial && (
+              {ocrFilledFields.statusSosial && formData.statusSosial !== 'REGULER' && (
                 <span className="text-xs font-bold text-lime-700 dark:text-lime-400 bg-lime-100 dark:bg-lime-950/60 px-2 py-0.5 rounded-full flex items-center gap-1 border border-lime-300 dark:border-lime-800">
-                  <Sparkle size={11} weight="fill" /> Terdeteksi dari KK: Cerai Mati (Yatim)
+                  <Sparkle size={11} weight="fill" /> Terdeteksi dari KK: {
+                    ({ YATIM: 'Yatim (ayah wafat)', PIATU: 'Piatu (ibu wafat)', YATIM_PIATU: 'Yatim Piatu', DHUAFA: 'Dhuafa' } as Record<string, string>)[formData.statusSosial] ?? formData.statusSosial
+                  }
                 </span>
               )}
             </label>

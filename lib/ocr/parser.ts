@@ -266,7 +266,7 @@ function extractKk(text: string): Partial<ExtractedDocumentData> {
   if (ayahMatch) {
     data.namaAyah = ayahMatch[1].trim().replace(/\s*\|\s*.*$/, '');
   } else if (namaKepalaKeluarga) {
-    if (/SITI|SRI|NUR|DEWI|PEREMPUAN|IBU|KOMARIYAH|SURATMI|WATI|ANI/i.test(namaKepalaKeluarga)) {
+    if (/SITI|SRI|NUR|DEWI|PEREMPUAN|IBU|WATI|ANI/i.test(namaKepalaKeluarga)) {
       data.namaIbu = namaKepalaKeluarga;
     } else {
       data.namaAyah = namaKepalaKeluarga;
@@ -278,13 +278,12 @@ function extractKk(text: string): Partial<ExtractedDocumentData> {
     data.namaIbu = ibuMatch[1].trim().replace(/\s*\|\s*.*$/, '');
   }
 
-  // Check Table 2 / Parent names in text
+  // Kolom "Nama Orang Tua (Ayah / Ibu)" di tabel bawah KK: "NAMA AYAH | NAMA IBU"
   if (!data.namaAyah || !data.namaIbu) {
-    if (/DWI\s*SRIYANA|DWMSRIYANA/i.test(text)) {
-      data.namaAyah = 'DWI SRIYANA';
-    }
-    if (/SITI\s*KOMARIYAH|ISIIKOMARIVAH/i.test(text)) {
-      data.namaIbu = 'SITI KOMARIYAH';
+    const ortuMatch = text.match(/Nama\s*Orang\s*Tua[^\n]*\n\s*([A-Za-z][A-Za-z\s,.']{2,40}?)\s*\|\s*([A-Za-z][A-Za-z\s,.']{2,40}?)\s*(?:\||\n|$)/i);
+    if (ortuMatch) {
+      if (!data.namaAyah) data.namaAyah = ortuMatch[1].trim();
+      if (!data.namaIbu) data.namaIbu = ortuMatch[2].trim();
     }
   }
 
@@ -297,8 +296,7 @@ function extractKk(text: string): Partial<ExtractedDocumentData> {
     data.namaIbu && namaKepalaKeluarga && (
       data.namaIbu.toUpperCase().trim() === namaKepalaKeluarga.toUpperCase().trim() ||
       data.namaIbu.toUpperCase().includes(namaKepalaKeluarga.toUpperCase()) ||
-      namaKepalaKeluarga.toUpperCase().includes(data.namaIbu.toUpperCase()) ||
-      /SITI\s*KOMARIYAH/i.test(namaKepalaKeluarga)
+      namaKepalaKeluarga.toUpperCase().includes(data.namaIbu.toUpperCase())
     )
   );
 
@@ -407,16 +405,7 @@ function extractKk(text: string): Partial<ExtractedDocumentData> {
       if (nik.length >= 16) nik = nik.slice(0, 16);
 
       // Clean common OCR prefixes
-      if (/^JSURATM/i.test(name)) {
-        name = 'SURATMI, S.PD';
-      } else if (/RAHMAT\s*KURNIAWAN|Rama\s*Kurmawan|mat\s*omAWAN/i.test(name)) {
-        name = 'RAHMAT KURNIAWAN';
-        if (nik.length < 16) {
-          nik = '3404111108060001';
-        }
-      } else {
-        name = name.replace(/^J(?=[A-Z]{3})/i, '').replace(/^[|:.\s]+/, '').trim();
-      }
+      name = name.replace(/^J(?=[A-Z]{3})/i, '').replace(/^[|:.\s]+/, '').trim();
 
       if (
         name.length > 3 &&
@@ -439,7 +428,7 @@ function extractKk(text: string): Partial<ExtractedDocumentData> {
 
         let gender: 'IKHWAN' | 'AKHWAT' = 'IKHWAN';
         const dayDigits = nik.length >= 8 ? parseInt(nik.slice(6, 8), 10) : 0;
-        if (dayDigits > 40 || /SURATMI|PEREMPUAN|IBU|SITI|NUR|DEWI|PEREMI|MUTHIAH|LUTFIANA|ANITA/i.test(line) || /PEREMPUAN/i.test(name)) {
+        if (dayDigits > 40 || /PEREMPUAN|IBU|SITI|NUR|DEWI|PEREMI/i.test(line) || /PEREMPUAN/i.test(name)) {
           gender = 'AKHWAT';
         }
 
@@ -449,22 +438,10 @@ function extractKk(text: string): Partial<ExtractedDocumentData> {
           gender,
           tempatLahir: tmptLahir,
           tanggalLahir: tglLahir,
-          hubungan: (/KEPALA/i.test(line) || name === data.namaAyah) ? 'KEPALA KELUARGA' : (gender === 'AKHWAT' && (/ISTRI|SURATMI/i.test(line) || dayDigits > 40 || name === data.namaIbu)) ? 'ISTRI' : 'ANAK'
+          hubungan: (/KEPALA/i.test(line) || name === data.namaAyah) ? 'KEPALA KELUARGA' : (gender === 'AKHWAT' && (/ISTRI/i.test(line) || dayDigits > 40 || name === data.namaIbu)) ? 'ISTRI' : 'ANAK'
         });
       }
     }
-  }
-
-  // Detect RAHMAT KURNIAWAN if in text but missed by table line match
-  if (/RAHMAT\s*KURNIAWAN|Rama\s*Kurmawan/i.test(text) && !anggotaKeluarga.some(m => /RAHMAT/i.test(m.nama))) {
-    anggotaKeluarga.push({
-      nama: 'RAHMAT KURNIAWAN',
-      nik: '3404111108060001',
-      gender: 'IKHWAN',
-      tempatLahir: 'SLEMAN',
-      tanggalLahir: '2006-08-11',
-      hubungan: 'ANAK'
-    });
   }
 
   // Helper to compare names leniently
@@ -474,20 +451,11 @@ function extractKk(text: string): Partial<ExtractedDocumentData> {
   if (!data.namaIbu) {
     const ibuMember = anggotaKeluarga.find(m => 
       m.hubungan === 'ISTRI' ||
-      /SURATMI|SRI|SITI|DEWI|KOMARIYAH/i.test(m.nama) || 
+      /SRI|SITI|DEWI/i.test(m.nama) || 
       (m.gender === 'AKHWAT' && m.tanggalLahir && parseInt(m.tanggalLahir.slice(0, 4), 10) < 1995)
     );
     if (ibuMember) {
       data.namaIbu = ibuMember.nama;
-    }
-
-    if (!data.namaIbu) {
-      const ortuMatch = text.match(/ARIFIN[^\r\n|]*[|\t ]+(SURATMI[^\r\n|]*)/i);
-      if (ortuMatch) {
-        let mName = ortuMatch[1].replace(/^[|\s]+/, '').replace(/\s*\|.*$/, '').trim();
-        if (/SURATMI/i.test(mName)) mName = 'SURATMI, S.PD';
-        if (mName.length > 3) data.namaIbu = mName;
-      }
     }
   }
 
@@ -511,8 +479,7 @@ function extractKk(text: string): Partial<ExtractedDocumentData> {
   });
 
   if (children.length > 0) {
-    const preferredChild = children.find(c => /RAHMAT/i.test(c.nama)) ||
-                           children.find(c => c.nik && c.nik.length === 16 && c.tanggalLahir) ||
+    const preferredChild = children.find(c => c.nik && c.nik.length === 16 && c.tanggalLahir) ||
                            children.find(c => c.nik && c.nik.length === 16) ||
                            children[0];
 

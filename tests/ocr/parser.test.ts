@@ -171,6 +171,24 @@ describe('parseOcrText', () => {
       expect(result.statusSosial).toBe('YATIM');
       expect(result.namaAyah).toBe('DWI SRIYANA (Alm.)');
     });
+
+    it('tetap REGULER tanpa (Alm.) bila ayah Kepala Keluarga dan orang tua lengkap', () => {
+      const rawText = `
+        KARTU KELUARGA
+        No. 3308011234567890
+        Nama Kepala Keluarga : BUDI SANTOSO
+        | 1 | BUDI SANTOSO | 3308010101750001 | KEPALA KELUARGA
+        | 2 | ANI LESTARI | 3308014102780001 | ISTRI
+        | 3 | FAJAR NUGROHO | 3308011505100001 | ANAK
+        Nama Orang Tua:
+        BUDI SANTOSO | ANI LESTARI
+      `;
+
+      const result = parseOcrText(rawText, 'KARTU_KELUARGA');
+      expect(result.statusSosial).toBe('REGULER');
+      expect(result.namaAyah).toBe('BUDI SANTOSO');
+      expect(result.namaIbu).toBe('ANI LESTARI');
+    });
   });
 
   describe('AKTA_KELAHIRAN', () => {
