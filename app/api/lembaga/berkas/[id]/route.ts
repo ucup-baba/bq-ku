@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authErrorResponse } from '@/lib/auth/session';
-import { getBerkas, ubahDataBerkas, hapusBerkas, catatAkses } from '@/lib/db/berkas-lembaga-repo';
+import { getBerkas, ubahDataBerkas, hapusBerkas, catatAkses, segarkanSuratBelumTerkirim } from '@/lib/db/berkas-lembaga-repo';
 import { jenisRahasia } from '@/lib/lembaga/berkas';
 import { ubahDataBerkasSchema } from '@/lib/validation/berkas-lembaga';
 import { validationResponse } from '@/lib/validation/errors';
@@ -28,7 +28,11 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     };
     const hasil = await ubahDataBerkas(supabase, id, Object.fromEntries(Object.entries(patch).filter(([, v]) => v !== undefined)));
     await catatAkses(supabase, 'UBAH_DATA', { berkasId: id });
-    if (berkas.jenis === 'TANDA_TANGAN') lupakanAsetPengesahan();
+    if (berkas.jenis === 'TANDA_TANGAN' && hasil.namaPenandatangan !== berkas.namaPenandatangan) {
+      // Nama di bawah tanda tangan berubah → surat yang belum terkirim dirender ulang.
+      lupakanAsetPengesahan();
+      await segarkanSuratBelumTerkirim(supabase);
+    }
     return NextResponse.json({ success: true, data: hasil });
   } catch (e: any) {
     const authRes = authErrorResponse(e);
@@ -52,7 +56,7 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
       if (error) console.error('Gagal menghapus file berkas lembaga', { id, error: error.message });
     }
     await catatAkses(supabase, 'HAPUS', { berkasId: id, rincian: berkas.jenis });
-    if (jenisRahasia(berkas.jenis)) lupakanAsetPengesahan();
+    if (jenisRahasia(berkas.jenis)) { lupakanAsetPengesahan(); await segarkanSuratBelumTerkirim(supabase); }
     return NextResponse.json({ success: true, data: { id } });
   } catch (e: any) {
     const authRes = authErrorResponse(e);
