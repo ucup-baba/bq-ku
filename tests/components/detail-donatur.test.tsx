@@ -35,3 +35,14 @@ describe('DetailDonatur', () => {
     expect(t).toContain('Tambah nomor WhatsApp');
   });
 });
+
+describe('DetailDonatur mode lembaga', () => {
+  const h = renderToStaticMarkup(<DetailDonatur donatur={{ ...donatur, noWa: null }} mode="lembaga" />);
+  it('tanpa menu, Donasi lagi, dan ajakan tambah WA; kembali ke /lembaga/donatur', () => {
+    expect(h).not.toContain('Menu donatur');
+    expect(h).not.toContain('Donasi lagi');
+    expect(h).not.toContain('?ubah=1');
+    expect(h).toContain('href="/lembaga/donatur"');
+    expect(h).toContain('Nomor WhatsApp belum diisi');
+  });
+});

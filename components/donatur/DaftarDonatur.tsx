@@ -16,6 +16,7 @@ import { LembarBawah } from '@/components/ui/LembarBawah';
 import { PesanGalat } from '@/components/ui/PesanGalat';
 import { kelasInput } from '@/components/ui/kelas';
 import { FormDonatur } from './FormDonatur';
+import { useModeRuang } from '@/components/ruang/ModeRuang';
 
 export function DaftarDonatur() {
   const [q, setQ] = useState('');
@@ -23,6 +24,7 @@ export function DaftarDonatur() {
   const [error, setError] = useState<string | null>(null);
   const [tambahBuka, setTambahBuka] = useState(false);
   const router = useRouter();
+  const mode = useModeRuang();
   const tanpaWa = useSearchParams().get('tanpaWa') === '1';
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdRef = useRef(0);
@@ -33,7 +35,7 @@ export function DaftarDonatur() {
       const id = ++requestIdRef.current;
       setError(null);
       try {
-        const res = await fetch(`/api/donatur?q=${encodeURIComponent(q)}`);
+        const res = await fetch(`${mode.api.donatur}?q=${encodeURIComponent(q)}`);
         const data = await res.json();
         if (id !== requestIdRef.current) return;
         if (!res.ok) { setError(data.error || 'Gagal memuat donatur.'); return; }
@@ -44,7 +46,7 @@ export function DaftarDonatur() {
       }
     }, 300);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [q]);
+  }, [q, mode.api.donatur]);
 
   const tambahDonaturBaru = (d: Donatur) => {
     setTambahBuka(false);
@@ -58,7 +60,7 @@ export function DaftarDonatur() {
   return (
     <div className="space-y-3 md:space-y-5">
       <KepalaHalaman judul="Donatur" sub="Cari donatur, lihat riwayat, atau tambahkan baru."
-        aksi={<TombolIkon ikon={UserPlus} label="Tambah donatur" varian="utama" onClick={() => setTambahBuka(true)} />} />
+        aksi={mode.bacaSaja ? undefined : <TombolIkon ikon={UserPlus} label="Tambah donatur" varian="utama" onClick={() => setTambahBuka(true)} />} />
 
       <div className="sticky top-0 z-20 -mx-4 space-y-1.5 bg-bq-bg/90 px-4 py-2 backdrop-blur sm:-mx-8 sm:px-8">
         <div className="relative">
@@ -76,7 +78,7 @@ export function DaftarDonatur() {
               {stat.total} donatur · {stat.aktifBulanIni} aktif bulan ini · {stat.punyaWa} punya WA
             </p>
             {tanpaWa && (
-              <button type="button" onClick={() => router.replace('/donatur/daftar', { scroll: false })}
+              <button type="button" onClick={() => router.replace(mode.rute.donaturDaftar, { scroll: false })}
                 className="tekan inline-flex shrink-0 items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-800 dark:bg-orange-950/40 dark:text-orange-200">
                 Hanya tanpa WA <X size={12} weight="bold" aria-hidden="true" /><span className="sr-only">(hapus saringan)</span>
               </button>
@@ -111,11 +113,11 @@ export function DaftarDonatur() {
             <li key={d.id}>
               <Kartu className="flex items-center gap-3 p-3">
                 <InisialUbin nama={d.nama} indeks={i} />
-                <Link href={`/donatur/daftar/${d.id}`} className="min-w-0 flex-1">
+                <Link href={mode.rute.donatur(d.id)} className="min-w-0 flex-1">
                   <p className="truncate text-sm font-bold text-bq-tinta">{labelSapaan(d.sapaan)} {d.nama}</p>
                   <p className="truncate text-xs text-bq-redup">{ringkasDonatur(d)}</p>
                 </Link>
-                {!d.noWa && (
+                {!d.noWa && !mode.bacaSaja && (
                   <Link href={`/donatur/daftar/${d.id}?ubah=1`} aria-label={`Lengkapi nomor WhatsApp ${d.nama}`} title="Nomor WA belum ada — lengkapi"
                     className="tekan inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-950/40">
                     <WhatsappLogo size={18} weight="bold" aria-hidden="true" />
@@ -127,16 +129,18 @@ export function DaftarDonatur() {
                     <WhatsappLogo size={18} weight="fill" aria-hidden="true" />
                   </a>
                 )}
-                <TombolIkon ikon={ArrowClockwise} label={`Donasi lagi dari ${d.nama}`} href={`/donatur/surat/baru?donaturId=${d.id}`} ukuran="sm" varian="polos" />
+                {!mode.bacaSaja && <TombolIkon ikon={ArrowClockwise} label={`Donasi lagi dari ${d.nama}`} href={`/donatur/surat/baru?donaturId=${d.id}`} ukuran="sm" varian="polos" />}
               </Kartu>
             </li>
           ))}
         </ul>
       )}
 
-      <LembarBawah buka={tambahBuka} onTutup={() => setTambahBuka(false)} judul="Donatur baru">
-        <FormDonatur daftar={donatur ?? undefined} onSelesai={tambahDonaturBaru} />
-      </LembarBawah>
+      {!mode.bacaSaja && (
+        <LembarBawah buka={tambahBuka} onTutup={() => setTambahBuka(false)} judul="Donatur baru">
+          <FormDonatur daftar={donatur ?? undefined} onSelesai={tambahDonaturBaru} />
+        </LembarBawah>
+      )}
     </div>
   );
 }

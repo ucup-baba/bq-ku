@@ -7,6 +7,7 @@ vi.mock('next/link', () => ({
 }));
 
 import { DaftarDonatur } from '@/components/donatur/DaftarDonatur';
+import { ModeRuangProvider } from '@/components/ruang/ModeRuang';
 
 describe('DaftarDonatur', () => {
   const h = renderToStaticMarkup(<DaftarDonatur />);
@@ -17,5 +18,13 @@ describe('DaftarDonatur', () => {
   it('pencarian berlabel dan menempel', () => {
     expect(h).toContain('aria-label="Cari donatur"');
     expect(h).toContain('sticky top-0');
+  });
+});
+
+describe('DaftarDonatur mode baca', () => {
+  const h = renderToStaticMarkup(<ModeRuangProvider mode="lembaga"><DaftarDonatur /></ModeRuangProvider>);
+  it('tanpa tombol tambah donatur', () => {
+    expect(h).not.toContain('aria-label="Tambah donatur"');
+    expect(h).toContain('aria-label="Cari donatur"');
   });
 });

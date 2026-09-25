@@ -21,10 +21,12 @@ import { PesanGalat } from '@/components/ui/PesanGalat';
 import { kelasInput, kelasLabel } from '@/components/ui/kelas';
 import { StatusSurat } from '@/components/donatur/StatusSurat';
 import { DialogHapusSurat, type InfoHapusSurat } from '@/components/donatur/DialogHapusSurat';
+import { useModeRuang } from '@/components/ruang/ModeRuang';
 
 export function DaftarSurat() {
   const router = useRouter();
   const sp = useSearchParams();
+  const mode = useModeRuang();
   const [status, setStatus] = useState<StatusFilter>(() => statusDariParam(sp.get('status')));
   const [bulan, setBulan] = useState(() => bulanDari(new Date()));
   const [cari, setCari] = useState('');
@@ -59,7 +61,7 @@ export function DaftarSurat() {
     setSurat(null);
     (async () => {
       try {
-        const res = await fetch(`/api/donatur/surat?${new URLSearchParams({ dari, sampai, limit: '500' })}`);
+        const res = await fetch(`${mode.api.surat}?${new URLSearchParams({ dari, sampai, limit: '500' })}`);
         const data = await res.json();
         if (batal) return;
         if (!res.ok) { setError(data.error || 'Gagal memuat daftar surat'); return; }
@@ -69,17 +71,17 @@ export function DaftarSurat() {
       }
     })();
     return () => { batal = true; };
-  }, [dari, sampai]);
+  }, [dari, sampai, mode.api.surat]);
 
   const hitung = surat ? hitungStatus(surat) : null;
   const infoHapus = (s: SuratWithRelasi): InfoHapusSurat => ({
     id: s.id, nomorSurat: s.nomorSurat, terkirim: s.terkirimWa,
     namaDonatur: `${labelSapaan(s.donasi.donatur.sapaan)} ${s.donasi.donatur.nama}`, nilai: formatNilaiDonasi(s.donasi),
   });
-  const tombolHapus = (s: SuratWithRelasi) => (
+  const tombolHapus = (s: SuratWithRelasi) => (mode.bacaSaja ? null : (
     <TombolIkon ikon={Trash} label={`Hapus surat ${s.nomorSurat}`} ukuran="sm" varian="polos"
       onClick={(e) => { e.stopPropagation(); setAkanDihapus(infoHapus(s)); }} className="text-bq-redup hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/40" />
-  );
+  ));
   const tersaring = surat ? saringSurat(surat, status, cari) : null;
 
   return (
@@ -90,7 +92,7 @@ export function DaftarSurat() {
             className="tekan inline-flex h-11 items-center gap-2 rounded-2xl border border-bq-garis bg-bq-surface px-3 text-sm font-bold text-bq-tinta">
             <CalendarBlank size={18} weight="bold" aria-hidden="true" /><span>{labelBulan(bulan)}</span>
           </button>
-          <TautanUtama href="/donatur/surat/baru" ikon={Plus} className="hidden md:inline-flex">Buat Surat</TautanUtama>
+          {!mode.bacaSaja && <TautanUtama href="/donatur/surat/baru" ikon={Plus} className="hidden md:inline-flex">Buat Surat</TautanUtama>}
         </>} />
 
       <div className="sticky top-0 z-20 -mx-4 flex flex-col gap-2 bg-bq-bg/90 px-4 py-2 backdrop-blur sm:-mx-8 sm:px-8 md:flex-row md:items-center">
@@ -102,7 +104,8 @@ export function DaftarSurat() {
               { value: 'SUDAH', label: 'Sudah dikirim', labelPendek: 'Sudah', jumlah: hitung?.sudah },
             ]} />
 
-          {/* Toggle Otomatis Tandai WA */}
+          {/* Toggle Otomatis Tandai WA (disembunyikan di mode baca) */}
+          {!mode.bacaSaja && (
           <div className="inline-flex h-9 items-center gap-2 rounded-full border border-bq-garis bg-bq-surface px-3 text-xs text-bq-redup shadow-xs">
             <span className="font-semibold text-bq-tinta whitespace-nowrap">Otomatis tandai WA</span>
             <button
@@ -122,6 +125,7 @@ export function DaftarSurat() {
               />
             </button>
           </div>
+          )}
         </div>
 
         <div className="relative md:ml-auto md:w-72">
@@ -155,7 +159,7 @@ export function DaftarSurat() {
               const d = s.donasi.donatur;
               return (
                 <li key={s.id} className={kelasKartu('biasa', 'flex items-center gap-1 p-1.5 pr-1')}>
-                  <Link href={`/donatur/surat/${s.id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1.5">
+                  <Link href={mode.rute.surat(s.id)} className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl p-1.5">
                     <InisialUbin nama={d.nama} indeks={i} />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-bold text-bq-tinta">{labelSapaan(d.sapaan)} {d.nama}</span>
@@ -184,17 +188,17 @@ export function DaftarSurat() {
                 {tersaring.map((s, i) => {
                   const d = s.donasi.donatur;
                   return (
-                    <tr key={s.id} onClick={() => router.push(`/donatur/surat/${s.id}`)}
+                    <tr key={s.id} onClick={() => router.push(mode.rute.surat(s.id))}
                       className="group cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
                       <td className="px-5 py-3 font-mono text-xs font-bold">
-                        <Link href={`/donatur/surat/${s.id}`} className="text-bq-biru hover:underline">{s.nomorSurat}</Link>
+                        <Link href={mode.rute.surat(s.id)} className="text-bq-biru hover:underline">{s.nomorSurat}</Link>
                       </td>
                       <td className="px-5 py-3 text-xs text-bq-redup">
                         <div className="font-medium text-bq-tinta">{formatDateIndonesian(s.tanggalSurat)}</div>
                         {s.createdAt && <div className="text-[11px] text-bq-redup">Pukul {formatJam(s.createdAt)}</div>}
                       </td>
                       <td className="px-5 py-3">
-                        <Link href={`/donatur/surat/${s.id}`} className="flex items-center gap-3">
+                        <Link href={mode.rute.surat(s.id)} className="flex items-center gap-3">
                           <InisialUbin nama={d.nama} indeks={i} className="h-8 w-8" />
                           <span className="truncate font-bold text-bq-tinta group-hover:text-bq-biru group-hover:underline">
                             {labelSapaan(d.sapaan)} {d.nama}
@@ -205,9 +209,9 @@ export function DaftarSurat() {
                       <td className="px-5 py-3"><StatusSurat terkirim={s.terkirimWa} /></td>
                       <td className="px-5 py-3 text-right">
                         <div className="flex items-center justify-end gap-2" onClick={e => e.stopPropagation()}>
-                          {!s.terkirimWa ? (
+                          {!s.terkirimWa && !mode.bacaSaja ? (
                             <Link
-                              href={`/donatur/surat/${s.id}`}
+                              href={mode.rute.surat(s.id)}
                               className="tekan inline-flex h-8 items-center gap-1.5 rounded-xl bg-[#0E9F54] px-2.5 text-xs font-bold text-white shadow-xs hover:bg-[#0c8a49]"
                               title="Kirim via WhatsApp"
                             >
@@ -216,7 +220,7 @@ export function DaftarSurat() {
                             </Link>
                           ) : (
                             <Link
-                              href={`/donatur/surat/${s.id}`}
+                              href={mode.rute.surat(s.id)}
                               className="tekan inline-flex h-8 items-center gap-1 rounded-xl border border-bq-garis px-2 text-xs font-bold text-bq-redup hover:border-bq-tinta hover:text-bq-tinta"
                               title="Lihat detail surat"
                             >
@@ -236,8 +240,10 @@ export function DaftarSurat() {
         </>
       )}
 
-      <DialogHapusSurat surat={akanDihapus} onTutup={() => setAkanDihapus(null)}
-        onTerhapus={(id) => { setAkanDihapus(null); setSurat(l => l?.filter(x => x.id !== id) ?? l); }} />
+      {!mode.bacaSaja && (
+        <DialogHapusSurat surat={akanDihapus} onTutup={() => setAkanDihapus(null)}
+          onTerhapus={(id) => { setAkanDihapus(null); setSurat(l => l?.filter(x => x.id !== id) ?? l); }} />
+      )}
 
       <LembarBawah buka={bulanBuka} onTutup={() => setBulanBuka(false)} judul="Pilih bulan">
         <label className="block space-y-1">

@@ -10,6 +10,7 @@ vi.mock('next/link', () => ({
 }));
 
 import { DaftarSurat } from '@/components/donatur/DaftarSurat';
+import { ModeRuangProvider } from '@/components/ruang/ModeRuang';
 
 describe('DaftarSurat', () => {
   const h = renderToStaticMarkup(<DaftarSurat />);
@@ -19,5 +20,13 @@ describe('DaftarSurat', () => {
   it('Buat Surat hanya tampil di desktop, tanpa teks "+"', () => {
     expect(h).toContain('hidden md:inline-flex');
     expect(h).not.toContain('+ Surat');
+  });
+});
+
+describe('DaftarSurat mode baca', () => {
+  const h = renderToStaticMarkup(<ModeRuangProvider mode="lembaga"><DaftarSurat /></ModeRuangProvider>);
+  it('tanpa Buat Surat & saklar otomatis tandai', () => {
+    expect(h).not.toContain('Buat Surat');
+    expect(h).not.toContain('Otomatis tandai WA');
   });
 });
