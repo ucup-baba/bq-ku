@@ -21,3 +21,10 @@ describe('skema pengguna', () => {
     expect(updatePenggunaSchema.safeParse({}).success).toBe(false);
   });
 });
+
+describe('peran PENGURUS', () => {
+  it('diterima saat mengundang', () => {
+    const r = invitePenggunaSchema.safeParse({ nama: 'Ketua', email: 'k@x.id', roles: ['PENGURUS', 'ADMIN_SANTRI'] });
+    expect(r.success).toBe(true);
+  });
+});

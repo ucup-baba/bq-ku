@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canEditSantri, canDeleteSantri, canManageUsers, canManageDonatur, getRoleLabel } from '@/lib/auth/roles';
+import { canEditSantri, canDeleteSantri, canManageUsers, canManageDonatur, getRoleLabel, ALL_ROLES } from '@/lib/auth/roles';
 
 describe('izin berbasis banyak peran', () => {
   it('ADMIN_SANTRI boleh mengubah santri, tidak boleh menghapus', () => {
@@ -21,5 +21,9 @@ describe('izin berbasis banyak peran', () => {
   });
   it('label peran berbahasa Indonesia', () => {
     expect(getRoleLabel('ADMIN_DONATUR')).toMatch(/Donatur/i);
+  });
+  it('peran Pengurus Yayasan terdaftar', () => {
+    expect(getRoleLabel('PENGURUS')).toBe('Pengurus Yayasan');
+    expect(ALL_ROLES).toContain('PENGURUS');
   });
 });

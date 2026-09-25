@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const roleEnum = z.enum(['SUPERADMIN', 'ADMIN_SANTRI', 'ADMIN_DONATUR', 'VIEWER']);
+export const roleEnum = z.enum(['SUPERADMIN', 'PENGURUS', 'ADMIN_SANTRI', 'ADMIN_DONATUR', 'VIEWER']);
 
 const rolesArray = z.array(roleEnum).min(1, 'Pilih minimal satu peran')
   .transform(list => Array.from(new Set(list)));
