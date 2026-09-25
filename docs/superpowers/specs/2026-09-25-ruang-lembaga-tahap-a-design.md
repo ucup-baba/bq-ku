@@ -86,19 +86,27 @@ Idempoten (aman dijalankan ulang), tidak mengubah izin peran lain.
 ## 6. Halaman & Komponen
 
 ### 6.1 Context `ModeRuang`
-File `components/ruang/ModeRuang.tsx`:
+Konstanta di `lib/ruang/mode.ts` (bisa dipakai komponen server), context di `components/ruang/ModeRuang.tsx`:
 
 ```ts
 type ModeRuang = {
+  nama: 'kerja' | 'lembaga';
   bacaSaja: boolean;
-  rute: { santri: (id?: string) => string; donatur: (id?: string) => string; surat: (id?: string) => string };
-  api: { donatur: string; surat: string };   // basis URL fetch dari klien
-  ruangKerja?: { santri?: string; donatur?: string }; // tautan "Ubah di Ruang …" bila berhak
+  rute: {
+    santriDaftar: string; santri: (id: string) => string;
+    donaturDaftar: string; donatur: (id: string) => string;
+    suratDaftar: string; surat: (id: string) => string;
+  };
+  api: { donatur: string; surat: string; pngSurat: (id: string) => string }; // basis URL fetch dari klien
 };
 ```
 
+- Provider menerima string `mode="kerja" | "lembaga"` (fungsi tidak bisa dikirim dari layout server ke komponen klien) lalu memilih konstanta.
+- Tautan "Ubah di Ruang …" ditentukan dari `useAuth().rooms` + `padananKerja(pathname)`, bukan disimpan di context.
 - Nilai bawaan = mode kerja dengan alamat sekarang (`/santri`, `/donatur/daftar`, `/donatur/surat`, `/api/donatur`, `/api/donatur/surat`). **Ruang Santri & Donatur tidak diubah.**
 - `app/(lembaga)/layout.tsx` membungkus `AppShell room="lembaga"` dengan `ModeRuangProvider` mode baca.
+- Komponen **server** (`DetailDonatur`) menerima prop `mode: 'kerja' | 'lembaga'` karena context hanya bisa dibaca komponen klien; konstanta mode ada di `lib/ruang/mode.ts`.
+- `BarisSantri` menerima prop `href` (dipakai juga oleh beranda santri).
 - Komponen yang dipakai ulang mengganti alamat tetap (`'/donatur/surat/' + id`, `fetch('/api/donatur…')`) dengan nilai dari context, dan menyembunyikan kontrol ubah bila `bacaSaja`.
 
 ### 6.2 Halaman
@@ -106,8 +114,8 @@ type ModeRuang = {
 | Rute | Komponen | Disembunyikan saat `bacaSaja` |
 |---|---|---|
 | `/lembaga` | `BerandaLembaga` (§7) | — |
-| `/lembaga/santri` | `SantriDirectory` | Tambah santri, `TombolPengingatWa` |
-| `/lembaga/santri/[id]` | `DetailSantri` | Tombol Edit, `MenuSantri`; tab Berkas → `StatusBerkasSaja` (status per kategori, tanpa pratinjau/unduh) |
+| `/lembaga/santri` | `SantriDirectory` | — (direktori tidak punya tombol ubah; hanya tautan diarahkan ke `/lembaga/santri/[id]`) |
+| `/lembaga/santri/[id]` | `DetailSantri` | Tombol Edit; tab Berkas tanpa "Lengkapi berkas" dan tanpa pratinjau/unduh (status per kategori saja). `MenuSantri` tetap (isinya hanya Bagikan & Cetak CV). |
 | `/lembaga/donatur` | `DaftarDonatur` | Tambah donatur, ikon "lengkapi WA", Donasi lagi |
 | `/lembaga/donatur/[id]` | `DetailDonatur` | `MenuDonatur`, Donasi lagi, chip "Tambah nomor WhatsApp" |
 | `/lembaga/surat` | `DaftarSurat` | Buat Surat, tandai terkirim, saklar otomatis, kirim WA, hapus |
@@ -117,12 +125,12 @@ type ModeRuang = {
 | `/lembaga/akun` | `HalamanAkun room="lembaga"` | — |
 
 - Data santri di halaman server: `listSantri` / `getSantriById` **tanpa** `documents(*)` untuk ruang Lembaga (varian repo `listSantriRingkas` / `getSantriLembaga` yang memilih kolom santri saja + status dari `status_berkas_santri()`), sehingga tidak mencoba membuat signed URL berkas.
-- Label kecil **"Mode baca"** di kepala halaman; bila `ruangKerja` tersedia, tautan "Ubah di Ruang Santri →" / "Ubah di Ruang Donatur →" menuju halaman padanan.
+- Bilah kecil **"Mode baca"** di atas konten setiap halaman Lembaga (dipasang sekali di layout); bila pengguna juga punya Ruang Santri/Donatur, tautan "Ubah di Ruang Santri →" / "Ubah di Ruang Donatur →" menuju halaman padanan (`padananKerja(pathname)`).
 
 ### 6.3 API baca-saja `/api/lembaga/*` (GET saja)
-- `GET /api/lembaga/donatur?q=` · `GET /api/lembaga/donatur/[id]`
+- `GET /api/lembaga/donatur?q=` (detail donatur diambil langsung oleh halaman server, tanpa API)
 - `GET /api/lembaga/surat?dari&sampai&limit` · `GET /api/lembaga/surat/[id]/png`
-- `GET /api/lembaga/ringkasan?periode=`
+- `GET /api/lembaga/ringkasan?periode=&hariIni=YYYY-MM-DD` (`hariIni` dari perangkat pengguna agar batas bulan mengikuti WIB, bukan jam server UTC)
 - PNG surat: bila `storagePath` cocok dengan path versi sekarang → unduh dari storage; jika tidak → render `ImageResponse` dan kirim **tanpa menyimpan** (Pengurus tidak punya izin tulis storage).
 
 ## 7. Beranda Ringkasan (`/lembaga`)
@@ -131,7 +139,7 @@ Satu kolom di HP, dua kolom di desktop. Urutan:
 
 1. **Hero:** santri aktif (jenjang ≠ `ALUMNI`) · total donasi uang periode ini · jumlah donatur; perbandingan dengan periode sebelumnya ("▲ 12% dari Agustus").
 2. **Santri:** per jenjang (SMP/SMA/SMK/Alumni), per jenis kelamin (Ikhwan/Akhwat), per status sosial (Reguler/Yatim/Piatu/Yatim Piatu/Dhuafa) — batang horizontal.
-3. **Kelengkapan berkas:** "X dari Y santri lengkap (Z%)" memakai `statusBerkas()` dari `lib/santri/ringkasan.ts` (aturan 4 berkas wajib yang sama dengan lencana "2/4"); daftar pendek (maks. 5) santri belum lengkap → `/lembaga/santri/[id]`.
+3. **Kelengkapan berkas:** "X dari Y santri aktif lengkap (Z%)" — alumni tidak dihitung memakai `statusBerkas()` dari `lib/santri/ringkasan.ts` (aturan 4 berkas wajib yang sama dengan lencana "2/4"); daftar pendek (maks. 5) santri belum lengkap → `/lembaga/santri/[id]`.
 4. **Donasi:** `GrafikTren` 12 bulan; uang (Rp) vs barang (jumlah catatan); rincian per jenis akad (ZIS/Wakaf/Lainnya; jenis lama ZAKAT/INFAQ/SHADAQAH ikut dihitung di bawah labelnya sendiri).
 5. **Donatur:** total, baru periode ini (donasi pertamanya di periode), **rutin** (berdonasi di ≥ 3 bulan kalender berbeda dalam 12 bulan terakhir).
 6. **Surat:** terbit periode ini; belum terkirim (semua waktu) → `/lembaga/surat?status=BELUM`.
