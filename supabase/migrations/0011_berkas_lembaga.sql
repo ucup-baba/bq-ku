@@ -289,3 +289,37 @@ create policy "berkas lembaga: unggah" on storage.objects for insert to authenti
 drop policy if exists "berkas lembaga: hapus" on storage.objects;
 create policy "berkas lembaga: hapus" on storage.objects for delete to authenticated
   using (bucket_id = 'berkas' and (storage.foldername(name))[1] = 'lembaga' and public.has_role('SUPERADMIN'));
+
+-- =====================================================================
+-- G. OPERASI ATOMIK HALAMAN BAGIKAN (hanya service role / server)
+-- =====================================================================
+-- Naikkan hitungan buka bila masih berlaku & di bawah batas. true = boleh dibuka.
+create or replace function public.buka_tautan(p_id text)
+returns boolean language plpgsql security definer set search_path = public as $$
+declare n int;
+begin
+  update public.tautan_bagikan set "jumlahBuka" = "jumlahBuka" + 1
+   where id = p_id and "dicabutAt" is null and "kedaluwarsaAt" > now()
+     and ("batasBuka" is null or "jumlahBuka" < "batasBuka");
+  get diagnostics n = row_count;
+  return n > 0;
+end $$;
+
+-- Catat PIN salah; kunci 15 menit setelah 5 kali. Mengembalikan sisa percobaan (0 = terkunci).
+create or replace function public.catat_pin_gagal(p_id text)
+returns int language plpgsql security definer set search_path = public as $$
+declare g int;
+begin
+  update public.tautan_bagikan set "pinGagal" = "pinGagal" + 1 where id = p_id returning "pinGagal" into g;
+  if g is null then return 0; end if;
+  if g >= 5 then
+    update public.tautan_bagikan set "pinGagal" = 0, "pinTerkunciSampai" = now() + interval '15 minutes' where id = p_id;
+    return 0;
+  end if;
+  return 5 - g;
+end $$;
+
+revoke all on function public.buka_tautan(text) from public, anon, authenticated;
+revoke all on function public.catat_pin_gagal(text) from public, anon, authenticated;
+grant execute on function public.buka_tautan(text) to service_role;
+grant execute on function public.catat_pin_gagal(text) to service_role;
