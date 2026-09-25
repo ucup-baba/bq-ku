@@ -44,6 +44,17 @@ export function PratinjauSurat({ data }: { data: SuratData }) {
   const wadahRef = useRef<HTMLDivElement>(null);
   const [lebar, setLebar] = useState(0);
   const [fontSiap, setFontSiap] = useState(false);
+  const [namaPenandatangan, setNamaPenandatangan] = useState(ASET_PRATINJAU.namaPenandatangan);
+
+  // Nama penandatangan mengikuti tanda tangan terbaru di Berkas lembaga (gagal → nama bawaan).
+  useEffect(() => {
+    let batal = false;
+    fetch('/api/donatur/surat/pengesahan')
+      .then(r => (r.ok ? r.json() : null))
+      .then(j => { if (!batal && j?.data?.namaPenandatangan) setNamaPenandatangan(j.data.namaPenandatangan); })
+      .catch(() => {});
+    return () => { batal = true; };
+  }, []);
 
   useEffect(() => {
     let batal = false;
@@ -80,7 +91,7 @@ export function PratinjauSurat({ data }: { data: SuratData }) {
             className="absolute left-0 top-0 leading-normal [&_img]:max-w-none"
             style={{ width: LEBAR, height: TINGGI, transform: `scale(${skala})`, transformOrigin: '0 0', opacity: fontSiap ? 1 : 0, transition: 'opacity 200ms' }}
           >
-            <SuratTemplate data={data} assets={ASET_PRATINJAU} />
+            <SuratTemplate data={data} assets={{ ...ASET_PRATINJAU, namaPenandatangan }} />
           </div>
         )}
         {!fontSiap && <div aria-hidden="true" className="absolute inset-0 animate-pulse bg-slate-100" />}

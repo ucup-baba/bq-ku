@@ -2,6 +2,8 @@
 import { describe, it, expect, vi } from 'vitest';
 
 const requireRoom = vi.fn(async () => ({ user: { id: 'u1' }, supabase: {} }));
+const pengesahan = vi.hoisted(() => ({ stempel: null as string | null, ttd: null as string | null, namaPenandatangan: null }));
+vi.mock('@/lib/surat/pengesahan', () => ({ ambilAsetPengesahan: async () => pengesahan }));
 vi.mock('@/lib/auth/session', () => ({
   requireRoom: (...a: unknown[]) => requireRoom(...(a as [])),
   authErrorResponse: (e: unknown) => ((e as Error)?.message === 'tolak' ? new Response(null, { status: 403 }) : null),
@@ -27,5 +29,13 @@ describe('GET /api/donatur/surat/aset/[nama]', () => {
   it('tanpa akses ruang donatur → ditolak', async () => {
     requireRoom.mockRejectedValueOnce(new Error('tolak'));
     expect((await panggil('ttd-rotasi.png')).status).toBe(403);
+  });
+  it('cap dari Berkas lembaga menggantikan bawaan, dengan cache singkat', async () => {
+    pengesahan.stempel = `data:image/png;base64,${Buffer.from('capbaru').toString('base64')}`;
+    const res = await panggil('stempel.webp');
+    expect(res.headers.get('Content-Type')).toBe('image/png');
+    expect(res.headers.get('Cache-Control')).toBe('private, max-age=300');
+    expect(Buffer.from(await res.arrayBuffer()).toString()).toBe('capbaru');
+    pengesahan.stempel = null;
   });
 });

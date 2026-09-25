@@ -3,11 +3,13 @@ import { NextResponse } from 'next/server';
 import type { SuratWithRelasi } from '@/lib/db/donatur-repo';
 import { buildSuratData } from '@/lib/surat/data';
 import { loadSuratAssets, loadSuratFonts } from '@/lib/surat/assets';
+import { ambilAsetPengesahan, gabungPengesahan } from '@/lib/surat/pengesahan';
 import { SuratTemplate } from '@/components/donatur/SuratTemplate';
 
 /** Render surat menjadi PNG 1240×1754 (A4 150 dpi). */
 export async function renderPngSurat(surat: SuratWithRelasi): Promise<Uint8Array> {
-  const [assets, fonts] = await Promise.all([loadSuratAssets(), loadSuratFonts()]);
+  const [bawaan, fonts, pengesahan] = await Promise.all([loadSuratAssets(), loadSuratFonts(), ambilAsetPengesahan()]);
+  const assets = gabungPengesahan(bawaan, pengesahan);
   const image = new ImageResponse(
     <SuratTemplate data={buildSuratData(surat)} assets={assets} />,
     { width: 1240, height: 1754, fonts },

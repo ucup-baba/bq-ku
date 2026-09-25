@@ -2,6 +2,7 @@ import 'server-only';
 import fs from 'fs/promises';
 import path from 'path';
 import sharp from 'sharp';
+import { NAMA_PENANDATANGAN_BAWAAN } from '@/lib/surat/aset-klien';
 
 export type SuratAssets = {
   logo: string;
@@ -11,7 +12,10 @@ export type SuratAssets = {
   kop: string;
   /** Baris doa Arab kaligrafi — hasil ekspor CorelDRAW asli. */
   doaCdr: string;
+  /** Nama di bawah tanda tangan; ditimpa nama penandatangan dari Berkas lembaga bila ada. */
+  namaPenandatangan: string;
 };
+
 
 // Aset surat (TTD, stempel, logo, kop, doa) sengaja TIDAK berada di public/
 // agar tidak bisa diunduh siapa pun tanpa login. Hanya dibaca di server;
@@ -44,7 +48,7 @@ async function buildSuratAssets(): Promise<SuratAssets> {
     asDataUri('kop.png', 'image/png'),
     asDataUri('doa-cdr.png', 'image/png'),
   ]);
-  return { logo, stempel, ttd, kop, doaCdr };
+  return { logo, stempel, ttd, kop, doaCdr, namaPenandatangan: NAMA_PENANDATANGAN_BAWAAN };
 }
 
 // Font Latin untuk badan surat (Arimo — pengganti Arial, ukuran huruf

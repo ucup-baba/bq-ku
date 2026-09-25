@@ -66,7 +66,8 @@ describe('loadSuratAssets — aset surat dibaca dari folder non-publik', () => {
     const path = await import('path');
 
     const assets = await loadSuratAssets();
-    expect(Object.keys(assets).sort()).toEqual(['doaCdr', 'kop', 'logo', 'stempel', 'ttd']);
+    expect(Object.keys(assets).sort()).toEqual(['doaCdr', 'kop', 'logo', 'namaPenandatangan', 'stempel', 'ttd']);
+    expect(assets.namaPenandatangan).toBe('Aris Eko Purwanto, S.T');
 
     const dibaca = fsMod.readFile.mock.calls.map((c: any[]) => String(c[0]));
     const dir = path.join(process.cwd(), 'assets', 'surat') + path.sep;

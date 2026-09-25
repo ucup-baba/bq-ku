@@ -24,6 +24,9 @@ export function asetDiizinkan(nama: string): boolean {
 
 const url = (nama: string) => `/api/donatur/surat/aset/${nama}`;
 
+/** Nama penandatangan bila Berkas lembaga belum punya tanda tangan (boleh dipakai klien & server). */
+export const NAMA_PENANDATANGAN_BAWAAN = 'Aris Eko Purwanto, S.T';
+
 /** Aset untuk SuratTemplate di browser (browser membaca WebP langsung, tanpa transkode). */
 export const ASET_PRATINJAU: SuratAssets = {
   kop: url('kop.png'),
@@ -31,6 +34,7 @@ export const ASET_PRATINJAU: SuratAssets = {
   ttd: url('ttd-rotasi.png'),
   logo: url('logo.webp'),
   stempel: url('stempel.webp'),
+  namaPenandatangan: NAMA_PENANDATANGAN_BAWAAN,
 };
 
 /** Font dengan nama keluarga yang sama seperti yang didaftarkan ke Satori (lihat loadSuratFonts). */

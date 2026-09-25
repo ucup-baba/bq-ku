@@ -23,6 +23,10 @@ vi.mock('@/lib/surat/assets', () => ({
   loadSuratFonts: async () => [],
 }));
 vi.mock('@/lib/surat/data', () => ({ buildSuratData: (s: any) => s }));
+vi.mock('@/lib/surat/pengesahan', () => ({
+  ambilAsetPengesahan: async () => ({ stempel: null, ttd: null, namaPenandatangan: null }),
+  gabungPengesahan: (a: any) => a,
+}));
 vi.mock('@/components/donatur/SuratTemplate', () => ({ SuratTemplate: () => null }));
 vi.mock('next/og', () => ({
   ImageResponse: class { arrayBuffer() { return Promise.resolve(new Uint8Array([137, 80, 78, 71]).buffer); } },
