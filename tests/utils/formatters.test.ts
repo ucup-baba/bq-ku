@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toTitleCase, matchBestFamilyMember, formatJam, deriveEducationFromPreviousSchool, deriveEducationFromDocument, samarkanNik, rapikanAlamat, rapikanNamaTempat } from '@/lib/utils/formatters';
+import { toTitleCase, matchBestFamilyMember, formatJam, deriveEducationFromPreviousSchool, deriveEducationFromDocument, samarkanNik, rapikanAlamat, rapikanNamaTempat, rapikanNamaOrang } from '@/lib/utils/formatters';
 import { FamilyMemberCandidate } from '@/lib/ocr/parser';
 
 describe('formatters utility', () => {
@@ -186,5 +186,18 @@ describe('rapikanNamaTempat', () => {
   it('tulisan campuran dianggap disengaja', () => {
     expect(rapikanNamaTempat('Mahasiswa UNY')).toBe('Mahasiswa UNY');
     expect(rapikanNamaTempat('  SMA  Negeri 1 ')).toBe('SMA Negeri 1');
+  });
+});
+
+describe('rapikanNamaOrang', () => {
+  it('kapital awal kata; akhiran (Alm.)/(Almh.) dijaga', () => {
+    expect(rapikanNamaOrang('LILIK AGUS PURWANTO')).toBe('Lilik Agus Purwanto');
+    expect(rapikanNamaOrang('DWI SRIYANA (Alm.)')).toBe('Dwi Sriyana (Alm.)');
+    expect(rapikanNamaOrang('siti aminah (almh)')).toBe('Siti Aminah (Almh.)');
+  });
+  it('gelar tetap benar; tulisan campuran & kosong dibiarkan', () => {
+    expect(rapikanNamaOrang('SURATMI, S.PD')).toBe('Suratmi, S.Pd');
+    expect(rapikanNamaOrang('Muhammad al-Fatih')).toBe('Muhammad al-Fatih');
+    expect(rapikanNamaOrang('')).toBe('');
   });
 });

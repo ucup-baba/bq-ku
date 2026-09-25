@@ -429,6 +429,19 @@ export function rapikanAlamat(alamat?: string | null): string {
   return semuaKapital ? kapitalAwalKata(hasil) : hasil;
 }
 
+/**
+ * Nama orang tua/wali: "DWI SRIYANA (Alm.)" → "Dwi Sriyana (Alm.)". Akhiran (Alm.)/(Almh.)
+ * dibakukan; tulisan campuran ("Muhammad al-Fatih") dianggap disengaja.
+ */
+export function rapikanNamaOrang(teks?: string | null): string {
+  const bersih = (teks ?? '').trim().replace(/\s+/g, ' ');
+  const m = bersih.match(/^(.*?)\s*\((almh?)\.?\)$/i);
+  const inti = m ? m[1] : bersih;
+  const akhiran = m ? (m[2].toLowerCase() === 'almh' ? ' (Almh.)' : ' (Alm.)') : '';
+  const seragam = inti === inti.toUpperCase() || inti === inti.toLowerCase();
+  return (seragam ? toTitleCase(inti) : inti) + akhiran;
+}
+
 /** NIK untuk tampilan publik/cetak: 4 digit awal & akhir saja, mis. "3404 •••• •••• 0001". */
 export function samarkanNik(val?: string | null): string {
   const digits = (val ?? '').replace(/\D/g, '');

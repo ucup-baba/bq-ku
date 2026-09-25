@@ -3,7 +3,7 @@
 import React from 'react';
 import { Baloo_2 } from 'next/font/google';
 import { User, GraduationCap, BookOpen, Star, IdentificationCard, Buildings, Check, MapPin, PencilSimple } from '@phosphor-icons/react';
-import { calculateAge, formatDateIndonesian, samarkanNik, rapikanAlamat, rapikanNamaTempat } from '@/lib/utils/formatters';
+import { calculateAge, formatDateIndonesian, samarkanNik, rapikanAlamat, rapikanNamaTempat, rapikanNamaOrang } from '@/lib/utils/formatters';
 
 /** Huruf judul poster; hanya dimuat di halaman yang memakai poster. */
 const baloo = Baloo_2({ subsets: ['latin'], variable: '--font-baloo', display: 'swap' });
@@ -55,7 +55,7 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
     ? (santri.kelas.toLowerCase().includes('lulus') ? santri.kelas : `Lulus ${santri.kelas}`)
     : `Kelas ${santri.kelas}`;
   const sekolahSekarang = rapikanNamaTempat(santri.sekolahSekarang);
-  const orangTua = santri.namaAyah || santri.namaIbu ? `${santri.namaAyah || '-'} / ${santri.namaIbu || '-'}` : '-';
+  const orangTua = santri.namaAyah || santri.namaIbu ? `${rapikanNamaOrang(santri.namaAyah) || '-'} / ${rapikanNamaOrang(santri.namaIbu) || '-'}` : '-';
 
   return (
     <div className={`poster-wadah mx-auto w-full max-w-4xl ${baloo.variable}`}>

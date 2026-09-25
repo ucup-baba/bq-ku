@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { BatchItemResult } from '../BatchScanModal';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from '@/lib/ocr/parser';
 import { useTheme } from '@/components/theme/ThemeProvider';
-import { toTitleCase, deriveEducationFromDocument, checkNameMatch, rapikanAlamat, rapikanNamaTempat } from '@/lib/utils/formatters';
+import { toTitleCase, deriveEducationFromDocument, checkNameMatch, rapikanAlamat, rapikanNamaTempat, rapikanNamaOrang } from '@/lib/utils/formatters';
 import type { DocumentMismatchData } from '@/components/modals/DocumentGuardModal';
 import { santriClientSchema, zodFieldErrors } from '@/lib/validation/santri';
 
@@ -226,11 +226,11 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
       newOcrTags.jenisKelamin = true;
     }
     if (extracted.namaAyah) {
-      updated.namaAyah = extracted.namaAyah.includes('(Alm') ? extracted.namaAyah : toTitleCase(extracted.namaAyah);
+      updated.namaAyah = rapikanNamaOrang(extracted.namaAyah);
       newOcrTags.namaAyah = true;
     }
     if (extracted.namaIbu) {
-      updated.namaIbu = extracted.namaIbu.includes('(Almh') ? extracted.namaIbu : toTitleCase(extracted.namaIbu);
+      updated.namaIbu = rapikanNamaOrang(extracted.namaIbu);
       newOcrTags.namaIbu = true;
     }
     if (extracted.kontakWali) {
@@ -439,11 +439,11 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
       }
 
       if (ext.namaAyah && !currentForm.namaAyah) {
-        currentForm.namaAyah = ext.namaAyah.includes('(Alm') ? ext.namaAyah : toTitleCase(ext.namaAyah);
+        currentForm.namaAyah = rapikanNamaOrang(ext.namaAyah);
         newOcrTags.namaAyah = true;
       }
       if (ext.namaIbu && !currentForm.namaIbu) {
-        currentForm.namaIbu = ext.namaIbu.includes('(Almh') ? ext.namaIbu : toTitleCase(ext.namaIbu);
+        currentForm.namaIbu = rapikanNamaOrang(ext.namaIbu);
         newOcrTags.namaIbu = true;
       }
       if (ext.kontakWali && !currentForm.kontakWali) {

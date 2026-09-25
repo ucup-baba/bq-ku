@@ -6,7 +6,7 @@ import {
   CheckCircle, LockKey, Trash, XCircle, WarningCircle, WhatsappLogo,
 } from '@phosphor-icons/react';
 import { DocumentUploadBox } from '../DocumentUploadBox';
-import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, formatNikDisplay, cleanNumericInput } from '@/lib/utils/formatters';
+import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, formatNikDisplay, cleanNumericInput, rapikanNamaOrang } from '@/lib/utils/formatters';
 import type { SantriFormCtx } from './useSantriForm';
 
 /** Langkah 3 — orang tua, wali & domisili. */
@@ -98,6 +98,7 @@ export function LangkahKeluarga({ f }: { f: SantriFormCtx }) {
               type="text"
               value={formData.namaAyah}
               onChange={e => setFormData({ ...formData, namaAyah: e.target.value })}
+              onBlur={() => setFormData(prev => ({ ...prev, namaAyah: rapikanNamaOrang(prev.namaAyah) }))}
               placeholder="Nama Ayah Kandung"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base md:text-sm focus:ring-2 focus:ring-[#0B5FA5] focus:outline-none"
             />
@@ -112,6 +113,7 @@ export function LangkahKeluarga({ f }: { f: SantriFormCtx }) {
               type="text"
               value={formData.namaIbu}
               onChange={e => setFormData({ ...formData, namaIbu: e.target.value })}
+              onBlur={() => setFormData(prev => ({ ...prev, namaIbu: rapikanNamaOrang(prev.namaIbu) }))}
               placeholder="Nama Ibu Kandung"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base md:text-sm focus:ring-2 focus:ring-[#0B5FA5] focus:outline-none"
             />
