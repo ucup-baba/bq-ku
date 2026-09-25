@@ -40,13 +40,3 @@ export const MODE_LEMBAGA: ModeRuang = {
 export function modeDari(nama: NamaMode): ModeRuang {
   return nama === 'lembaga' ? MODE_LEMBAGA : MODE_KERJA;
 }
-
-/** Halaman kerja yang setara dengan halaman Lembaga (untuk tautan "Ubah di Ruang …"). */
-export function padananKerja(pathname: string): { room: 'santri' | 'donatur'; href: string } | null {
-  const m = /^\/lembaga\/(santri|donatur|surat)(?:\/([^/]+))?\/?$/.exec(pathname);
-  if (!m) return null;
-  const [, jenis, id] = m;
-  if (jenis === 'santri') return { room: 'santri', href: id ? `/santri/${id}` : '/santri' };
-  if (jenis === 'donatur') return { room: 'donatur', href: id ? `/donatur/daftar/${id}` : '/donatur/daftar' };
-  return { room: 'donatur', href: id ? `/donatur/surat/${id}` : '/donatur/surat' };
-}

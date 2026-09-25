@@ -125,7 +125,7 @@ type ModeRuang = {
 | `/lembaga/akun` | `HalamanAkun room="lembaga"` | — |
 
 - Data santri di halaman server: `listSantri` / `getSantriById` **tanpa** `documents(*)` untuk ruang Lembaga (varian repo `listSantriRingkas` / `getSantriLembaga` yang memilih kolom santri saja + status dari `status_berkas_santri()`), sehingga tidak mencoba membuat signed URL berkas.
-- Bilah kecil **"Mode baca"** di atas konten setiap halaman Lembaga (dipasang sekali di layout); bila pengguna juga punya Ruang Santri/Donatur, tautan "Ubah di Ruang Santri →" / "Ubah di Ruang Donatur →" menuju halaman padanan (`padananKerja(pathname)`).
+- ~~Bilah "Mode baca"~~ — dihapus 25-09-2026 atas permintaan pengguna; mode baca cukup tersirat dari tidak adanya tombol ubah. Untuk mengubah data, pindah ruangan lewat halaman Akun.
 
 ### 6.3 API baca-saja `/api/lembaga/*` (GET saja)
 - `GET /api/lembaga/donatur?q=` (detail donatur diambil langsung oleh halaman server, tanpa API)

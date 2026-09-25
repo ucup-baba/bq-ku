@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MODE_KERJA, MODE_LEMBAGA, modeDari, padananKerja } from '@/lib/ruang/mode';
+import { MODE_KERJA, MODE_LEMBAGA, modeDari } from '@/lib/ruang/mode';
 
 describe('mode ruang', () => {
   it('mode kerja = alamat yang sudah ada', () => {
@@ -18,13 +18,5 @@ describe('mode ruang', () => {
     expect(MODE_LEMBAGA.api.pngSurat('x')).toBe('/api/lembaga/surat/x/png');
     expect(modeDari('lembaga')).toBe(MODE_LEMBAGA);
     expect(modeDari('kerja')).toBe(MODE_KERJA);
-  });
-  it('padanan halaman kerja dari halaman lembaga', () => {
-    expect(padananKerja('/lembaga/santri/s1')).toEqual({ room: 'santri', href: '/santri/s1' });
-    expect(padananKerja('/lembaga/santri')).toEqual({ room: 'santri', href: '/santri' });
-    expect(padananKerja('/lembaga/donatur/p1')).toEqual({ room: 'donatur', href: '/donatur/daftar/p1' });
-    expect(padananKerja('/lembaga/surat/x')).toEqual({ room: 'donatur', href: '/donatur/surat/x' });
-    expect(padananKerja('/lembaga')).toBeNull();
-    expect(padananKerja('/lembaga/berkas')).toBeNull();
   });
 });
