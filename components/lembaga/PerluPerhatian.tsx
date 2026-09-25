@@ -1,17 +1,18 @@
 import Link from 'next/link';
-import { FileText, PaperPlaneTilt, FolderSimple, CheckCircle, CaretRight, type Icon } from '@phosphor-icons/react';
+import { FileText, PaperPlaneTilt, FolderSimple, CheckCircle, CaretRight, Warning, type Icon } from '@phosphor-icons/react';
 import type { Ringkasan } from '@/lib/lembaga/ringkasan';
 import { daftarPerhatian, type ItemPerhatian } from '@/lib/lembaga/tampilan';
 import { kelasKartu } from '@/components/ui/Kartu';
 import { IkonUbin, type WarnaUbin } from '@/components/ui/IkonUbin';
 
 const IKON: Record<ItemPerhatian['id'], { ikon: Icon; warna: WarnaUbin }> = {
+  'berkas-lembaga': { ikon: Warning, warna: 'jingga' },
   'berkas-santri': { ikon: FileText, warna: 'jingga' },
   'surat-belum': { ikon: PaperPlaneTilt, warna: 'biru' },
 };
 const kelasBaris = 'goyang-saat-hover flex items-center gap-3 rounded-2xl p-2 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60';
 
-/** Hal yang perlu ditindaklanjuti, ditambah pintu ke Berkas lembaga (Tahap B). */
+/** Hal yang perlu ditindaklanjuti (berkas lembaga, berkas santri, surat), ditambah pintu ke Berkas lembaga. */
 export function PerluPerhatian({ r, className }: { r: Ringkasan; className?: string }) {
   const daftar = daftarPerhatian(r);
   return (
@@ -45,8 +46,9 @@ export function PerluPerhatian({ r, className }: { r: Ringkasan; className?: str
         <IkonUbin ikon={FolderSimple} warna="ungu" />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-sm font-bold text-bq-tinta">Berkas lembaga</span>
-          <span className="block truncate text-xs text-bq-redup">Segera hadir — SK, akta, NPWP & masa berlakunya</span>
+          <span className="block truncate text-xs text-bq-redup">SK, akta, NPWP, izin, cap & tanda tangan</span>
         </span>
+        <CaretRight size={16} weight="bold" className="shrink-0 text-bq-redup" aria-hidden="true" />
       </Link>
     </section>
   );

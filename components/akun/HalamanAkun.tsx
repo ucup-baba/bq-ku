@@ -3,9 +3,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   SignOut, Sun, Moon, CaretRight, WarningCircle, EnvelopeSimple, IdentificationBadge,
-  Bell, CheckCircle, PaperPlaneTilt, WhatsappLogo, UserCirclePlus, DeviceMobile, Export, PlusSquare,
+  Bell, CheckCircle, PaperPlaneTilt, WhatsappLogo, UserCirclePlus, DeviceMobile, Export, PlusSquare, FolderSimple,
 } from '@phosphor-icons/react';
 import { usePasangAplikasi } from '@/components/pwa/usePasangAplikasi';
+import { SaklarKelolaBerkas } from './SaklarKelolaBerkas';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { useNotifikasi } from '@/components/notifikasi/NotifikasiProvider';
@@ -25,6 +26,7 @@ const IKON_NOTIF: Record<Notifikasi['id'], { ikon: typeof Bell; warna: 'hijau' |
   'surat-belum-terkirim': { ikon: PaperPlaneTilt, warna: 'jingga' },
   'donatur-tanpa-wa': { ikon: WhatsappLogo, warna: 'hijau' },
   'akun-menunggu': { ikon: UserCirclePlus, warna: 'ungu' },
+  'berkas-lembaga': { ikon: FolderSimple, warna: 'jingga' },
 };
 
 /** Halaman Akun (menggantikan laci akun): profil, notifikasi, pindah ruangan, tema, kelola pengguna, keluar. */
@@ -208,6 +210,8 @@ export function HalamanAkun({ room }: { room: Room }) {
                 <CaretRight size={16} weight="bold" className="text-bq-redup" aria-hidden="true" />
               </Link>
             )}
+
+            {superadmin && <SaklarKelolaBerkas />}
 
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-bq-garis p-3.5">
               <span className="flex items-center gap-3">

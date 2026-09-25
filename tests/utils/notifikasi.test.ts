@@ -19,3 +19,10 @@ describe('labelLencana', () => {
     expect(labelLencana(10)).toBe('9+');
   });
 });
+
+describe('notifikasi berkas lembaga', () => {
+  it('muncul di ruang lembaga dengan tautan ke halaman berkas', () => {
+    const [n] = susunNotifikasi({ berkasLembaga: 2 });
+    expect(n).toMatchObject({ id: 'berkas-lembaga', ruang: 'lembaga', href: '/lembaga/berkas', judul: '2 berkas lembaga perlu diperpanjang' });
+  });
+});

@@ -29,11 +29,21 @@ export function keteranganDonasi(r: Ringkasan): string | null {
   return `Donasi ${p > 0 ? '▲' : '▼'} ${Math.abs(p)}% dari periode sebelumnya`;
 }
 
-export type ItemPerhatian = { id: 'berkas-santri' | 'surat-belum'; jumlah: number; judul: string; sub: string; href: string };
+export type ItemPerhatian = { id: 'berkas-lembaga' | 'berkas-santri' | 'surat-belum'; jumlah: number; judul: string; sub: string; href: string };
 
 /** Hal yang perlu ditindaklanjuti pengurus (hanya yang jumlahnya > 0). */
 export function daftarPerhatian(r: Ringkasan): ItemPerhatian[] {
   const out: ItemPerhatian[] = [];
+  const bl = r.berkasLembaga ?? [];
+  if (bl.length > 0) {
+    const u = bl[0];
+    const kata = u.status === 'kedaluwarsa' ? 'kedaluwarsa' : u.status === 'mendesak' ? `mendesak (${u.sisaHari} hari lagi)` : `segera urus (${u.sisaHari} hari lagi)`;
+    out.push({
+      id: 'berkas-lembaga', jumlah: bl.length,
+      judul: bl.length === 1 ? `${u.label} perlu diperpanjang` : `${bl.length} berkas lembaga perlu diperpanjang`,
+      sub: `${u.label} · ${kata}`, href: '/lembaga/berkas',
+    });
+  }
   const belumLengkap = r.berkas ? r.berkas.total - r.berkas.lengkap : 0;
   if (belumLengkap > 0) out.push({
     id: 'berkas-santri', jumlah: belumLengkap, judul: `${belumLengkap} santri berkasnya belum lengkap`,

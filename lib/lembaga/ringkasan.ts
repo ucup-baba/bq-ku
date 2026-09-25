@@ -1,6 +1,7 @@
 import { statusBerkas, type DokRingkas } from '@/lib/santri/ringkasan';
 import { isiBulanKosong, type PerBulan } from '@/lib/utils/rekap';
 import { toCsv } from '@/lib/utils/csv';
+import { statusMasaBerlaku, sisaHari, labelJenisBerkas } from '@/lib/lembaga/berkas';
 
 export type PeriodeLembaga = 'bulan-ini' | '3-bulan' | '12-bulan' | 'tahun-ini';
 export const PERIODE_LEMBAGA: PeriodeLembaga[] = ['bulan-ini', '3-bulan', '12-bulan', 'tahun-ini'];
@@ -30,6 +31,8 @@ export function rentangSebelumnya(dari: string, sampai: string): { dari: string;
 export type BarisSantriRingkas = { id: string; namaLengkap: string; jenjang: string; jenisKelamin: string; statusSosial: string | null };
 export type BarisDonasiRingkas = { donaturId: string; tanggal: string; bentuk: 'UANG' | 'BARANG'; nominal: number | null; jenis: string };
 export type BarisSuratRingkas = { tanggalSurat: string; terkirimWa: boolean };
+export type BarisBerkasLembagaRingkas = { id: string; jenis: string; namaLainnya: string | null; berlakuSampai: string | null };
+export type BerkasPerluDiperpanjang = { id: string; label: string; status: 'segera' | 'mendesak' | 'kedaluwarsa'; sisaHari: number };
 
 export type InputRingkasan = {
   hariIni: Date;
@@ -39,6 +42,8 @@ export type InputRingkasan = {
   donasi: BarisDonasiRingkas[];
   jumlahDonatur: number;
   surat: BarisSuratRingkas[];
+  /** Kosong/undefined bila tabel belum ada (migrasi 0011 belum dijalankan). */
+  berkasLembaga?: BarisBerkasLembagaRingkas[];
 };
 
 export type Ringkasan = {
@@ -56,6 +61,8 @@ export type Ringkasan = {
   };
   donatur: { total: number; baru: number; rutin: number };
   surat: { terbit: number; belumTerkirim: number };
+  /** Berkas lembaga ≤ 90 hari / kedaluwarsa, paling mendesak dulu. */
+  berkasLembaga: BerkasPerluDiperpanjang[];
 };
 
 const dalam = (t: string, r: { dari: string; sampai: string }) => t >= r.dari && t <= r.sampai;
@@ -147,7 +154,17 @@ export function hitungRingkasan(i: InputRingkasan): Ringkasan {
       terbit: i.surat.filter(s => dalam(s.tanggalSurat, i.periode)).length,
       belumTerkirim: i.surat.filter(s => !s.terkirimWa).length,
     },
+    berkasLembaga: berkasPerluDiperpanjang(i.berkasLembaga ?? [], i.hariIni),
   };
+}
+
+/** Berkas yang segera urus (≤ 90 hari), mendesak (≤ 30), atau kedaluwarsa — urut sisa hari. */
+export function berkasPerluDiperpanjang(rows: BarisBerkasLembagaRingkas[], hariIni: Date): BerkasPerluDiperpanjang[] {
+  return rows.flatMap(b => {
+    const status = statusMasaBerlaku(b.berlakuSampai, hariIni);
+    if (status !== 'segera' && status !== 'mendesak' && status !== 'kedaluwarsa') return [];
+    return [{ id: b.id, label: b.jenis === 'LAINNYA' ? b.namaLainnya ?? 'Lainnya' : labelJenisBerkas(b.jenis), status, sisaHari: sisaHari(b.berlakuSampai!, hariIni) }];
+  }).sort((a, b) => a.sisaHari - b.sisaHari);
 }
 
 /** Ringkasan sebagai CSV dua kolom (Indikator, Nilai) untuk lampiran laporan. */

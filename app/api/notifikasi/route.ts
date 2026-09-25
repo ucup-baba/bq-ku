@@ -24,6 +24,16 @@ export async function GET() {
         hitung.donaturTanpaWa = tanpaWa.count ?? 0;
       })());
     }
+    if (roomsFor(user.roles).includes('lembaga')) {
+      tugas.push((async () => {
+        // Berlaku sampai ≤ 90 hari lagi (termasuk yang sudah lewat). Tabel belum ada (migrasi 0011) → abaikan.
+        const d = new Date(Date.now() + 90 * 86_400_000);
+        const batas = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const { count, error } = await supabase.from('berkas_lembaga').select('id', { head: true, count: 'exact' })
+          .not('berlakuSampai', 'is', null).lte('berlakuSampai', batas);
+        if (!error) hitung.berkasLembaga = count ?? 0;
+      })());
+    }
     if (canManageUsers(user.roles)) {
       tugas.push((async () => {
         const { count, error } = await createAdminSupabase()

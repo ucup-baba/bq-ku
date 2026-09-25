@@ -1,7 +1,7 @@
 import type { Room } from '@/lib/auth/rooms';
 
 export type Notifikasi = {
-  id: 'surat-belum-terkirim' | 'donatur-tanpa-wa' | 'akun-menunggu';
+  id: 'surat-belum-terkirim' | 'donatur-tanpa-wa' | 'akun-menunggu' | 'berkas-lembaga';
   judul: string;
   sub: string;
   href: string;
@@ -20,8 +20,13 @@ export function labelLencana(total: number): string {
 }
 
 /** Menyusun daftar notifikasi dari hitungan mentah; hitungan 0/undefined tidak ditampilkan. */
-export function susunNotifikasi(h: { suratBelumTerkirim?: number; donaturTanpaWa?: number; akunMenunggu?: number }): Notifikasi[] {
+export function susunNotifikasi(h: { suratBelumTerkirim?: number; donaturTanpaWa?: number; akunMenunggu?: number; berkasLembaga?: number }): Notifikasi[] {
   const out: Notifikasi[] = [];
+  if (h.berkasLembaga) out.push({
+    id: 'berkas-lembaga', ruang: 'lembaga', jumlah: h.berkasLembaga,
+    judul: `${h.berkasLembaga} berkas lembaga perlu diperpanjang`, sub: 'Masa berlaku ≤ 90 hari atau sudah lewat',
+    href: '/lembaga/berkas',
+  });
   if (h.suratBelumTerkirim) out.push({
     id: 'surat-belum-terkirim', ruang: 'donatur', jumlah: h.suratBelumTerkirim,
     judul: `${h.suratBelumTerkirim} surat belum dikirim`, sub: 'Kirim lewat WhatsApp lalu tandai terkirim',

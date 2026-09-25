@@ -67,3 +67,15 @@ describe('segmen', () => {
     expect(segmen({ SMP: 0 })).toEqual([]);
   });
 });
+
+describe('daftarPerhatian — berkas lembaga', () => {
+  it('paling mendesak di depan, tautan ke halaman berkas', () => {
+    const rr = { ...r, berkasLembaga: [
+      { id: 'a', label: 'Izin operasional', status: 'mendesak' as const, sisaHari: 21 },
+      { id: 'b', label: 'Akreditasi', status: 'segera' as const, sisaHari: 70 },
+    ] };
+    const d = daftarPerhatian(rr);
+    expect(d[0]).toMatchObject({ id: 'berkas-lembaga', jumlah: 2, href: '/lembaga/berkas', judul: '2 berkas lembaga perlu diperpanjang', sub: 'Izin operasional · mendesak (21 hari lagi)' });
+    expect(daftarPerhatian({ ...rr, berkasLembaga: [rr.berkasLembaga[0]] })[0].judul).toBe('Izin operasional perlu diperpanjang');
+  });
+});
