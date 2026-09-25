@@ -1,7 +1,7 @@
-import { SegeraHadir } from '@/components/ruang/SegeraHadir';
+import { HalamanBerkas } from '@/components/lembaga/berkas/HalamanBerkas';
 
 export const metadata = { title: 'Berkas Lembaga — BQ-ku' };
 
 export default function BerkasLembagaPage() {
-  return <SegeraHadir judul="Berkas lembaga" sub="SK Kemenkumham, akta pendirian, NPWP, dan izin operasional." />;
+  return <HalamanBerkas />;
 }

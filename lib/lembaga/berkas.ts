@@ -57,3 +57,33 @@ export function validasiUnggah({ jenis, mime, ukuran }: { jenis: string; mime: s
   if (ukuran > UKURAN_MAKS) return 'Ukuran berkas maksimal 10 MB';
   return null;
 }
+
+export type StatusTautan = 'aktif' | 'kedaluwarsa' | 'dicabut' | 'batas-habis';
+
+export function statusTautan(
+  t: { dicabutAt: string | null; kedaluwarsaAt: string; batasBuka: number | null; jumlahBuka: number }, sekarang = Date.now(),
+): StatusTautan {
+  if (t.dicabutAt) return 'dicabut';
+  if (Date.parse(t.kedaluwarsaAt) <= sekarang) return 'kedaluwarsa';
+  if (t.batasBuka !== null && t.jumlahBuka >= t.batasBuka) return 'batas-habis';
+  return 'aktif';
+}
+
+const KATA_AKSI: Record<string, string> = {
+  LIHAT: 'membuka', UNDUH: 'mengunduh', UNGGAH: 'mengunggah', VERSI_BARU: 'mengganti versi', UBAH_DATA: 'mengubah data',
+  HAPUS: 'menghapus', BUAT_TAUTAN: 'membuat tautan', CABUT_TAUTAN: 'mencabut tautan', BUKA_TAUTAN: 'membuka tautan',
+  UNDUH_TAUTAN: 'mengunduh lewat tautan', PIN_SALAH: 'salah memasukkan PIN',
+};
+
+/**
+ * Kalimat catatan akses, mis. "CSR Bank X mengunduh lewat tautan NPWP (diunduh)".
+ * Pelaku: nama akun, atau penerima tautan untuk akses publik.
+ */
+export function kalimatLog(
+  l: { aksi: string; userId: string | null; namaPengguna?: string | null; berkasId: string | null; tautanId: string | null; rincian: string | null },
+  labelBerkas: Record<string, string>, penerimaTautan: Record<string, string>,
+): string {
+  const pelaku = l.userId ? (l.namaPengguna || 'Pengguna') : (l.tautanId && penerimaTautan[l.tautanId]) || 'Penerima tautan';
+  const objek = l.berkasId ? (labelBerkas[l.berkasId] ?? 'berkas terhapus') : l.tautanId && l.userId ? `untuk ${penerimaTautan[l.tautanId] ?? '—'}` : '';
+  return [pelaku, KATA_AKSI[l.aksi] ?? l.aksi.toLowerCase(), objek, l.rincian ? `(${l.rincian})` : ''].filter(Boolean).join(' ');
+}

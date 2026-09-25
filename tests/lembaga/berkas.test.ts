@@ -39,3 +39,31 @@ describe('validasiUnggah', () => {
     expect(validasiUnggah({ jenis: 'BOS', mime: 'image/png', ukuran: 1000 })).toMatch(/Jenis/);
   });
 });
+
+import { statusTautan, kalimatLog } from '@/lib/lembaga/berkas';
+
+describe('statusTautan', () => {
+  const kini = Date.parse('2026-09-25T00:00:00Z');
+  const t = { dicabutAt: null, kedaluwarsaAt: '2026-10-01T00:00:00Z', batasBuka: null, jumlahBuka: 0 };
+  it('dicabut > kedaluwarsa > batas habis > aktif', () => {
+    expect(statusTautan(t, kini)).toBe('aktif');
+    expect(statusTautan({ ...t, batasBuka: 3, jumlahBuka: 3 }, kini)).toBe('batas-habis');
+    expect(statusTautan({ ...t, kedaluwarsaAt: '2026-09-24T00:00:00Z' }, kini)).toBe('kedaluwarsa');
+    expect(statusTautan({ ...t, dicabutAt: 'x', kedaluwarsaAt: '2026-09-24T00:00:00Z' }, kini)).toBe('dicabut');
+  });
+});
+
+describe('kalimatLog', () => {
+  const berkas = { b1: 'NPWP' };
+  const tautan = { t1: 'CSR Bank X' };
+  it('akses akun & akses publik lewat tautan', () => {
+    expect(kalimatLog({ aksi: 'UNDUH', userId: 'u1', namaPengguna: 'Ucup', berkasId: 'b1', tautanId: null, rincian: 'v2' }, berkas, tautan))
+      .toBe('Ucup mengunduh NPWP (v2)');
+    expect(kalimatLog({ aksi: 'UNDUH_TAUTAN', userId: null, berkasId: 'b1', tautanId: 't1', rincian: 'ZIP' }, berkas, tautan))
+      .toBe('CSR Bank X mengunduh lewat tautan NPWP (ZIP)');
+    expect(kalimatLog({ aksi: 'BUAT_TAUTAN', userId: 'u1', namaPengguna: 'Ucup', berkasId: null, tautanId: 't1', rincian: null }, berkas, tautan))
+      .toBe('Ucup membuat tautan untuk CSR Bank X');
+    expect(kalimatLog({ aksi: 'PIN_SALAH', userId: null, berkasId: null, tautanId: 't9', rincian: 'sisa 4' }, berkas, tautan))
+      .toBe('Penerima tautan salah memasukkan PIN (sisa 4)');
+  });
+});
