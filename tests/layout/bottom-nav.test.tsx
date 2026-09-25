@@ -64,6 +64,14 @@ describe('BottomNav', () => {
     notif.total = 0;
   });
 
+  it('ruang lembaga: tombol tengah Berkas lembaga, akun ke /lembaga/akun', () => {
+    s.path = '/lembaga'; s.rooms = ['lembaga'];
+    const h = renderToStaticMarkup(<BottomNav room="lembaga" />);
+    expect(h.match(/<li/g)).toHaveLength(5);
+    expect(h).toContain('aria-label="Berkas lembaga"');
+    expect(h).toContain('href="/lembaga/akun"');
+  });
+
   it('disembunyikan di halaman Buat Surat', () => {
     s.path = '/donatur/surat/baru';
     expect(renderToStaticMarkup(<BottomNav room="donatur" />)).toBe('');

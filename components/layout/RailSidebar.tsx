@@ -2,12 +2,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, HandCoins, PushPin, PushPinSlash } from '@phosphor-icons/react';
+import { PushPin, PushPinSlash } from '@phosphor-icons/react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { IkonUbin } from '@/components/ui/IkonUbin';
 import { menuRail, itemAktif } from '@/lib/nav/menu';
 import { bacaPin, simpanPin, storageAman } from '@/lib/ui/pin-rail';
-import { ROOM_HOME, ROOM_AKUN, type Room } from '@/lib/auth/rooms';
+import { ROOM_HOME, ROOM_AKUN, ROOM_LABEL, type Room } from '@/lib/auth/rooms';
+import { RUANG_TAMPILAN } from './ikon-ruang';
 import { useNotifikasi } from '@/components/notifikasi/NotifikasiProvider';
 import { IKON_MENU } from './ikon-menu';
 import { RoomSwitchButton } from './RoomSwitchButton';
@@ -41,8 +42,8 @@ export function RailSidebar({ room }: { room: Room }) {
         className={`group/rail fixed inset-y-0 left-0 z-30 hidden flex-col gap-1 overflow-hidden border-r border-bq-garis bg-bq-surface px-3 py-4 transition-[width,box-shadow] duration-200 ease-out md:flex ${
           pin ? 'w-60' : 'w-[76px] hover:w-60 hover:shadow-angkat focus-within:w-60 focus-within:shadow-angkat'}`}>
         <Link href={ROOM_HOME[room]} className={`${kelasBaris} mb-3`}>
-          <IkonUbin ikon={room === 'donatur' ? HandCoins : BookOpen} warna={room === 'donatur' ? 'biru' : 'hijau'} doodle="bintang" />
-          <span className={`${kelasLabel} font-extrabold text-bq-tinta`}>{room === 'donatur' ? 'Ruang Donatur' : 'Ruang Santri'}</span>
+          <IkonUbin ikon={RUANG_TAMPILAN[room].ikon} warna={RUANG_TAMPILAN[room].warna} doodle="bintang" />
+          <span className={`${kelasLabel} font-extrabold text-bq-tinta`}>{ROOM_LABEL[room]}</span>
         </Link>
 
         {items.map(item => {

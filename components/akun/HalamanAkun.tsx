@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  SignOut, Sun, Moon, CaretRight, WarningCircle, EnvelopeSimple, IdentificationBadge, ArrowsLeftRight,
+  SignOut, Sun, Moon, CaretRight, WarningCircle, EnvelopeSimple, IdentificationBadge,
   Bell, CheckCircle, PaperPlaneTilt, WhatsappLogo, UserCirclePlus, DeviceMobile, Export, PlusSquare,
 } from '@phosphor-icons/react';
 import { usePasangAplikasi } from '@/components/pwa/usePasangAplikasi';
@@ -11,6 +11,7 @@ import { useTheme } from '@/components/theme/ThemeProvider';
 import { useNotifikasi } from '@/components/notifikasi/NotifikasiProvider';
 import { getRoleLabel } from '@/lib/auth/roles';
 import { ROOM_HOME, ROOM_LABEL, type Room } from '@/lib/auth/rooms';
+import { RUANG_TAMPILAN } from '@/components/layout/ikon-ruang';
 import type { Notifikasi } from '@/lib/notifikasi/jenis';
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
 import { Kartu } from '@/components/ui/Kartu';
@@ -40,7 +41,7 @@ export function HalamanAkun({ room }: { room: Room }) {
   useEffect(() => { muatUlang(); }, [muatUlang]);
 
   const superadmin = roles.includes('SUPERADMIN');
-  const ruangLain = rooms.find(r => r !== room);
+  const ruangLain = rooms.filter(r => r !== room);
   const gelap = theme === 'dark';
 
   const handleKeluar = async () => {
@@ -182,18 +183,18 @@ export function HalamanAkun({ room }: { room: Room }) {
               </div>
             )}
 
-            {ruangLain && (
-              <Link href={ROOM_HOME[ruangLain]} className={kelasBaris}>
+            {ruangLain.map(r => (
+              <Link key={r} href={ROOM_HOME[r]} className={kelasBaris}>
                 <span className="flex items-center gap-3">
-                  <IkonUbin ikon={ArrowsLeftRight} warna="biru" />
+                  <IkonUbin ikon={RUANG_TAMPILAN[r].ikon} warna={RUANG_TAMPILAN[r].warna} />
                   <span>
-                    <span className="block text-sm font-bold text-bq-tinta">Pindah ke {ROOM_LABEL[ruangLain]}</span>
+                    <span className="block text-sm font-bold text-bq-tinta">Pindah ke {ROOM_LABEL[r]}</span>
                     <span className="block text-xs text-bq-redup">Sekarang di {ROOM_LABEL[room]}</span>
                   </span>
                 </span>
                 <CaretRight size={16} weight="bold" className="text-bq-redup" aria-hidden="true" />
               </Link>
-            )}
+            ))}
 
             {canManageUsers && (
               <Link href="/pengguna" className={kelasBaris}>

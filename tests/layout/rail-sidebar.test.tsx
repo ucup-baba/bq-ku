@@ -6,7 +6,7 @@ vi.mock('next/link', () => ({
   default: ({ href, children, ...p }: { href: string; children: React.ReactNode }) => <a href={href} {...p}>{children}</a>,
 }));
 vi.mock('@/components/auth/AuthProvider', () => ({
-  useAuth: () => ({ user: { nama: 'Ucup Baba', email: 'u@x' }, roles: ['SUPERADMIN'], rooms: ['santri', 'donatur'], canManageUsers: true, logout: async () => {} }),
+  useAuth: () => ({ user: { nama: 'Ucup Baba', email: 'u@x' }, roles: ['SUPERADMIN'], rooms: ['santri', 'donatur', 'lembaga'], canManageUsers: true, logout: async () => {} }),
 }));
 vi.mock('@/components/theme/ThemeProvider', () => ({ useTheme: () => ({ theme: 'light', toggleTheme: () => {} }) }));
 
@@ -25,5 +25,10 @@ describe('RailSidebar', () => {
     expect(h).toContain('Pindah ke Ruang Santri');
     expect(h).toMatch(/href="\/donatur\/akun" aria-label="Akun"/);
     expect(h).toContain('aria-pressed="false"');
+  });
+  it('pindah ke setiap ruangan lain', () => {
+    expect(h).toContain('Pindah ke Ruang Santri');
+    expect(h).toContain('Pindah ke Ruang Lembaga');
+    expect(h).not.toContain('Pindah ke Ruang Donatur');
   });
 });

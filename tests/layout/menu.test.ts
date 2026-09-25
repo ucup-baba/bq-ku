@@ -30,7 +30,7 @@ describe('slotHp', () => {
     expect(s[2]).toMatchObject({ utama: true, item: { href: '/tambah' } });
   });
   it('tidak ada tujuan ganda dalam satu bottom nav', () => {
-    for (const room of ['donatur', 'santri'] as const) {
+    for (const room of ['donatur', 'santri', 'lembaga'] as const) {
       for (const jumlahRuang of [1, 2]) {
         const h = hrefSlot(slotHp(room, { canManageUsers: true, jumlahRuang }));
         expect(new Set(h).size).toBe(h.length);
@@ -38,7 +38,7 @@ describe('slotHp', () => {
     }
   });
   it('label pendek muat di HP dan tidak berawalan "+"', () => {
-    for (const room of ['donatur', 'santri'] as const) {
+    for (const room of ['donatur', 'santri', 'lembaga'] as const) {
       for (const x of slotHp(room, dua)) {
         if (x.jenis !== 'tautan') continue;
         expect(x.item.labelPendek.length).toBeLessThanOrEqual(9);
@@ -77,5 +77,22 @@ describe('sembunyikanNavHp', () => {
   it('label Ruang Santri: Santri baru', () => {
     expect(menuRail('santri', dua).find(i => i.href === '/tambah')?.label).toBe('Santri baru');
     expect(slotHp('santri', dua)[2]).toMatchObject({ item: { labelPendek: 'Santri' } });
+  });
+});
+
+describe('Ruang Lembaga', () => {
+  it('rail: Beranda, Santri, Donatur, Surat, Berkas lembaga, Keuangan', () => {
+    expect(menuRail('lembaga', dua).map(i => i.href)).toEqual(
+      ['/lembaga', '/lembaga/santri', '/lembaga/donatur', '/lembaga/surat', '/lembaga/berkas', '/lembaga/keuangan']);
+  });
+  it('bottom nav: 5 slot, tombol tengah Berkas lembaga', () => {
+    const s = slotHp('lembaga', dua);
+    expect(s.map(x => x.jenis)).toEqual(['tautan', 'tautan', 'tautan', 'tautan', 'akun']);
+    expect(s[2]).toMatchObject({ utama: true, item: { href: '/lembaga/berkas' } });
+    expect(s[3]).toMatchObject({ utama: false, item: { href: '/lembaga/donatur' } });
+  });
+  it('beranda lembaga hanya aktif di path persis', () => {
+    expect(itemAktif('/lembaga', '/lembaga')).toBe(true);
+    expect(itemAktif('/lembaga/santri', '/lembaga')).toBe(false);
   });
 });
