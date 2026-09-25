@@ -6,7 +6,7 @@ import { kelasKartu } from '@/components/ui/Kartu';
 import { formatRupiah } from '@/lib/utils/terbilang';
 import { labelBulan, type PerBulan } from '@/lib/utils/rekap';
 
-export function GrafikTren({ tren, className }: { tren: PerBulan[] | null; className?: string }) {
+export function GrafikTren({ tren, judul = 'Tren 6 bulan', className }: { tren: PerBulan[] | null; judul?: string; className?: string }) {
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(...(tren ?? []).map(p => p.total), 1);
   const terakhirBerisi = (tren ?? []).map((p, i) => (p.total > 0 ? i : -1)).filter(i => i >= 0).pop();
@@ -15,7 +15,7 @@ export function GrafikTren({ tren, className }: { tren: PerBulan[] | null; class
   return (
     <section aria-labelledby="judul-tren" className={twMerge(kelasKartu('biasa', 'space-y-3 p-5'), className)}>
       <h2 id="judul-tren" className="flex items-center gap-2 text-sm font-extrabold text-bq-tinta">
-        <ChartBar size={18} weight="duotone" className="text-bq-biru" aria-hidden="true" /> Tren 6 bulan
+        <ChartBar size={18} weight="duotone" className="text-bq-biru" aria-hidden="true" /> {judul}
       </h2>
       {tren === null ? (
         <div className="h-52 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800/60" />
