@@ -10,6 +10,8 @@ import { padananKerja } from '@/lib/ruang/mode';
 export function BilahModeBaca() {
   const pathname = usePathname();
   const { rooms } = useAuth();
+  // Beranda hanya berisi ringkasan — tidak ada yang bisa diubah, bilah hanya memakan tempat.
+  if (pathname === '/lembaga') return null;
   const padanan = padananKerja(pathname);
   const bisaUbah = padanan && rooms.includes(padanan.room);
   return (

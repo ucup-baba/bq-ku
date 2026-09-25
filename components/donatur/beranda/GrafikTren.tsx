@@ -20,7 +20,7 @@ export function GrafikTren({ tren, judul = 'Tren 6 bulan', className }: { tren: 
       {tren === null ? (
         <div className="h-52 animate-pulse rounded-2xl bg-slate-100 dark:bg-slate-800/60" />
       ) : tren.every(p => p.total === 0) ? (
-        <p className="py-10 text-center text-sm text-bq-redup">Belum ada donasi uang dalam 6 bulan terakhir.</p>
+        <p className="py-10 text-center text-sm text-bq-redup">{`Belum ada donasi uang dalam ${tren.length} bulan terakhir.`}</p>
       ) : (
         <div className="flex h-52 items-end justify-between gap-3 px-1 pt-8">
           {tren.map((p, i) => {

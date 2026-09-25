@@ -1,10 +1,8 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { DownloadSimple, ArrowClockwise } from '@phosphor-icons/react';
+import { ArrowClockwise } from '@phosphor-icons/react';
 import { csvRingkasan, type PeriodeLembaga, type Ringkasan } from '@/lib/lembaga/ringkasan';
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
-import { ChipPilihan } from '@/components/ui/ChipPilihan';
-import { TombolIkon } from '@/components/ui/Tombol';
 import { PesanGalat } from '@/components/ui/PesanGalat';
 import { BagianRingkasan } from './BagianRingkasan';
 
@@ -24,7 +22,20 @@ function unduh(r: Ringkasan) {
   URL.revokeObjectURL(url);
 }
 
-/** Beranda Ruang Lembaga: pilih periode, muat ringkasan, unduh CSV. */
+function Kerangka() {
+  const blok = 'animate-pulse rounded-kartu bg-slate-200/60 dark:bg-slate-800/60';
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5" aria-label="Memuat ringkasan">
+      <div className={`${blok} h-44 md:col-span-7`} />
+      <div className={`${blok} h-44 md:col-span-5`} />
+      <div className={`${blok} h-24 md:col-span-12`} />
+      <div className={`${blok} h-56 md:col-span-7`} />
+      <div className={`${blok} h-56 md:col-span-5`} />
+    </div>
+  );
+}
+
+/** Beranda Ruang Lembaga: muat ringkasan per periode; data lama tetap tampil saat periode diganti. */
 export function BerandaLembaga({ namaDepan }: { namaDepan?: string }) {
   const [periode, setPeriode] = useState<PeriodeLembaga>('bulan-ini');
   const [data, setData] = useState<Ringkasan | null>(null);
@@ -51,15 +62,7 @@ export function BerandaLembaga({ namaDepan }: { namaDepan?: string }) {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <KepalaHalaman judul="Ruang Lembaga" sub={namaDepan ? `Assalamu'alaikum, ${namaDepan}` : "Assalamu'alaikum"} subTampilDiHp
-        aksi={<TombolIkon ikon={DownloadSimple} label="Unduh ringkasan (CSV)" disabled={!data} onClick={() => data && unduh(data)} />} />
-      <ChipPilihan<PeriodeLembaga> label="Periode" nilai={periode} onPilih={setPeriode}
-        opsi={[
-          { value: 'bulan-ini', label: 'Bulan ini' },
-          { value: '3-bulan', label: '3 bulan' },
-          { value: '12-bulan', label: '12 bulan' },
-          { value: 'tahun-ini', label: 'Tahun ini' },
-        ]} />
+      <KepalaHalaman judul="Ruang Lembaga" sub={namaDepan ? `Assalamu'alaikum, ${namaDepan}` : "Assalamu'alaikum"} subTampilDiHp />
       {galat && (
         <div className="space-y-2">
           <PesanGalat pesan={galat} />
@@ -68,8 +71,7 @@ export function BerandaLembaga({ namaDepan }: { namaDepan?: string }) {
           </button>
         </div>
       )}
-      {!data && !galat && <div className="h-40 animate-pulse rounded-kartu bg-slate-200/60 dark:bg-slate-800/60" />}
-      {data && <BagianRingkasan r={data} />}
+      {data ? <BagianRingkasan r={data} periode={periode} onPeriode={setPeriode} onUnduh={() => unduh(data)} /> : !galat && <Kerangka />}
     </div>
   );
 }

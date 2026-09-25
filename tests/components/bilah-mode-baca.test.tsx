@@ -23,4 +23,8 @@ describe('BilahModeBaca', () => {
     expect(h).toContain('Mode baca');
     expect(h).not.toContain('Ubah di');
   });
+  it('tidak tampil di beranda Lembaga (tidak ada yang bisa diubah)', () => {
+    s.path = '/lembaga';
+    expect(renderToStaticMarkup(<BilahModeBaca />)).toBe('');
+  });
 });

@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { twMerge } from 'tailwind-merge';
 import { Receipt, Package, PaperPlaneTilt, type Icon } from '@phosphor-icons/react';
 import { Carousel } from '@/components/ui/Carousel';
 import { IkonUbin, type JenisDoodle, type WarnaUbin } from '@/components/ui/IkonUbin';
@@ -11,7 +12,7 @@ import type { Ringkasan } from '@/lib/donatur/ringkasan';
 
 const kelasIsi = 'goyang-saat-hover block h-full p-2.5 pr-4 transition-transform duration-200 hover:-translate-y-0.5 md:p-4';
 
-function KartuAngka({ ikon, warna, doodle, nilai, label, href }: {
+export function KartuAngka({ ikon, warna, doodle, nilai, label, href }: {
   ikon: Icon; warna: WarnaUbin; doodle?: JenisDoodle; nilai: React.ReactNode; label: string; href?: string;
 }) {
   const isi = (
@@ -36,9 +37,9 @@ const WARNA_AKAD: Record<string, string> = {
   ZAKAT: 'bg-emerald-600', INFAQ: 'bg-[#0B5FA5]', SHADAQAH: 'bg-amber-500',
 };
 
-function KartuAkad({ akad }: { akad: PorsiAkad[] }) {
+export function KartuAkad({ akad, className }: { akad: PorsiAkad[]; className?: string }) {
   return (
-    <div className={kelasKartu('biasa', 'h-full w-44 space-y-1.5 p-2.5 md:w-auto md:space-y-2 md:p-4')}>
+    <div className={kelasKartu('biasa', twMerge('h-full w-44 space-y-1.5 p-2.5 md:w-auto md:space-y-2 md:p-4', className))}>
       <p className="text-xs font-bold text-bq-tinta">Komposisi akad</p>
       <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
         {akad.map(a => <span key={a.jenis} className={WARNA_AKAD[a.jenis] ?? 'bg-slate-400'} style={{ width: `${Math.max(a.persen, 2)}%` }} />)}
