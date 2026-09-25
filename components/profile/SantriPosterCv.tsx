@@ -3,7 +3,7 @@
 import React from 'react';
 import { Baloo_2 } from 'next/font/google';
 import { User, GraduationCap, BookOpen, Star, IdentificationCard, Buildings, Check, MapPin, PencilSimple } from '@phosphor-icons/react';
-import { calculateAge, formatDateIndonesian, samarkanNik } from '@/lib/utils/formatters';
+import { calculateAge, formatDateIndonesian, samarkanNik, rapikanAlamat } from '@/lib/utils/formatters';
 
 /** Huruf judul poster; hanya dimuat di halaman yang memakai poster. */
 const baloo = Baloo_2({ subsets: ['latin'], variable: '--font-baloo', display: 'swap' });
@@ -164,7 +164,7 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
             <Baris label="Tempat, tgl lahir">{santri.tempatLahir}, {formatDateIndonesian(santri.tanggalLahir) || santri.tanggalLahir}</Baris>
             <Baris label="Orang tua">{orangTua}</Baris>
             <Baris label="WhatsApp wali" angka warna="text-poster-hijau">{santri.kontakWali || '-'}</Baris>
-            <Baris label="Alamat">{santri.alamat || '-'}</Baris>
+            <Baris label="Alamat">{rapikanAlamat(santri.alamat) || '-'}</Baris>
           </Blok>
         </section>
 

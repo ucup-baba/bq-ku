@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toTitleCase, matchBestFamilyMember, formatJam, deriveEducationFromPreviousSchool, deriveEducationFromDocument, samarkanNik } from '@/lib/utils/formatters';
+import { toTitleCase, matchBestFamilyMember, formatJam, deriveEducationFromPreviousSchool, deriveEducationFromDocument, samarkanNik, rapikanAlamat } from '@/lib/utils/formatters';
 import { FamilyMemberCandidate } from '@/lib/ocr/parser';
 
 describe('formatters utility', () => {
@@ -150,5 +150,22 @@ describe('samarkanNik', () => {
   it('kosong/pendek tidak membocorkan digit', () => {
     expect(samarkanNik(null)).toBe('');
     expect(samarkanNik('12345')).toBe('•••••');
+  });
+});
+
+describe('rapikanAlamat', () => {
+  it('membuang label KK, duplikasi, dan huruf kapital semua', () => {
+    expect(rapikanAlamat('DOMBAN DUSUN. DOMBAN, RT/RW 004/006, DESA/KELURAHAN MOROREJO, KECAMATAN TEMPEL, KABUPATEN/KOTA SLEMAN, PROVINSI DAERAH ISTIMEWA YOGYAKARTA'))
+      .toBe('Domban, RT/RW 004/006, Mororejo, Tempel, Sleman, Daerah Istimewa Yogyakarta');
+  });
+  it('singkatan & angka Romawi tetap kapital; "Kota" dipertahankan', () => {
+    expect(rapikanAlamat('JL. KALIURANG KM 5 GG. MAWAR III, DUSUN KRAJAN, RT 01 RW 02, KEL. CATURTUNGGAL, KOTA YOGYAKARTA, DIY'))
+      .toBe('Jl. Kaliurang Km 5 Gg. Mawar III, Krajan, RT 01 RW 02, Caturtunggal, Kota Yogyakarta, DIY');
+  });
+  it('alamat yang sudah ditulis rapi tidak diubah hurufnya', () => {
+    expect(rapikanAlamat('Perum Griya Asri No. 12, Tempel, Sleman')).toBe('Perum Griya Asri No. 12, Tempel, Sleman');
+  });
+  it('kosong tetap kosong', () => {
+    expect(rapikanAlamat(null)).toBe('');
   });
 });

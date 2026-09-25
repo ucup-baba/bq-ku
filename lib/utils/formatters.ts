@@ -381,6 +381,32 @@ export function formatNikDisplay(val?: string | null): string {
   return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
 }
 
+const LABEL_ALAMAT = /\b(?:DUSUN|DSN|DESA\s*\/\s*KELURAHAN|DESA|KELURAHAN|KEL|KECAMATAN|KEC|KABUPATEN\s*\/\s*KOTA|KABUPATEN|KAB|PROVINSI|PROV)\b\.?/gi;
+const SINGKATAN_ALAMAT = /^(?:RT|RW|RT\/RW|DIY|DKI|NTB|NTT|[IVX]{1,4})$/i;
+
+/**
+ * Alamat KK → ringkas & enak dibaca: label (Dusun, Desa/Kelurahan, Kecamatan,
+ * Kabupaten/Kota, Provinsi) dibuang, nama berulang dirapatkan, dan HURUF KAPITAL
+ * semua diubah ke Kapital Awal Kata (singkatan & angka Romawi tetap kapital).
+ * Alamat yang sudah memuat huruf kecil dipertahankan penulisan hurufnya.
+ */
+export function rapikanAlamat(alamat?: string | null): string {
+  if (!alamat?.trim()) return '';
+  const semuaKapital = alamat === alamat.toUpperCase();
+  const bagian = alamat.split(',').map((b) => {
+    const kata = b.replace(LABEL_ALAMAT, ' ').trim().split(/\s+/).filter(Boolean);
+    // "DOMBAN DUSUN. DOMBAN" → setelah label dibuang "DOMBAN DOMBAN" → "DOMBAN"
+    const separuh = kata.length / 2;
+    const ulang = kata.length % 2 === 0 && kata.slice(0, separuh).join(' ').toLowerCase() === kata.slice(separuh).join(' ').toLowerCase();
+    return (ulang ? kata.slice(0, separuh) : kata).join(' ');
+  }).filter((b, i, arr) => b && b.toLowerCase() !== arr[i - 1]?.toLowerCase());
+  const hasil = bagian.join(', ');
+  if (!semuaKapital) return hasil;
+  return hasil.split(' ').map((k) =>
+    SINGKATAN_ALAMAT.test(k.replace(/[.,]/g, '')) || /\d/.test(k) ? k : k.charAt(0) + k.slice(1).toLowerCase()
+  ).join(' ');
+}
+
 /** NIK untuk tampilan publik/cetak: 4 digit awal & akhir saja, mis. "3404 •••• •••• 0001". */
 export function samarkanNik(val?: string | null): string {
   const digits = (val ?? '').replace(/\D/g, '');
