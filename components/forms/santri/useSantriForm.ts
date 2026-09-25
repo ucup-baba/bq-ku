@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { BatchItemResult } from '../BatchScanModal';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from '@/lib/ocr/parser';
 import { useTheme } from '@/components/theme/ThemeProvider';
-import { toTitleCase, deriveEducationFromPreviousSchool, checkNameMatch } from '@/lib/utils/formatters';
+import { toTitleCase, deriveEducationFromDocument, checkNameMatch } from '@/lib/utils/formatters';
 import type { DocumentMismatchData } from '@/components/modals/DocumentGuardModal';
 import { santriClientSchema, zodFieldErrors } from '@/lib/validation/santri';
 
@@ -257,47 +257,14 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
       newOcrTags.asalSekolahSebelumnya = true;
     }
 
-    // Deteksi cerdas jenjang & status pendidikan di Baitul Qowwam berdasarkan asal sekolah atau teks berkas
-    const targetSchoolToAnalyze = rawSchoolName || extracted.rawText || '';
-    const derivedEdu = deriveEducationFromPreviousSchool(targetSchoolToAnalyze);
-
+    // Jenjang hanya dari berkas yang memuat info sekolah — KK/KTP tidak menimpanya.
+    const derivedEdu = deriveEducationFromDocument({ ...extracted, kategori: extracted.kategori || kategori });
     if (derivedEdu) {
       updated.jenjang = derivedEdu.jenjang;
+      updated.kelas = derivedEdu.kelas;
       newOcrTags.jenjang = true;
-
-      if (extracted.tahunLulus && derivedEdu.jenjang === 'ALUMNI') {
-        updated.kelas = `Lulus ${extracted.tahunLulus}`;
-      } else {
-        updated.kelas = derivedEdu.kelas;
-      }
       newOcrTags.kelas = true;
-
-      if (derivedEdu.sekolahSekarang) {
-        updated.sekolahSekarang = derivedEdu.sekolahSekarang;
-        newOcrTags.sekolahSekarang = true;
-      }
-
       customNoticeText = derivedEdu.noticeText;
-    } else if (extracted.jenjangTerdeteksi) {
-      if (extracted.jenjangTerdeteksi === 'ALUMNI') {
-        updated.jenjang = 'ALUMNI';
-        newOcrTags.jenjang = true;
-        updated.kelas = extracted.tahunLulus ? `Lulus ${extracted.tahunLulus}` : 'Lulus 2024';
-        newOcrTags.kelas = true;
-        customNoticeText = 'Terdeteksi jenjang ALUMNI! Status disesuaikan ke Lulusan SMA/SMK.';
-      } else if (extracted.jenjangTerdeteksi === 'SMA') {
-        updated.jenjang = 'SMA';
-        newOcrTags.jenjang = true;
-        updated.kelas = '10';
-        newOcrTags.kelas = true;
-        customNoticeText = 'Terdeteksi jenjang SMA! Jenjang disetel ke SMA (Kelas 10).';
-      } else if (extracted.jenjangTerdeteksi === 'SMP') {
-        updated.jenjang = 'SMP';
-        newOcrTags.jenjang = true;
-        updated.kelas = '7';
-        newOcrTags.kelas = true;
-        customNoticeText = 'Terdeteksi jenjang SMP! Jenjang disetel ke SMP (Kelas 7).';
-      }
     }
 
     setFormData(updated);
@@ -502,31 +469,12 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
         currentForm.asalSekolahSebelumnya = rawSchool;
         newOcrTags.asalSekolahSebelumnya = true;
       }
-      const targetSchoolToAnalyze = rawSchool || ext.rawText || '';
-      const derivedEdu = deriveEducationFromPreviousSchool(targetSchoolToAnalyze);
-      if (derivedEdu && currentForm.jenjang === 'SMA') {
+      const derivedEdu = deriveEducationFromDocument({ ...ext, kategori: ext.kategori || item.kategori });
+      if (derivedEdu) {
         currentForm.jenjang = derivedEdu.jenjang;
-        currentForm.kelas = ext.tahunLulus && derivedEdu.jenjang === 'ALUMNI' ? `Lulus ${ext.tahunLulus}` : derivedEdu.kelas;
-        if (derivedEdu.sekolahSekarang) currentForm.sekolahSekarang = derivedEdu.sekolahSekarang;
+        currentForm.kelas = derivedEdu.kelas;
         newOcrTags.jenjang = true;
         newOcrTags.kelas = true;
-      } else if (ext.jenjangTerdeteksi) {
-        if (ext.jenjangTerdeteksi === 'ALUMNI') {
-          currentForm.jenjang = 'ALUMNI';
-          currentForm.kelas = ext.tahunLulus ? `Lulus ${ext.tahunLulus}` : 'Lulus 2024';
-          newOcrTags.jenjang = true;
-          newOcrTags.kelas = true;
-        } else if (ext.jenjangTerdeteksi === 'SMA') {
-          currentForm.jenjang = 'SMA';
-          currentForm.kelas = '10';
-          newOcrTags.jenjang = true;
-          newOcrTags.kelas = true;
-        } else if (ext.jenjangTerdeteksi === 'SMP') {
-          currentForm.jenjang = 'SMP';
-          currentForm.kelas = '7';
-          newOcrTags.jenjang = true;
-          newOcrTags.kelas = true;
-        }
       }
     }
 

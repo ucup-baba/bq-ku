@@ -556,9 +556,9 @@ function extractSkl(text: string): Partial<ExtractedDocumentData> {
   if (sekolahMatch) data.asalSekolahSebelumnya = sekolahMatch[1].trim();
 
   // Deteksi jenjang kelulusan
-  const isSmaSmk = /SMA|SMK|MADRASAH\s+ALIYAH|\bMA\b|SEKOLAH\s+MENENGAH\s+ATAS|SEKOLAH\s+MENENGAH\s+KEJURUAN/i.test(text);
-  const isSmpMts = /SMP|MTS|MADRASAH\s+TSANAWIYAH|SEKOLAH\s+MENENGAH\s+PERTAMA/i.test(text);
-  const isSdMi = /SD|MI|MADRASAH\s+IBTIDAIYAH|SEKOLAH\s+DASAR/i.test(text);
+  const isSmaSmk = /\bSMA|\bSMK|MADRASAH\s+ALIYAH|\bMAN?\b|SEKOLAH\s+MENENGAH\s+ATAS|SEKOLAH\s+MENENGAH\s+KEJURUAN/i.test(text);
+  const isSmpMts = /\bSMP|\bMTS|MADRASAH\s+TSANAWIYAH|SEKOLAH\s+MENENGAH\s+PERTAMA/i.test(text);
+  const isSdMi = /\bSD|\bMIN?\b|MADRASAH\s+IBTIDAIYAH|SEKOLAH\s+DASAR/i.test(text);
 
   if (isSmaSmk) {
     data.jenjangTerdeteksi = 'ALUMNI';

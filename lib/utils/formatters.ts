@@ -223,10 +223,10 @@ export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
   const s = schoolName.toUpperCase().trim();
 
   // 1. Asal SMA / SMK / MA -> Santri Purna / ALUMNI
-  if (/SMA|SMK|MADRASAH\s+ALIYAH|\bMA\b|SEKOLAH\s+MENENGAH\s+ATAS|SEKOLAH\s+MENENGAH\s+KEJURUAN/i.test(s)) {
+  if (/\bSMA|\bSMK|MADRASAH\s+ALIYAH|\bMAN?\b|SEKOLAH\s+MENENGAH\s+ATAS|SEKOLAH\s+MENENGAH\s+KEJURUAN/i.test(s)) {
     return {
       jenjang: 'ALUMNI',
-      kelas: 'Lulus 2024',
+      kelas: `Lulus ${new Date().getFullYear()}`,
       sekolahSekarang: '',
       label: 'Alumni (Lulusan SMA/SMK)',
       noticeText: `Terdeteksi lulusan SMA/SMK (${schoolName}): Jenjang otomatis disetel ke "ALUMNI".`,
@@ -234,7 +234,7 @@ export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
   }
 
   // 2. Asal SMP / MTs -> Naik ke SMA (Kelas 10)
-  if (/SMP|MTS|MADRASAH\s+TSANAWIYAH|SEKOLAH\s+MENENGAH\s+PERTAMA/i.test(s)) {
+  if (/\bSMP|\bMTS|MADRASAH\s+TSANAWIYAH|SEKOLAH\s+MENENGAH\s+PERTAMA/i.test(s)) {
     return {
       jenjang: 'SMA',
       kelas: '10',
@@ -245,7 +245,7 @@ export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
   }
 
   // 3. Asal SD / MI -> Naik ke SMP (Kelas 7)
-  if (/SD|MI|MADRASAH\s+IBTIDAIYAH|SEKOLAH\s+DASAR/i.test(s)) {
+  if (/\bSD|\bMIN?\b|MADRASAH\s+IBTIDAIYAH|SEKOLAH\s+DASAR/i.test(s)) {
     return {
       jenjang: 'SMP',
       kelas: '7',
@@ -256,6 +256,32 @@ export function deriveEducationFromPreviousSchool(schoolName?: string | null): {
   }
 
   return null;
+}
+
+/**
+ * Jenjang & kelas dari satu berkas hasil OCR. Nama asal sekolah diutamakan,
+ * lalu `jenjangTerdeteksi`. Berkas tanpa info sekolah (KK, KTP, dsb.) → null,
+ * supaya tidak menimpa jenjang yang sudah ditetapkan berkas sekolah.
+ */
+export function deriveEducationFromDocument(ext: {
+  kategori?: string;
+  asalSekolahSebelumnya?: string;
+  jenjangTerdeteksi?: 'SMP' | 'SMA' | 'SMK' | 'ALUMNI';
+  tahunLulus?: string;
+}): { jenjang: 'SMP' | 'SMA' | 'SMK' | 'ALUMNI'; kelas: string; noticeText: string } | null {
+  // Kolom pendidikan KK ("TAMAT SD/SEDERAJAT") dsb. bukan jenjang calon santri.
+  if (ext.kategori && ['KARTU_KELUARGA', 'KTP_ORTU', 'AKTA_KELAHIRAN'].includes(ext.kategori)) return null;
+  const dariNama = deriveEducationFromPreviousSchool(ext.asalSekolahSebelumnya);
+  const jenjang = dariNama?.jenjang ?? ext.jenjangTerdeteksi;
+  if (!jenjang) return null;
+  const kelas = jenjang === 'ALUMNI'
+    ? `Lulus ${ext.tahunLulus || new Date().getFullYear()}`
+    : jenjang === 'SMP' ? '7' : '10';
+  const noticeText = dariNama?.noticeText ?? (
+    jenjang === 'ALUMNI' ? 'Terdeteksi jenjang ALUMNI! Status disesuaikan ke Lulusan SMA/SMK.'
+    : `Terdeteksi jenjang ${jenjang}! Jenjang disetel ke ${jenjang} (Kelas ${kelas}).`
+  );
+  return { jenjang, kelas, noticeText };
 }
 
 /**

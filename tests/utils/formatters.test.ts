@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toTitleCase, matchBestFamilyMember, formatJam } from '@/lib/utils/formatters';
+import { toTitleCase, matchBestFamilyMember, formatJam, deriveEducationFromPreviousSchool, deriveEducationFromDocument } from '@/lib/utils/formatters';
 import { FamilyMemberCandidate } from '@/lib/ocr/parser';
 
 describe('formatters utility', () => {
@@ -111,5 +111,33 @@ describe('formatters utility', () => {
       const date = new Date(2026, 8, 23, 14, 25);
       expect(formatJam(date.toISOString())).toBe('14:25');
     });
+  });
+});
+
+describe('deriveEducationFromPreviousSchool', () => {
+  it('lulusan SMP/MTs → SMA kelas 10', () => {
+    expect(deriveEducationFromPreviousSchool('SMP N 1 Tempel')).toMatchObject({ jenjang: 'SMA', kelas: '10' });
+    expect(deriveEducationFromPreviousSchool('MTsN 3 Sleman')).toMatchObject({ jenjang: 'SMA', kelas: '10' });
+  });
+  it('lulusan SD/MI → SMP kelas 7', () => {
+    expect(deriveEducationFromPreviousSchool('SDN Tempel 2')).toMatchObject({ jenjang: 'SMP', kelas: '7' });
+    expect(deriveEducationFromPreviousSchool('MI Maarif Tempel')).toMatchObject({ jenjang: 'SMP', kelas: '7' });
+  });
+  it('tidak salah cocok potongan kata (mis. "MI" di tengah nama)', () => {
+    expect(deriveEducationFromPreviousSchool('Pondok Kamil')).toBeNull();
+  });
+});
+
+describe('deriveEducationFromDocument', () => {
+  it('KK tidak menentukan jenjang meski memuat "TAMAT SD/SEDERAJAT"', () => {
+    expect(deriveEducationFromDocument({ kategori: 'KARTU_KELUARGA', asalSekolahSebelumnya: 'TAMAT SD/SEDERAJAT', jenjangTerdeteksi: 'SMP' })).toBeNull();
+  });
+  it('nama asal sekolah diutamakan di atas jenjangTerdeteksi', () => {
+    expect(deriveEducationFromDocument({ kategori: 'SKL_IJAZAH', asalSekolahSebelumnya: 'SMP N 1 Tempel', jenjangTerdeteksi: 'SMP' }))
+      .toMatchObject({ jenjang: 'SMA', kelas: '10' });
+  });
+  it('tanpa nama sekolah memakai jenjangTerdeteksi; ALUMNI memakai tahun lulus', () => {
+    expect(deriveEducationFromDocument({ jenjangTerdeteksi: 'ALUMNI', tahunLulus: '2025' })).toMatchObject({ jenjang: 'ALUMNI', kelas: 'Lulus 2025' });
+    expect(deriveEducationFromDocument({})).toBeNull();
   });
 });
