@@ -11,10 +11,10 @@ export function keteranganJenjang(s: Pick<Santri, 'jenjang' | 'kelas'>): string 
 }
 
 /** Kartu satu baris santri; seluruh kartu menuju halaman detail. */
-export function BarisSantri({ santri, indeks = 0 }: { santri: SantriBaris; indeks?: number }) {
+export function BarisSantri({ santri, indeks = 0, href }: { santri: SantriBaris; indeks?: number; href?: string }) {
   const foto = santri.fotoProfilUrl || santri.fotoFormalUrl;
   return (
-    <Link href={`/santri/${santri.id}`} className={kelasKartu('biasa', 'goyang-saat-hover flex items-center gap-3 p-3 transition-transform duration-200 hover:-translate-y-0.5')}>
+    <Link href={href ?? `/santri/${santri.id}`} className={kelasKartu('biasa', 'goyang-saat-hover flex items-center gap-3 p-3 transition-transform duration-200 hover:-translate-y-0.5')}>
       {foto
         ? <img src={foto} alt="" className="h-10 w-10 shrink-0 rounded-xl object-cover" />
         : <InisialUbin nama={santri.namaLengkap} indeks={indeks} />}

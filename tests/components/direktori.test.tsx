@@ -6,6 +6,7 @@ vi.mock('next/link', () => ({
 }));
 
 import { SantriDirectory } from '@/components/directory/SantriDirectory';
+import { ModeRuangProvider } from '@/components/ruang/ModeRuang';
 
 const santri = [
   { id: '1', namaLengkap: 'Ahmad Faiz', nik: '1', jenisKelamin: 'IKHWAN', jenjang: 'SMP', kelas: '7', sekolahSekarang: 'SMP IT BQ', tempatLahir: '', tanggalLahir: '', documents: [] },
@@ -21,5 +22,9 @@ describe('SantriDirectory', () => {
     expect(h).toContain('aria-label="Cari santri"');
     expect(h).toMatch(/Ikhwan<span[^>]*>1</);
     expect(h).toContain('href="/santri/2"');
+  });
+  it('mode lembaga: kartu santri menuju /lembaga/santri/[id]', () => {
+    const t = renderToStaticMarkup(<ModeRuangProvider mode="lembaga"><SantriDirectory initialSantriList={santri} /></ModeRuangProvider>);
+    expect(t).toContain('href="/lembaga/santri/1"');
   });
 });

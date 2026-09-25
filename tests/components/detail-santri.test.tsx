@@ -11,6 +11,7 @@ vi.mock('next/link', () => ({
 }));
 
 import { DetailSantri } from '@/components/profile/DetailSantri';
+import { ModeRuangProvider } from '@/components/ruang/ModeRuang';
 
 const santri = {
   id: 's1', namaLengkap: 'Ahmad Faiz', nik: '3404000000000001', tempatLahir: 'Sleman', tanggalLahir: '2010-01-01',
@@ -29,5 +30,19 @@ describe('DetailSantri', () => {
     expect(h).toContain('Lengkapi berkas');
     expect(h).toContain('aria-label="Lihat Kartu Keluarga"');
     expect(h).not.toMatch(/text-\[1[01]px\]/);
+  });
+});
+
+describe('DetailSantri mode baca (Ruang Lembaga)', () => {
+  const h = renderToStaticMarkup(<ModeRuangProvider mode="lembaga"><DetailSantri santri={santri} /></ModeRuangProvider>);
+  it('tanpa Edit & Lengkapi berkas, kembali ke direktori Lembaga', () => {
+    expect(h).not.toContain('/edit');
+    expect(h).not.toContain('Lengkapi berkas');
+    expect(h).toContain('href="/lembaga/santri"');
+  });
+  it('status berkas tampil tetapi tidak bisa dibuka', () => {
+    expect(h).toContain('Kartu Keluarga');
+    expect(h).toContain('Terverifikasi');
+    expect(h).not.toContain('aria-label="Lihat Kartu Keluarga"');
   });
 });

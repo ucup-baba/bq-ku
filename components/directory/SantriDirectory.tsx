@@ -12,12 +12,14 @@ import { TombolIkon } from '@/components/ui/Tombol';
 import { LembarBawah } from '@/components/ui/LembarBawah';
 import { kelasInput } from '@/components/ui/kelas';
 import { BarisSantri } from '@/components/santri/BarisSantri';
+import { useModeRuang } from '@/components/ruang/ModeRuang';
 
 const LABEL_JENJANG: Record<FilterSantri['jenjang'], string> = {
   SEMUA: 'Semua', SMP: 'SMP', SMA: 'SMA', SMK: 'SMK', ALUMNI: 'Alumni',
 };
 
 export function SantriDirectory({ initialSantriList }: { initialSantriList: Santri[] }) {
+  const mode = useModeRuang();
   const [filter, setFilter] = useState<FilterSantri>({ q: '', gender: 'SEMUA', jenjang: 'SEMUA' });
   const [jenjangBuka, setJenjangBuka] = useState(false);
   const ubah = (p: Partial<FilterSantri>) => setFilter(f => ({ ...f, ...p }));
@@ -65,7 +67,7 @@ export function SantriDirectory({ initialSantriList }: { initialSantriList: Sant
         </Kartu>
       ) : (
         <ul data-audit-daftar className="bergilir grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
-          {tersaring.map((s, i) => <li key={s.id}><BarisSantri santri={s} indeks={i} /></li>)}
+          {tersaring.map((s, i) => <li key={s.id}><BarisSantri santri={s} indeks={i} href={mode.rute.santri(s.id)} /></li>)}
         </ul>
       )}
 

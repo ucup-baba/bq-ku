@@ -10,11 +10,13 @@ import { useMedia } from '@/components/ui/useMedia';
 import { SantriPosterCv } from './SantriPosterCv';
 import { TabBerkas } from './TabBerkas';
 import { MenuSantri } from './MenuSantri';
+import { useModeRuang } from '@/components/ruang/ModeRuang';
 
 type Tab = 'cv' | 'berkas';
 
 export function DetailSantri({ santri }: { santri: Santri }) {
   const router = useRouter();
+  const mode = useModeRuang();
   const pathname = usePathname();
   const tab: Tab = useSearchParams().get('tab') === 'berkas' ? 'berkas' : 'cv';
   const st = statusBerkas(santri.documents);
@@ -25,9 +27,9 @@ export function DetailSantri({ santri }: { santri: Santri }) {
   return (
     <div className="space-y-4">
       <div className="print:hidden space-y-3">
-        <KepalaHalaman judul={santri.namaLengkap} kembali={{ href: '/santri', label: 'Kembali ke direktori' }}
+        <KepalaHalaman judul={santri.namaLengkap} kembali={{ href: mode.rute.santriDaftar, label: 'Kembali ke direktori' }}
           aksi={<>
-            <TautanUtama href={`/santri/${santri.id}/edit`} ikon={PencilSimple}>Edit</TautanUtama>
+            {!mode.bacaSaja && <TautanUtama href={`/santri/${santri.id}/edit`} ikon={PencilSimple}>Edit</TautanUtama>}
             <MenuSantri nama={santri.namaLengkap} />
           </>} />
         {!desktop && (
