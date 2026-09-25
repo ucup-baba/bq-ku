@@ -63,7 +63,8 @@ export function DaftarTautan({ tautan, bolehKelola, onBerubah, onLihatCatatan }:
                 <button type="button" onClick={() => onLihatCatatan(t.id)} className="tekan inline-flex h-8 items-center gap-1 rounded-xl px-2 text-xs font-bold text-bq-biru hover:bg-slate-50 dark:hover:bg-slate-800/60">
                   <ClockCounterClockwise size={14} weight="bold" aria-hidden="true" /> Catatan
                 </button>
-                {bolehKelola && st === 'aktif' && (
+                {/* Batas buka habis tetap bisa dicabut: sesi yang sudah terbuka masih bisa mengunduh sampai sesinya habis. */}
+                {bolehKelola && (st === 'aktif' || st === 'batas-habis') && (
                   <button type="button" onClick={() => cabut(t.id)} disabled={mencabut === t.id}
                     className="tekan inline-flex h-8 items-center gap-1 rounded-xl px-2 text-xs font-bold text-rose-600 hover:bg-rose-50 disabled:opacity-60 dark:hover:bg-rose-950/40">
                     <Prohibit size={14} weight="bold" aria-hidden="true" /> {mencabut === t.id ? 'Mencabut…' : 'Cabut'}

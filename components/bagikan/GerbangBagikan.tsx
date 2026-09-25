@@ -42,7 +42,10 @@ export function FormPin({ token, terkunciSampai }: { token: string; terkunciSamp
   const [busy, setBusy] = useState(false);
 
   const kirim = async (e: React.FormEvent) => {
-    e.preventDefault(); setBusy(true); setGalat(null);
+    e.preventDefault();
+    // Tombol tidak dinonaktifkan saat PIN belum lengkap: Enter/tempel cepat tetap terkirim, dicek di sini.
+    if (!/^\d{6}$/.test(pin)) { setGalat('PIN harus 6 angka.'); return; }
+    setBusy(true); setGalat(null);
     try {
       const r = await fetch(`/api/bagikan/${token}/pin`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }) });
       if (r.ok) { router.refresh(); return; }
@@ -64,7 +67,7 @@ export function FormPin({ token, terkunciSampai }: { token: string; terkunciSamp
         {galat && <PesanGalat pesan={galat} />}
         <input value={pin} onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))} inputMode="numeric" autoComplete="one-time-code"
           aria-label="PIN 6 angka" placeholder="••••••" className={`${kelasInput} text-center text-2xl font-black tracking-[0.5em]`} autoFocus />
-        <TombolUtama type="submit" disabled={busy || pin.length !== 6} className="h-12 w-full">{busy ? 'Memeriksa…' : 'Buka berkas'}</TombolUtama>
+        <TombolUtama type="submit" disabled={busy} className="h-12 w-full">{busy ? 'Memeriksa…' : 'Buka berkas'}</TombolUtama>
       </form>
     </Kartu>
   );

@@ -39,7 +39,8 @@ export function HalamanBerkas({ hariIni = new Date() }: { hariIni?: Date }) {
         ambil<TautanBagikan[]>('/api/lembaga/tautan'),
       ]);
       setData(d); setTautan(t);
-    } catch (e) { setGalat(e instanceof Error ? e.message : 'Gagal memuat berkas lembaga.'); }
+      return d;
+    } catch (e) { setGalat(e instanceof Error ? e.message : 'Gagal memuat berkas lembaga.'); return null; }
   }, []);
   useEffect(() => { muat(); }, [muat]);
 
@@ -50,7 +51,13 @@ export function HalamanBerkas({ hariIni = new Date() }: { hariIni?: Date }) {
   const penerima = useMemo(() => Object.fromEntries((tautan ?? []).map(t => [t.id, t.penerima])), [tautan]);
 
   const tutup = () => setLembar(null);
-  const selesai = () => { setLembar(null); muat(); };
+  /** Tutup lembar & muat ulang; bila `bukaLagi`, buka kembali detail berkas itu dengan data TERBARU (bukan salinan lama). */
+  const selesai = async (bukaLagi?: string) => {
+    setLembar(null);
+    const d = await muat();
+    const b = bukaLagi ? d?.berkas.find(x => x.id === bukaLagi) : undefined;
+    if (b) setLembar({ jenis: 'detail', berkas: b });
+  };
   const judulLembar = !lembar ? '' : lembar.jenis === 'tautan' ? 'Bagikan berkas'
     : lembar.jenis === 'detail' ? labelBerkas(lembar.berkas)
     : lembar.m.mode === 'baru' ? 'Unggah berkas' : lembar.m.mode === 'versi' ? 'Ganti versi' : 'Ubah data berkas';
@@ -79,7 +86,7 @@ export function HalamanBerkas({ hariIni = new Date() }: { hariIni?: Date }) {
       {galat && <PesanGalat pesan={galat} />}
 
       {tab === 'berkas' && (!data ? <div className="h-40 animate-pulse rounded-kartu bg-slate-200/60 dark:bg-slate-800/60" /> : (
-        <ul className="bergilir grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="bergilir grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3 [&>li>*]:h-full">
           {JENIS_BERKAS.filter(j => j.kunci !== 'LAINNYA').map(j => (
             <li key={j.kunci}>
               <KartuBerkas jenis={j.kunci} berkas={perJenis.get(j.kunci) ?? null} bolehUnggah={!!hak?.kelola} lihatRahasia={!!hak?.rahasia} hariIni={hariIni}
@@ -104,7 +111,7 @@ export function HalamanBerkas({ hariIni = new Date() }: { hariIni?: Date }) {
       ))}
 
       {tab === 'tautan' && (
-        <DaftarTautan tautan={tautan} bolehKelola={!!hak?.kelola} onBerubah={muat}
+        <DaftarTautan tautan={tautan} bolehKelola={!!hak?.kelola} onBerubah={() => { muat(); }}
           onLihatCatatan={id => { setSaring({ tautanId: id }); setTab('akses'); }} />
       )}
 
@@ -120,7 +127,7 @@ export function HalamanBerkas({ hariIni = new Date() }: { hariIni?: Date }) {
             <DetailBerkas b={lembar.berkas} hak={hak}
               onGantiVersi={() => setLembar({ jenis: 'form', m: { mode: 'versi', berkas: lembar.berkas } })}
               onUbah={() => setLembar({ jenis: 'form', m: { mode: 'ubah', berkas: lembar.berkas } })}
-              onTerhapus={selesai} />
+              onTerhapus={() => selesai()} />
             <button type="button" onClick={() => { setSaring({ berkasId: lembar.berkas.id }); setTab('akses'); tutup(); }}
               className="tekan mt-3 h-10 w-full rounded-xl text-xs font-bold text-bq-biru hover:bg-slate-50 dark:hover:bg-slate-800/60">
               Lihat catatan akses berkas ini
@@ -128,9 +135,10 @@ export function HalamanBerkas({ hariIni = new Date() }: { hariIni?: Date }) {
           </>
         )}
         {lembar?.jenis === 'form' && (
-          <FormBerkas m={lembar.m} jenisTerpakai={new Set(perJenis.keys())} lihatRahasia={!!hak?.rahasia} onSelesai={selesai} />
+          <FormBerkas m={lembar.m} jenisTerpakai={new Set(perJenis.keys())} lihatRahasia={!!hak?.rahasia}
+            onSelesai={() => selesai(lembar.m.mode === 'baru' ? undefined : lembar.m.berkas.id)} />
         )}
-        {lembar?.jenis === 'tautan' && data && <FormTautan berkas={data.berkas} onSelesai={selesai} />}
+        {lembar?.jenis === 'tautan' && data && <FormTautan berkas={data.berkas} onSelesai={() => selesai()} />}
       </LembarBawah>
     </div>
   );

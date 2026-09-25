@@ -4,7 +4,7 @@ vi.mock('server-only', () => ({}));
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 import { unzipSync, strFromU8 } from 'fflate';
-import { tandaAirPdf, tandaAirGambar, buatZip, teksTandaAir } from '@/lib/bagikan/tanda-air';
+import { tandaAirPdf, tandaAirGambar, buatZip, teksTandaAir, posisiTandaAirPdf } from '@/lib/bagikan/tanda-air';
 
 async function pdfContoh(halaman: number): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
@@ -25,6 +25,30 @@ describe('tandaAirPdf', () => {
     const doc = await PDFDocument.load(hasil);
     expect(doc.getPageCount()).toBe(2);
     expect(hasil.byteLength).toBeGreaterThan(asli.byteLength);
+  });
+});
+
+describe('posisiTandaAirPdf', () => {
+  it('tiga baris sejajar berjarak (tidak menumpuk) dan teks ASLI muat utuh di halaman', async () => {
+    const { StandardFonts } = await import('pdf-lib');
+    const doc = await PDFDocument.create();
+    const font = await doc.embedFont(StandardFonts.HelveticaBold);
+    const teks = 'Untuk: Corporate Social Responsibility Bank Rakyat - 25 September 2026';
+    for (const [w, h] of [[595, 842], [842, 595], [612, 1008]]) {
+      const p = posisiTandaAirPdf(w, h, font.widthOfTextAtSize(teks, 1));
+      const rad = (p.sudutDerajat * Math.PI) / 180;
+      const tegak = (q: { x: number; y: number }) => -q.x * Math.sin(rad) + q.y * Math.cos(rad);
+      const d = p.baris.map(tegak).sort((a, b) => a - b);
+      expect(d[1] - d[0]).toBeGreaterThan(80);
+      expect(d[2] - d[1]).toBeGreaterThan(80);
+      for (const q of p.baris) {
+        for (const t of [0, 1]) {
+          const x = q.x + t * p.lebar * Math.cos(rad), y = q.y + t * p.lebar * Math.sin(rad);
+          expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThanOrEqual(w);
+          expect(y).toBeGreaterThanOrEqual(0); expect(y).toBeLessThanOrEqual(h);
+        }
+      }
+    }
   });
 });
 
