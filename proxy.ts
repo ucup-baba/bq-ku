@@ -68,10 +68,10 @@ export async function proxy(request: NextRequest) {
       return withSessionCookies(NextResponse.redirect(url));
     }
 
-    if (rooms.length === 0 && target === 'donatur') {
+    if (rooms.length === 0 && target !== 'santri') {
       // Tidak punya ruangan sama sekali (profil belum ada/nonaktif/gagal dimuat): ruang santri
       // tetap dilewatkan (halaman "Akun belum diaktifkan" yang menangani, tanpa loop redirect),
-      // tapi ruang donatur tetap ditolak.
+      // tapi ruang donatur & lembaga tetap ditolak.
       if (pathname.startsWith('/api/')) {
         return withSessionCookies(NextResponse.json(
           { error: 'Anda tidak memiliki akses ke ruangan ini', code: 'FORBIDDEN' },

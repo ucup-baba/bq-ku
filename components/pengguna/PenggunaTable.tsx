@@ -22,6 +22,7 @@ const RUANGAN_FILTER: { value: 'semua' | Room; label: string }[] = [
   { value: 'semua', label: 'Semua' },
   { value: 'santri', label: ROOM_LABEL.santri },
   { value: 'donatur', label: ROOM_LABEL.donatur },
+  { value: 'lembaga', label: ROOM_LABEL.lembaga },
 ];
 const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : 'Belum pernah';
 const fmtMasuk = (r: Row) => r.status === 'MENUNGGU' ? 'Menunggu masuk pertama via Google' : fmt(r.lastSignInAt);

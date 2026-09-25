@@ -63,6 +63,37 @@ describe('proxy: penjaga ruangan', () => {
     expect(res.headers.get('location')).toBeNull();
   });
 
+  it('PENGURUS membuka /santri → redirect ke /lembaga', async () => {
+    loggedIn(['PENGURUS']);
+    const res = await proxy(req('/santri'));
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get('location')!).pathname).toBe('/lembaga');
+  });
+
+  it('PENGURUS memanggil /api/donatur → 403', async () => {
+    loggedIn(['PENGURUS']);
+    expect((await proxy(req('/api/donatur'))).status).toBe(403);
+  });
+
+  it('PENGURUS membuka /lembaga → diteruskan, cookie bq_room=lembaga', async () => {
+    loggedIn(['PENGURUS']);
+    const res = await proxy(req('/lembaga'));
+    expect(res.headers.get('location')).toBeNull();
+    expect(res.cookies.get('bq_room')?.value).toBe('lembaga');
+  });
+
+  it('ADMIN_SANTRI membuka /lembaga → redirect ke /', async () => {
+    loggedIn(['ADMIN_SANTRI']);
+    const res = await proxy(req('/lembaga'));
+    expect(new URL(res.headers.get('location')!).pathname).toBe('/');
+  });
+
+  it('tanpa peran membuka /lembaga → redirect ke /', async () => {
+    loggedIn([], false);
+    const res = await proxy(req('/lembaga'));
+    expect(new URL(res.headers.get('location')!).pathname).toBe('/');
+  });
+
   it('SUPERADMIN membuka /donatur → diteruskan, cookie bq_room=donatur diset', async () => {
     loggedIn(['SUPERADMIN']);
     const res = await proxy(req('/donatur'));
