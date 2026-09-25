@@ -47,9 +47,11 @@ body {
   animation: halamanMasuk 250ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Stagger fade-up untuk anak-anak langsung. Keyframe akhir transform:none. */
+/* Stagger fade-up untuk anak-anak langsung. Fill `backwards` (bukan `both`):
+   `both` menahan translateY(0) setelah selesai — tetap sebuah transform, sehingga
+   modal position:fixed di dalamnya terkurung di kartu dan tak bisa di-scroll. */
 .bergilir > * {
-  animation: halamanMasuk 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: halamanMasuk 350ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
   animation-delay: calc(var(--urutan, 0) * 60ms);
 }
 .bergilir > *:nth-child(2) { --urutan: 1; }

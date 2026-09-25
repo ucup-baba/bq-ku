@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, 
   ArrowSquareOut, 
@@ -56,7 +57,7 @@ export function DocumentPreviewModal({
     };
   }, [isOpen, onClose, fileUrl]);
 
-  if (!isOpen || !fileUrl) return null;
+  if (!isOpen || !fileUrl || typeof document === 'undefined') return null;
 
   // Determine if file is PDF or image
   const isPdf = 
@@ -69,7 +70,8 @@ export function DocumentPreviewModal({
   const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.25, 0.5));
   const handleResetZoom = () => setZoom(1);
 
-  return (
+  // Portal ke <body>: induk ber-transform/backdrop-blur membuat `fixed` terkurung di kartu.
+  return createPortal(
     <div 
       className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
       onClick={onClose}
@@ -219,6 +221,7 @@ export function DocumentPreviewModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

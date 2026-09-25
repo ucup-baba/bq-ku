@@ -56,6 +56,14 @@ export const DOCUMENT_CATEGORIES = [
   { id: 'LAINNYA', label: 'Formulir / Berkas Lainnya', wajib: false, icon: FileText, desc: 'Formulir pendaftaran / berkas tambahan' },
 ];
 
+/** Nama berkas dari URL (tanpa query token tanda tangan). */
+function namaBerkasDariUrl(url: string): string {
+  const nama = url.split('?')[0].split('/').pop() || '';
+  try { return decodeURIComponent(nama) || 'Dokumen Terunggah'; } catch { return nama || 'Dokumen Terunggah'; }
+}
+
+const isUrlPdf = (url: string) => url.split('?')[0].toLowerCase().endsWith('.pdf');
+
 export function DocumentUploadBox({ 
   onDataExtracted, 
   onBatchExtracted,
@@ -416,7 +424,7 @@ export function DocumentUploadBox({
               onChange={handleFileChange}
               className="hidden"
             />
-            <div className="flex items-center gap-3.5 w-full sm:w-auto">
+            <div className="flex items-center gap-3.5 w-full sm:w-auto sm:flex-1 min-w-0">
               <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-300/50 dark:border-emerald-700/50">
                 <CheckCircle size={28} weight="duotone" />
               </div>
@@ -430,7 +438,7 @@ export function DocumentUploadBox({
                   </span>
                 </div>
                 <p className="text-xs font-medium text-slate-700 dark:text-slate-200 truncate mt-1">
-                  {currentExistingDoc.fileUrl.split('/').pop() || 'Dokumen Terunggah'}
+                  {namaBerkasDariUrl(currentExistingDoc.fileUrl)}
                 </p>
                 {currentExistingDoc.nomorDokumen && (
                   <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -449,7 +457,7 @@ export function DocumentUploadBox({
                     isOpen: true,
                     title: `Berkas: ${catLabel}`,
                     fileUrl: currentExistingDoc.fileUrl,
-                    fileType: currentExistingDoc.fileUrl.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image',
+                    fileType: isUrlPdf(currentExistingDoc.fileUrl) ? 'pdf' : 'image',
                     badge: 'Sudah Terunggah',
                   });
                 }}
@@ -798,7 +806,7 @@ export function DocumentUploadBox({
                         isOpen: true,
                         title: catMeta?.label || doc.kategori,
                         fileUrl: doc.fileUrl,
-                        fileType: doc.fileUrl.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image',
+                        fileType: isUrlPdf(doc.fileUrl) ? 'pdf' : 'image',
                         badge: 'Berkas Terlampir',
                       })}
                       className="px-2.5 py-1 text-xs font-semibold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 dark:hover:bg-teal-900/60 rounded-lg flex items-center gap-1 border border-teal-200 dark:border-teal-800/80 transition-colors cursor-pointer"
