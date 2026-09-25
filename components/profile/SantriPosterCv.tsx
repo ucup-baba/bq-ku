@@ -3,7 +3,7 @@
 import React from 'react';
 import { Baloo_2 } from 'next/font/google';
 import { User, GraduationCap, BookOpen, Star, IdentificationCard, Buildings, Check, MapPin, PencilSimple } from '@phosphor-icons/react';
-import { calculateAge, formatDateIndonesian, samarkanNik, rapikanAlamat } from '@/lib/utils/formatters';
+import { calculateAge, formatDateIndonesian, samarkanNik, rapikanAlamat, rapikanNamaTempat } from '@/lib/utils/formatters';
 
 /** Huruf judul poster; hanya dimuat di halaman yang memakai poster. */
 const baloo = Baloo_2({ subsets: ['latin'], variable: '--font-baloo', display: 'swap' });
@@ -54,6 +54,7 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
   const labelKelas = alumni
     ? (santri.kelas.toLowerCase().includes('lulus') ? santri.kelas : `Lulus ${santri.kelas}`)
     : `Kelas ${santri.kelas}`;
+  const sekolahSekarang = rapikanNamaTempat(santri.sekolahSekarang);
   const orangTua = santri.namaAyah || santri.namaIbu ? `${santri.namaAyah || '-'} / ${santri.namaIbu || '-'}` : '-';
 
   return (
@@ -112,10 +113,10 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
             <h2 className="max-w-full break-words font-[family-name:var(--font-baloo)] text-[2.5rem] font-extrabold leading-none text-poster-judul poster-lebar:text-6xl">
               {santri.namaLengkap}
             </h2>
-            {santri.sekolahSekarang && (
+            {sekolahSekarang && (
               <span className="inline-flex -rotate-1 items-center gap-2 rounded-full border-2 border-poster-hijau bg-poster-sekolah px-4 py-1.5">
                 <Buildings size={18} weight="bold" className="shrink-0 text-poster-hijau" aria-hidden />
-                <span className="font-[family-name:var(--font-baloo)] text-base font-bold text-poster-hijau-tua poster-lebar:text-lg">{santri.sekolahSekarang}</span>
+                <span className="font-[family-name:var(--font-baloo)] text-base font-bold text-poster-hijau-tua poster-lebar:text-lg">{sekolahSekarang}</span>
               </span>
             )}
             {santri.ringkasanTentang && (
@@ -153,15 +154,15 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
 
           <Blok judul="RIWAYAT PENDIDIKAN" ikon={GraduationCap} miring="rotate-[.4deg]" pita="right-10 -rotate-[4deg] bg-[rgba(96,165,250,.6)]"
             kelas="bg-poster-b3-bg border-poster-b3-garis" warnaIkon="text-poster-b3-ikon border-poster-b3-ikon" warnaJudul="text-poster-b3-judul">
-            <Baris label="Sekolah sekarang">{santri.sekolahSekarang ? `${santri.sekolahSekarang} · ${labelKelas}` : labelKelas}</Baris>
-            {santri.asalSekolahSebelumnya && <Baris label="Sekolah asal">{santri.asalSekolahSebelumnya}</Baris>}
+            <Baris label="Sekolah sekarang">{sekolahSekarang ? `${sekolahSekarang} · ${labelKelas}` : labelKelas}</Baris>
+            {santri.asalSekolahSebelumnya && <Baris label="Sekolah asal">{rapikanNamaTempat(santri.asalSekolahSebelumnya)}</Baris>}
             <Baris label="NISN" angka>{santri.nisn || '-'}</Baris>
             <PencilSimple size={40} className="absolute bottom-4 right-5 hidden text-poster-b3-judul opacity-70 poster-lebar:block" aria-hidden />
           </Blok>
 
           <Blok judul="IDENTITAS & WALI SANTRI" ikon={IdentificationCard} miring="-rotate-[.4deg]" pita="left-8 rotate-[5deg] bg-[rgba(250,204,21,.6)]"
             kelas="bg-poster-b4-bg border-poster-b4-garis" warnaIkon="text-poster-b4-ikon border-poster-b4-ikon" warnaJudul="text-poster-b4-judul">
-            <Baris label="Tempat, tgl lahir">{santri.tempatLahir}, {formatDateIndonesian(santri.tanggalLahir) || santri.tanggalLahir}</Baris>
+            <Baris label="Tempat, tgl lahir">{rapikanNamaTempat(santri.tempatLahir)}, {formatDateIndonesian(santri.tanggalLahir) || santri.tanggalLahir}</Baris>
             <Baris label="Orang tua">{orangTua}</Baris>
             <Baris label="WhatsApp wali" angka warna="text-poster-hijau">{santri.kontakWali || '-'}</Baris>
             <Baris label="Alamat">{rapikanAlamat(santri.alamat) || '-'}</Baris>

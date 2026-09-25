@@ -6,7 +6,7 @@ import {
   CheckCircle, LockKey, Trash, XCircle, WarningCircle, WhatsappLogo,
 } from '@phosphor-icons/react';
 import { DocumentUploadBox } from '../DocumentUploadBox';
-import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, formatNikDisplay, cleanNumericInput } from '@/lib/utils/formatters';
+import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, formatNikDisplay, cleanNumericInput, rapikanNamaTempat } from '@/lib/utils/formatters';
 import type { SantriFormCtx } from './useSantriForm';
 
 /** Langkah 4 — pendidikan & profil CV. */
@@ -85,6 +85,7 @@ export function LangkahSekolah({ f }: { f: SantriFormCtx }) {
               required
               value={formData.sekolahSekarang}
               onChange={e => setFormData({ ...formData, sekolahSekarang: e.target.value })}
+              onBlur={() => setFormData(prev => ({ ...prev, sekolahSekarang: rapikanNamaTempat(prev.sekolahSekarang) }))}
               placeholder={formData.jenjang === 'ALUMNI' ? 'Contoh: Mahasiswa UNY / Khidmah Asrama BQ / Bekerja' : 'Contoh: SMA Negeri 1 Tempel / SMK / Sekolah Luar'}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base md:text-sm focus:ring-2 focus:ring-[#0B5FA5] focus:outline-none"
             />
@@ -113,6 +114,7 @@ export function LangkahSekolah({ f }: { f: SantriFormCtx }) {
                   setFormData(prev => ({ ...prev, asalSekolahSebelumnya: val }));
                 }
               }}
+              onBlur={() => setFormData(prev => ({ ...prev, asalSekolahSebelumnya: rapikanNamaTempat(prev.asalSekolahSebelumnya) }))}
               placeholder={formData.jenjang === 'ALUMNI' ? 'Contoh: SMA IT Baitul Qowwam / SMK Negeri 2 Depok' : 'Contoh: SD Negeri 1 Sleman / SMP Muhammadiyah 1 Tempel'}
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base md:text-sm focus:ring-2 focus:ring-[#0B5FA5] focus:outline-none"
             />

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toTitleCase, matchBestFamilyMember, formatJam, deriveEducationFromPreviousSchool, deriveEducationFromDocument, samarkanNik, rapikanAlamat } from '@/lib/utils/formatters';
+import { toTitleCase, matchBestFamilyMember, formatJam, deriveEducationFromPreviousSchool, deriveEducationFromDocument, samarkanNik, rapikanAlamat, rapikanNamaTempat } from '@/lib/utils/formatters';
 import { FamilyMemberCandidate } from '@/lib/ocr/parser';
 
 describe('formatters utility', () => {
@@ -167,5 +167,24 @@ describe('rapikanAlamat', () => {
   });
   it('kosong tetap kosong', () => {
     expect(rapikanAlamat(null)).toBe('');
+  });
+});
+
+describe('rapikanNamaTempat', () => {
+  it('nama sekolah: kapital awal kata, singkatan jenjang tetap', () => {
+    expect(rapikanNamaTempat('SMK MUHAMMADIYYAH 2 TEMPEL')).toBe('SMK Muhammadiyyah 2 Tempel');
+    expect(rapikanNamaTempat('smp n 1 tempel')).toBe('SMP N 1 Tempel');
+    expect(rapikanNamaTempat('MTSN 3 SLEMAN')).toBe('MTsN 3 Sleman');
+    expect(rapikanNamaTempat("MI MA'ARIF TEMPEL")).toBe("MI Ma'arif Tempel");
+    expect(rapikanNamaTempat('SMA IT ABU BAKAR')).toBe('SMA IT Abu Bakar');
+  });
+  it('tempat lahir & kosong', () => {
+    expect(rapikanNamaTempat('SLEMAN')).toBe('Sleman');
+    expect(rapikanNamaTempat('KULON PROGO')).toBe('Kulon Progo');
+    expect(rapikanNamaTempat('')).toBe('');
+  });
+  it('tulisan campuran dianggap disengaja', () => {
+    expect(rapikanNamaTempat('Mahasiswa UNY')).toBe('Mahasiswa UNY');
+    expect(rapikanNamaTempat('  SMA  Negeri 1 ')).toBe('SMA Negeri 1');
   });
 });

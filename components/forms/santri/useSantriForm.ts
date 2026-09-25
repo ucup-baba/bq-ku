@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { BatchItemResult } from '../BatchScanModal';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from '@/lib/ocr/parser';
 import { useTheme } from '@/components/theme/ThemeProvider';
-import { toTitleCase, deriveEducationFromDocument, checkNameMatch } from '@/lib/utils/formatters';
+import { toTitleCase, deriveEducationFromDocument, checkNameMatch, rapikanAlamat, rapikanNamaTempat } from '@/lib/utils/formatters';
 import type { DocumentMismatchData } from '@/components/modals/DocumentGuardModal';
 import { santriClientSchema, zodFieldErrors } from '@/lib/validation/santri';
 
@@ -202,7 +202,7 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
       newOcrTags.nisn = true;
     }
     if (extracted.tempatLahir) {
-      updated.tempatLahir = extracted.tempatLahir;
+      updated.tempatLahir = rapikanNamaTempat(extracted.tempatLahir);
       newOcrTags.tempatLahir = true;
     }
     const rawTgl = extracted.tanggalLahir || (extracted.nik ? extractBirthDateFromNik(extracted.nik) : null);
@@ -243,7 +243,7 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
       if (extracted.statusSosial !== 'REGULER') newOcrTags.statusSosial = true;
     }
     if (extracted.alamat) {
-      updated.alamat = extracted.alamat;
+      updated.alamat = rapikanAlamat(extracted.alamat);
       newOcrTags.alamat = true;
     }
     if (extracted.pekerjaanOrtu) {
@@ -253,7 +253,7 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
     let customNoticeText: string | null = null;
     const rawSchoolName = extracted.asalSekolahSebelumnya || '';
     if (rawSchoolName) {
-      updated.asalSekolahSebelumnya = rawSchoolName;
+      updated.asalSekolahSebelumnya = rapikanNamaTempat(rawSchoolName);
       newOcrTags.asalSekolahSebelumnya = true;
     }
 
@@ -414,7 +414,7 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
         newOcrTags.nisn = true;
       }
       if (ext.tempatLahir && !currentForm.tempatLahir) {
-        currentForm.tempatLahir = ext.tempatLahir;
+        currentForm.tempatLahir = rapikanNamaTempat(ext.tempatLahir);
         newOcrTags.tempatLahir = true;
       }
       const rawTgl = ext.tanggalLahir || (ext.nik ? extractBirthDateFromNik(ext.nik) : null);
@@ -455,7 +455,7 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
         newOcrTags.statusSosial = true;
       }
       if (ext.alamat && !currentForm.alamat) {
-        currentForm.alamat = ext.alamat;
+        currentForm.alamat = rapikanAlamat(ext.alamat);
         newOcrTags.alamat = true;
       }
       if (ext.pekerjaanOrtu && !currentForm.pekerjaanOrtu) {
@@ -466,7 +466,7 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
       // Deteksi cerdas jenjang & asal sekolah
       const rawSchool = ext.asalSekolahSebelumnya || '';
       if (rawSchool && !currentForm.asalSekolahSebelumnya) {
-        currentForm.asalSekolahSebelumnya = rawSchool;
+        currentForm.asalSekolahSebelumnya = rapikanNamaTempat(rawSchool);
         newOcrTags.asalSekolahSebelumnya = true;
       }
       const derivedEdu = deriveEducationFromDocument({ ...ext, kategori: ext.kategori || item.kategori });

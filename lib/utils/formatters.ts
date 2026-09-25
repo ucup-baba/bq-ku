@@ -382,7 +382,32 @@ export function formatNikDisplay(val?: string | null): string {
 }
 
 const LABEL_ALAMAT = /\b(?:DUSUN|DSN|DESA\s*\/\s*KELURAHAN|DESA|KELURAHAN|KEL|KECAMATAN|KEC|KABUPATEN\s*\/\s*KOTA|KABUPATEN|KAB|PROVINSI|PROV)\b\.?/gi;
-const SINGKATAN_ALAMAT = /^(?:RT|RW|RT\/RW|DIY|DKI|NTB|NTT|[IVX]{1,4})$/i;
+/** Singkatan yang tetap kapital (kunci huruf besar → bentuk baku). */
+const SINGKATAN: Record<string, string> = Object.fromEntries(
+  ['RT', 'RW', 'RT/RW', 'DIY', 'DKI', 'NTB', 'NTT', 'TK', 'SD', 'SDN', 'SDIT', 'SMP', 'SMPN', 'SMPIT', 'SMA', 'SMAN', 'SMAIT',
+    'SMK', 'SMKN', 'MI', 'MIN', 'MA', 'MAN', 'IT', 'PGRI', 'NU', 'MTs', 'MTsN'].map((s) => [s.toUpperCase(), s])
+);
+
+/** Kapital Awal Kata; singkatan, angka Romawi, huruf tunggal & kata berangka dibiarkan. */
+function kapitalAwalKata(teks: string): string {
+  return teks.split(' ').map((k) => {
+    const inti = k.replace(/[.,]/g, '').toUpperCase();
+    if (SINGKATAN[inti]) return k.toUpperCase().replace(inti, SINGKATAN[inti]);
+    if (/^[IVX]{1,4}$/.test(inti) || inti.length === 1) return k.toUpperCase();
+    if (/\d/.test(k)) return k;
+    return k.charAt(0).toUpperCase() + k.slice(1).toLowerCase();
+  }).join(' ');
+}
+
+/**
+ * Nama sekolah / tempat lahir ditulis seperti nama: "SMK MUHAMMADIYYAH 2 TEMPEL" → "SMK Muhammadiyyah 2 Tempel".
+ * Hanya teks yang seluruhnya kapital atau seluruhnya kecil; tulisan campuran ("Mahasiswa UNY") dianggap disengaja.
+ */
+export function rapikanNamaTempat(teks?: string | null): string {
+  const bersih = (teks ?? '').trim().replace(/\s+/g, ' ');
+  const seragam = bersih === bersih.toUpperCase() || bersih === bersih.toLowerCase();
+  return seragam ? kapitalAwalKata(bersih) : bersih;
+}
 
 /**
  * Alamat KK → ringkas & enak dibaca: label (Dusun, Desa/Kelurahan, Kecamatan,
@@ -401,10 +426,7 @@ export function rapikanAlamat(alamat?: string | null): string {
     return (ulang ? kata.slice(0, separuh) : kata).join(' ');
   }).filter((b, i, arr) => b && b.toLowerCase() !== arr[i - 1]?.toLowerCase());
   const hasil = bagian.join(', ');
-  if (!semuaKapital) return hasil;
-  return hasil.split(' ').map((k) =>
-    SINGKATAN_ALAMAT.test(k.replace(/[.,]/g, '')) || /\d/.test(k) ? k : k.charAt(0) + k.slice(1).toLowerCase()
-  ).join(' ');
+  return semuaKapital ? kapitalAwalKata(hasil) : hasil;
 }
 
 /** NIK untuk tampilan publik/cetak: 4 digit awal & akhir saja, mis. "3404 •••• •••• 0001". */

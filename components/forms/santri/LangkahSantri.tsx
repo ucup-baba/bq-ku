@@ -6,7 +6,7 @@ import {
   CheckCircle, LockKey, Trash, XCircle, WarningCircle, WhatsappLogo,
 } from '@phosphor-icons/react';
 import { DocumentUploadBox } from '../DocumentUploadBox';
-import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, formatNikDisplay, cleanNumericInput } from '@/lib/utils/formatters';
+import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, formatNikDisplay, cleanNumericInput, rapikanNamaTempat } from '@/lib/utils/formatters';
 import type { SantriFormCtx } from './useSantriForm';
 
 /** Langkah 2 — foto formal & santai, data kependudukan. */
@@ -160,6 +160,7 @@ export function LangkahSantri({ f }: { f: SantriFormCtx }) {
               required
               value={formData.tempatLahir}
               onChange={e => setFormData({ ...formData, tempatLahir: e.target.value })}
+              onBlur={() => setFormData(prev => ({ ...prev, tempatLahir: rapikanNamaTempat(prev.tempatLahir) }))}
               placeholder="Sleman / Yogyakarta"
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-base md:text-sm focus:ring-2 focus:ring-[#0B5FA5] focus:outline-none"
             />
