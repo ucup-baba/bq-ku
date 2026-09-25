@@ -117,3 +117,57 @@ body {
   left: var(--takik-x);
   transition: opacity 200ms ease-out, transform 240ms ease-out;
 }
+
+/* ——— Poster CV santri (gaya scrapbook) ———
+   Semua warna poster lewat --pk-* agar terang/gelap/cetak cukup menukar variabel.
+   Foto (polaroid) & stiker badge sengaja tetap terang di mode gelap. */
+.poster-wadah { container: poster / inline-size; }
+.poster-kertas {
+  --pk-latar: #fbf8f1; --pk-grid: rgba(15,122,79,.07); --pk-garis: rgba(28,37,54,.09);
+  --pk-tinta: #1c2536; --pk-tinta2: #334155; --pk-redup: #475569; --pk-judul: #16233b;
+  --pk-hijau: #0f6b45; --pk-hijau-tua: #0f4d33; --pk-sekolah: #dcfce7;
+  --pk-kartu: #ffffff; --pk-polaroid: #ffffff; --pk-pisah: #b6c0cc;
+  --pk-chip: #0f6b45; --pk-chip-teks: #ffffff; --pk-stabilo: rgba(250,204,21,.55); --pk-stabilo-teks: #0f6b45;
+  --pk-bayang: rgba(28,37,54,.18);
+  --pk-b1-bg: #eaf6ef; --pk-b1-garis: #7cc4a4;
+  --pk-b2-bg: #fdecf0; --pk-b2-garis: #f2a7b8; --pk-b2-ikon: #be185d; --pk-b2-judul: #831843;
+  --pk-b3-bg: #eaf2fc; --pk-b3-garis: #93b8e6; --pk-b3-ikon: #1d4ed8; --pk-b3-judul: #1e3a8a;
+  --pk-b4-bg: #fff8dc; --pk-b4-garis: #eccb54; --pk-b4-ikon: #a16207; --pk-b4-judul: #713f12;
+  --pk-aksen: #e11d48; --pk-aksen-lembut: #fda4af;
+  color: var(--pk-tinta);
+  background-color: var(--pk-latar);
+  background-image: linear-gradient(var(--pk-grid) 1px, transparent 1px), linear-gradient(90deg, var(--pk-grid) 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+.poster-kertas[data-gender='IKHWAN'] { --pk-aksen: #4d7c0f; --pk-aksen-lembut: #bef264; }
+.dark .poster-kertas {
+  --pk-latar: #131820; --pk-grid: rgba(255,255,255,.045); --pk-garis: rgba(255,255,255,.07);
+  --pk-tinta: #e6ebf2; --pk-tinta2: #c0cad6; --pk-redup: #9aa7b8; --pk-judul: #f8fafc;
+  --pk-hijau: #34d399; --pk-hijau-tua: #a7f3d0; --pk-sekolah: #0f2a20;
+  --pk-kartu: #1c232e; --pk-polaroid: #ece6d8; --pk-pisah: #3b4656;
+  --pk-chip: #34d399; --pk-chip-teks: #052e1f; --pk-stabilo: #facc15; --pk-stabilo-teks: #1a1405;
+  --pk-bayang: rgba(0,0,0,.5);
+  --pk-b1-bg: #10261f; --pk-b1-garis: #2f7d62;
+  --pk-b2-bg: #2a1520; --pk-b2-garis: #9b4a66; --pk-b2-ikon: #f9a8d4; --pk-b2-judul: #fbcfe8;
+  --pk-b3-bg: #121f33; --pk-b3-garis: #3f6aa3; --pk-b3-ikon: #93c5fd; --pk-b3-judul: #bfdbfe;
+  --pk-b4-bg: #2a2310; --pk-b4-garis: #a4852c; --pk-b4-ikon: #fcd34d; --pk-b4-judul: #fde68a;
+}
+.poster-bergaris {
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--pk-garis) 31px, var(--pk-garis) 32px);
+}
+/* Cetak selalu versi terang, dengan warna latar ikut tercetak. */
+@media print {
+  .dark .poster-kertas {
+    --pk-latar: #fbf8f1; --pk-grid: rgba(15,122,79,.07); --pk-garis: rgba(28,37,54,.09);
+    --pk-tinta: #1c2536; --pk-tinta2: #334155; --pk-redup: #475569; --pk-judul: #16233b;
+    --pk-hijau: #0f6b45; --pk-hijau-tua: #0f4d33; --pk-sekolah: #dcfce7;
+    --pk-kartu: #ffffff; --pk-polaroid: #ffffff; --pk-pisah: #b6c0cc;
+    --pk-chip: #0f6b45; --pk-chip-teks: #ffffff; --pk-stabilo: rgba(250,204,21,.55); --pk-stabilo-teks: #0f6b45;
+    --pk-bayang: rgba(28,37,54,.18);
+    --pk-b1-bg: #eaf6ef; --pk-b1-garis: #7cc4a4;
+    --pk-b2-bg: #fdecf0; --pk-b2-garis: #f2a7b8; --pk-b2-ikon: #be185d; --pk-b2-judul: #831843;
+    --pk-b3-bg: #eaf2fc; --pk-b3-garis: #93b8e6; --pk-b3-ikon: #1d4ed8; --pk-b3-judul: #1e3a8a;
+    --pk-b4-bg: #fff8dc; --pk-b4-garis: #eccb54; --pk-b4-ikon: #a16207; --pk-b4-judul: #713f12;
+  }
+  .poster-kertas { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toTitleCase, matchBestFamilyMember, formatJam, deriveEducationFromPreviousSchool, deriveEducationFromDocument } from '@/lib/utils/formatters';
+import { toTitleCase, matchBestFamilyMember, formatJam, deriveEducationFromPreviousSchool, deriveEducationFromDocument, samarkanNik } from '@/lib/utils/formatters';
 import { FamilyMemberCandidate } from '@/lib/ocr/parser';
 
 describe('formatters utility', () => {
@@ -139,5 +139,16 @@ describe('deriveEducationFromDocument', () => {
   it('tanpa nama sekolah memakai jenjangTerdeteksi; ALUMNI memakai tahun lulus', () => {
     expect(deriveEducationFromDocument({ jenjangTerdeteksi: 'ALUMNI', tahunLulus: '2025' })).toMatchObject({ jenjang: 'ALUMNI', kelas: 'Lulus 2025' });
     expect(deriveEducationFromDocument({})).toBeNull();
+  });
+});
+
+describe('samarkanNik', () => {
+  it('hanya menampilkan 4 digit awal & akhir', () => {
+    expect(samarkanNik('3404145501100001')).toBe('3404 •••• •••• 0001');
+    expect(samarkanNik('3404 1455 0110 0001')).toBe('3404 •••• •••• 0001');
+  });
+  it('kosong/pendek tidak membocorkan digit', () => {
+    expect(samarkanNik(null)).toBe('');
+    expect(samarkanNik('12345')).toBe('•••••');
   });
 });

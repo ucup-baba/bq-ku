@@ -381,6 +381,13 @@ export function formatNikDisplay(val?: string | null): string {
   return digits.replace(/(\d{4})(?=\d)/g, '$1 ');
 }
 
+/** NIK untuk tampilan publik/cetak: 4 digit awal & akhir saja, mis. "3404 •••• •••• 0001". */
+export function samarkanNik(val?: string | null): string {
+  const digits = (val ?? '').replace(/\D/g, '');
+  if (digits.length < 8) return digits ? '•'.repeat(digits.length) : '';
+  return `${digits.slice(0, 4)} •••• •••• ${digits.slice(-4)}`;
+}
+
 /**
  * Membersihkan input menjadi hanya angka murni (maksimal panjang tertentu jika ditentukan)
  */
