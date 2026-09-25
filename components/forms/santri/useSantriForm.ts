@@ -8,6 +8,7 @@ import { useTheme } from '@/components/theme/ThemeProvider';
 import { toTitleCase, deriveEducationFromDocument, checkNameMatch, rapikanAlamat, rapikanNamaTempat, rapikanNamaOrang } from '@/lib/utils/formatters';
 import type { DocumentMismatchData } from '@/components/modals/DocumentGuardModal';
 import { santriClientSchema, zodFieldErrors } from '@/lib/validation/santri';
+import type { KolomFoto } from '@/lib/santri/foto';
 
 export interface OpsiSantriForm {
   initialData?: any;
@@ -567,29 +568,54 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
     setUploadBoxKey(prev => prev + 1);
   };
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'fotoFormalUrl' | 'fotoProfilUrl') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Foto: pilih → jendela Atur Foto (potong permanen) → unggah hasil potongan.
+  const [aturFoto, setAturFoto] = useState<{ kolom: KolomFoto; src: string; lokal: boolean } | null>(null);
+  const [fotoMengunggah, setFotoMengunggah] = useState<KolomFoto | null>(null);
+  const [galatFoto, setGalatFoto] = useState<string | null>(null);
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>, targetField: KolomFoto) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // agar berkas yang sama bisa dipilih lagi
+    if (!file) return;
+    setGalatFoto(null);
+    setAturFoto({ kolom: targetField, src: URL.createObjectURL(file), lokal: true });
+  };
+
+  const bukaAturUlangFoto = (kolom: KolomFoto) => {
+    if (formData[kolom]) setAturFoto({ kolom, src: formData[kolom], lokal: false });
+  };
+
+  const tutupAturFoto = () => {
+    if (aturFoto?.lokal) URL.revokeObjectURL(aturFoto.src);
+    setAturFoto(null);
+  };
+
+  const pakaiFoto = async (hasil: Blob) => {
+    if (!aturFoto) return;
+    const targetField = aturFoto.kolom;
+    tutupAturFoto();
+    setFotoMengunggah(targetField);
     try {
       const uploadData = new FormData();
-      uploadData.append('file', file);
+      uploadData.append('file', new File([hasil], 'foto.jpg', { type: 'image/jpeg' }));
       uploadData.append('kategori', targetField === 'fotoFormalUrl' ? 'FOTO_FORMAL' : 'FOTO_PROFIL');
       uploadData.append('tahunMasuk', String(formData.tahunMasuk || new Date().getFullYear()));
       uploadData.append('jenisKelamin', formData.jenisKelamin);
       if (formData.namaLengkap) uploadData.append('namaSantri', formData.namaLengkap);
-      uploadData.append('enhance', 'true');
+      // Tanpa `enhance`: penajaman/kontras untuk dokumen membuat wajah tampak keras.
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: uploadData,
-      });
+      const res = await fetch('/api/upload', { method: 'POST', body: uploadData });
       const data = await res.json();
       if (res.ok && data.success) {
         setFormData(prev => ({ ...prev, [targetField]: data.fileUrl }));
+      } else {
+        setGalatFoto(data.error || 'Foto gagal diunggah. Coba lagi.');
       }
     } catch (err) {
       console.error('Failed to upload photo:', err);
+      setGalatFoto('Foto gagal diunggah. Periksa koneksi lalu coba lagi.');
+    } finally {
+      setFotoMengunggah(null);
     }
   };
 
@@ -692,6 +718,7 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
     pendingDocuments, setPendingDocuments, hasExistingDraft, draftInfo,
     handleRestoreDraft, handleDiscardDraft, handleOcrDataExtracted, handleBatchOcrCompleted,
     handleResetKkAndName, handleGuardCancel, handleGuardOpenNewRegistration, handlePhotoUpload,
+    aturFoto, fotoMengunggah, galatFoto, bukaAturUlangFoto, tutupAturFoto, pakaiFoto,
     handleAddSkill, handleRemoveSkill, simpan, setGenderTheme, genderTheme,
   };
 }

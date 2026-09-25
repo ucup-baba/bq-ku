@@ -101,8 +101,8 @@ export function SantriPosterCv({ santri }: SantriPosterCvProps) {
             </div>
             <div className="absolute -right-6 bottom-9 h-7 w-24 -rotate-[32deg] bg-[rgba(214,196,160,.75)]" aria-hidden />
             {santri.fotoFormalUrl && santri.fotoProfilUrl && (
-              <div className="absolute -bottom-6 -left-7 flex h-28 w-[86px] -rotate-6 flex-col bg-poster-polaroid p-1.5 shadow-[0_6px_14px_rgba(28,37,54,.25)]">
-                <img src={santri.fotoFormalUrl} alt="Pas foto formal" className="min-h-0 flex-1 object-cover" />
+              <div className="absolute -bottom-6 -left-7 flex w-[86px] -rotate-6 flex-col bg-poster-polaroid p-1.5 shadow-[0_6px_14px_rgba(28,37,54,.25)]">
+                <img src={santri.fotoFormalUrl} alt="Pas foto formal" className="aspect-[3/4] w-full object-cover" />
                 <span className="text-center font-handwriting text-base font-bold leading-tight text-[#1c2536]">Pas Foto</span>
               </div>
             )}

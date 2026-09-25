@@ -1,13 +1,18 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import {
   User, Camera, Sparkle, Check, IdentificationCard, BookOpen, GraduationCap, Users, Plus, X,
-  CheckCircle, LockKey, Trash, XCircle, WarningCircle, WhatsappLogo,
+  CheckCircle, LockKey, Trash, XCircle, WarningCircle, WhatsappLogo, Crop, CircleNotch,
 } from '@phosphor-icons/react';
 import { DocumentUploadBox } from '../DocumentUploadBox';
 import { toTitleCase, calculateAge, deriveEducationFromPreviousSchool, formatNikDisplay, cleanNumericInput, rapikanNamaTempat } from '@/lib/utils/formatters';
 import type { SantriFormCtx } from './useSantriForm';
+import type { KolomFoto } from '@/lib/santri/foto';
+
+// Pemotong foto (react-easy-crop) hanya dimuat saat jendela Atur Foto dibuka.
+const AturFoto = dynamic(() => import('../AturFoto').then((m) => m.AturFoto), { ssr: false });
 
 /** Langkah 2 — foto formal & santai, data kependudukan. */
 export function LangkahSantri({ f }: { f: SantriFormCtx }) {
@@ -16,6 +21,7 @@ export function LangkahSantri({ f }: { f: SantriFormCtx }) {
     ocrAutoFilledNotice, setOcrAutoFilledNotice, uploadBoxKey, isNameLockedFromKk, pendingDocuments, setPendingDocuments,
     hasExistingDraft, draftInfo, handleRestoreDraft, handleDiscardDraft, handleOcrDataExtracted, handleBatchOcrCompleted,
     handleResetKkAndName, handlePhotoUpload, handleAddSkill, handleRemoveSkill, setGenderTheme,
+    aturFoto, galatFoto, tutupAturFoto, pakaiFoto,
   } = f;
   return (
     <div className="space-y-4">
@@ -30,50 +36,13 @@ export function LangkahSantri({ f }: { f: SantriFormCtx }) {
         </p>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-6">
-          {/* Foto Formal */}
-          <div className="flex flex-col items-center gap-2 rounded-2xl border border-bq-garis bg-slate-50 p-3 text-center dark:bg-slate-800/40 sm:flex-row sm:items-center sm:gap-4 sm:p-4 sm:text-left">
-            <div className="relative h-24 w-20 sm:h-28 sm:w-24 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden border border-slate-300 dark:border-slate-600 flex-shrink-0 flex items-center justify-center">
-              {formData.fotoFormalUrl ? (
-                <img src={formData.fotoFormalUrl} alt="Formal" className="w-full h-full object-cover" />
-              ) : (
-                <User size={36} className="text-slate-400" />
-              )}
-            </div>
-            <div>
-              <span className="inline-block text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 mb-1">
-                Pas Foto Formal (3x4)
-              </span>
-              <p className="hidden text-xs text-slate-500 dark:text-slate-400 mb-2 sm:block">Background merah/biru, berpakaian rapi</p>
-              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg cursor-pointer hover:bg-slate-50">
-                <Camera size={14} />
-                Pilih foto
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, 'fotoFormalUrl')} />
-              </label>
-            </div>
-          </div>
-
-          {/* Foto Profil Santai */}
-          <div className="flex flex-col items-center gap-2 rounded-2xl border border-bq-garis bg-slate-50 p-3 text-center dark:bg-slate-800/40 sm:flex-row sm:items-center sm:gap-4 sm:p-4 sm:text-left">
-            <div className="relative h-24 w-20 sm:h-28 sm:w-24 rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden border border-slate-300 dark:border-slate-600 flex-shrink-0 flex items-center justify-center">
-              {formData.fotoProfilUrl ? (
-                <img src={formData.fotoProfilUrl} alt="Profil" className="w-full h-full object-cover" />
-              ) : (
-                <User size={36} className="text-slate-400" />
-              )}
-            </div>
-            <div>
-              <span className="inline-block text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 mb-1">
-                Foto Pose / Profil Santai
-              </span>
-              <p className="hidden text-xs text-slate-500 dark:text-slate-400 mb-2 sm:block">Pose ekspresif untuk poster CV digital</p>
-              <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg cursor-pointer hover:bg-slate-50">
-                <Camera size={14} />
-                Pilih foto
-                <input type="file" accept="image/*" className="hidden" onChange={(e) => handlePhotoUpload(e, 'fotoProfilUrl')} />
-              </label>
-            </div>
-          </div>
+          <KotakFoto f={f} kolom="fotoFormalUrl" label="Pas Foto Formal (3x4)" keterangan="Background merah/biru, berpakaian rapi"
+            warnaLabel="bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300" rasio="aspect-[3/4]" />
+          <KotakFoto f={f} kolom="fotoProfilUrl" label="Foto Pose / Profil Santai" keterangan="Pose ekspresif untuk poster CV digital"
+            warnaLabel="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300" rasio="aspect-[4/5]" />
         </div>
+        {galatFoto && <p role="alert" className="mt-3 text-center text-sm font-semibold text-rose-600">{galatFoto}</p>}
+        {aturFoto && <AturFoto src={aturFoto.src} kolom={aturFoto.kolom} onBatal={tutupAturFoto} onPakai={pakaiFoto} />}
       </div>
 
       {/* Bagian Identitas Kependudukan Santri */}
@@ -228,6 +197,45 @@ export function LangkahSantri({ f }: { f: SantriFormCtx }) {
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Satu kotak foto: pratinjau berasio sama dengan bingkai hasil potongan, tombol pilih & atur ulang. */
+function KotakFoto({ f, kolom, label, keterangan, warnaLabel, rasio }: {
+  f: SantriFormCtx; kolom: KolomFoto; label: string; keterangan: string; warnaLabel: string; rasio: string;
+}) {
+  const url = f.formData[kolom];
+  const mengunggah = f.fotoMengunggah === kolom;
+  const tombol = 'tekan inline-flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600';
+  return (
+    <div className="flex flex-col items-center gap-2 rounded-2xl border border-bq-garis bg-slate-50 p-3 text-center dark:bg-slate-800/40 sm:flex-row sm:items-center sm:gap-4 sm:p-4 sm:text-left">
+      <div className={`relative w-20 sm:w-24 ${rasio} rounded-xl bg-slate-200 dark:bg-slate-700 overflow-hidden border border-slate-300 dark:border-slate-600 flex-shrink-0 flex items-center justify-center`}>
+        {url ? <img src={url} alt={label} className="w-full h-full object-cover" /> : <User size={36} className="text-slate-400" />}
+        {mengunggah && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-slate-900/60 text-white" role="status">
+            <CircleNotch size={22} className="animate-spin" aria-hidden />
+            <span className="text-[11px] font-semibold">Mengunggah…</span>
+          </div>
+        )}
+      </div>
+      <div>
+        <span className={`inline-block text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded mb-1 ${warnaLabel}`}>{label}</span>
+        <p className="hidden text-xs text-slate-500 dark:text-slate-400 mb-2 sm:block">{keterangan}</p>
+        <div className="flex flex-wrap justify-center gap-1.5 sm:justify-start">
+          <label className={`${tombol} ${mengunggah ? 'pointer-events-none opacity-50' : ''}`}>
+            <Camera size={14} aria-hidden />
+            {url ? 'Ganti foto' : 'Pilih foto'}
+            <input type="file" accept="image/*" className="hidden" disabled={mengunggah} onChange={(e) => f.handlePhotoUpload(e, kolom)} />
+          </label>
+          {url && !mengunggah && (
+            <button type="button" className={tombol} onClick={() => f.bukaAturUlangFoto(kolom)}>
+              <Crop size={14} aria-hidden />
+              Atur ulang
+            </button>
+          )}
         </div>
       </div>
     </div>
