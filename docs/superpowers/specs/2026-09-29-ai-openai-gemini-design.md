@@ -49,7 +49,8 @@ pemakaian_ai(
   "idPermintaan" uuid not null,          -- satu pindai; percobaan utama & cadangan berbagi id
   waktu timestamptz not null default now(),
   "penggunaId" uuid references profiles(id),
-  fitur text not null,                   -- 'ocr_tunggal' | 'ocr_massal'
+  fitur text not null,                   -- 'ocr_tunggal' | 'ocr_massal' | 'ocr_mandiri' (unggah mandiri wali)
+  peran text not null,                   -- 'utama' | 'cadangan'
   penyedia text not null,                -- 'openai' | 'gemini'
   model text not null,
   "tokenMasuk" int not null default 0,
