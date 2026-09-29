@@ -110,6 +110,12 @@ describe('formatters utility', () => {
       it('OCR memecah marga ("AL AYDRUS") tetap memilih pemilik nama depan', () => {
         expect(matchBestFamilyMember('Chotidjah Allaydrus', keluarga('CHOTIJAH AL AYDRUS', 'CINDELARAS ALLAYDRUS'))?.nama).toBe('CHOTIJAH AL AYDRUS');
       });
+      it('nama depan beda 2 huruf (Chotidjah vs Chofizah) bukan orang yang sama', () => {
+        expect(matchBestFamilyMember('Chotidjah Allaydrus', keluarga('CINDELARAS ALLAYDRUS', 'CHOFIZAH ALIYATUN NISA'))).toBeNull();
+      });
+      it('salah baca OCR satu huruf tetap cocok', () => {
+        expect(matchBestFamilyMember('Chotidjah Allaydrus', keluarga('CHOTLDJAH ALLAYDRUS', 'CINDELARAS ALLAYDRUS'))?.nama).toBe('CHOTLDJAH ALLAYDRUS');
+      });
       it('ejaan lama (ch→kh, dj→j) dicocokkan dengan ejaan baru', () => {
         expect(matchBestFamilyMember('Chotidjah Allaydrus', keluarga('KHODIJAH ALLAYDRUS', 'CINDELARAS ALLAYDRUS'))?.nama).toBe('KHODIJAH ALLAYDRUS');
       });

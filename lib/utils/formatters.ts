@@ -93,9 +93,11 @@ export function matchBestFamilyMember(
         if (t === mt) {
           score += 35;
         } else {
+          // Toleransi salah baca OCR: 1 huruf; nama panjang (≥10) 2 huruf. Lebih longgar dari itu
+          // nama berbeda ikut cocok (Khotijah ↔ Khofizah).
           const maxLen = Math.max(t.length, mt.length);
           const dist = levenshteinDistance(t, mt);
-          if (dist <= 2 && maxLen >= 4) {
+          if (maxLen >= 4 && dist <= (maxLen >= 10 ? 2 : 1)) {
             score += 25;
           } else if (t.includes(mt) || mt.includes(t)) {
             score += 15;
