@@ -21,9 +21,9 @@ import {
   Camera
 } from '@phosphor-icons/react';
 import { createBrowserSupabase } from '@/lib/supabase/client';
-import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from '@/lib/ocr/parser';
+import type { ExtractedDocumentData } from '@/lib/ocr/parser';
 import { DoodleBadgeTape, DoodleSparkle } from '@/components/ui/DoodleStickers';
-import { matchBestFamilyMember } from '@/lib/utils/formatters';
+import { sesuaikanDenganSantri } from '@/lib/ocr/anggota-santri';
 import { DocumentPreviewModal } from '@/components/ui/DocumentPreviewModal';
 import { BatchScanModal, BatchItemResult } from './BatchScanModal';
 
@@ -222,40 +222,8 @@ export function DocumentUploadBox({
         throw new Error(ocrJson.error || 'Gagal memproses OCR.');
       }
 
-      let finalExtracted: ExtractedDocumentData = ocrJson.extracted;
-
-      // Smart Auto-Match jika targetNamaSantri sudah diisi di awal dan dokumen memiliki anggota keluarga
-      if (
-        targetNamaSantri &&
-        targetNamaSantri.trim() &&
-        ocrJson.extracted?.anggotaKeluarga &&
-        ocrJson.extracted.anggotaKeluarga.length > 0
-      ) {
-        const matchedMember = matchBestFamilyMember(targetNamaSantri, ocrJson.extracted.anggotaKeluarga);
-        if (matchedMember) {
-          let bDate = matchedMember.tanggalLahir || ocrJson.extracted.tanggalLahir;
-          if (bDate) {
-            bDate = parseIndonesianDate(bDate) || bDate;
-          } else if (matchedMember.nik) {
-            bDate = extractBirthDateFromNik(matchedMember.nik) || undefined;
-          }
-
-          let gender = matchedMember.gender || ocrJson.extracted.jenisKelamin;
-          if (/LAKI|IKHWAN|PRIA/i.test(gender || '')) gender = 'IKHWAN';
-          else if (/PEREMPUAN|AKHWAT|WANITA/i.test(gender || '')) gender = 'AKHWAT';
-
-          finalExtracted = {
-            ...ocrJson.extracted,
-            namaLengkap: matchedMember.nama,
-            nik: matchedMember.nik || ocrJson.extracted.nik,
-            tempatLahir: matchedMember.tempatLahir || ocrJson.extracted.tempatLahir,
-            tanggalLahir: bDate,
-            jenisKelamin: gender,
-            namaAyah: ocrJson.extracted.namaAyah,
-            namaIbu: ocrJson.extracted.namaIbu,
-          };
-        }
-      }
+      // Data pribadi KK disesuaikan ke santri yang namanya sudah diketik (lihat sesuaikanDenganSantri).
+      const finalExtracted: ExtractedDocumentData = sesuaikanDenganSantri(targetNamaSantri, ocrJson.extracted as ExtractedDocumentData);
 
       setExtractedResult(finalExtracted);
 

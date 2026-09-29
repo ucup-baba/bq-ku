@@ -39,10 +39,20 @@ function levenshteinDistance(a: string, b: string): number {
   return dp[m][n];
 }
 
+/** Huruf kecil tanpa tanda baca, ejaan lama disamakan (dj→j, tj→c, oe→u, sj→sy, nj→ny, ch→kh). */
+function normalisasiNama(nama: string): string {
+  return nama.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim()
+    .replace(/dj/g, 'j').replace(/tj/g, 'c').replace(/oe/g, 'u').replace(/sj/g, 'sy').replace(/nj/g, 'ny').replace(/ch/g, 'kh');
+}
+
 /**
  * Mencocokkan nama input santri dengan anggota keluarga dari dokumen (KK)
  * secara case-insensitive, token matching, & toleransi OCR noise (Levenshtein).
  * Contoh: "Rahmat Kurniawan" akan cocok dengan "Rama Kurmawan" atau "RAHMAT KURNIAWAN"
+ *
+ * Kata yang persis dimiliki ≥2 anggota (marga "Allaydrus", "Muhammad") tidak membedakan siapa pun,
+ * jadi tidak dihitung: tanpa kata pembeda yang cocok hasilnya null — jangan sampai saudara semarga
+ * terpilih lalu menimpa nama yang diketik.
  */
 export function matchBestFamilyMember(
   targetName: string,
@@ -52,17 +62,20 @@ export function matchBestFamilyMember(
     return null;
   }
 
-  const cleanTarget = targetName.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-  const targetTokens = cleanTarget.split(/\s+/).filter((t) => t.length >= 2);
+  const cleanTarget = normalisasiNama(targetName);
+  const tokenAnggota = members.map((m) => normalisasiNama(m.nama).split(/\s+/).filter((t) => t.length >= 2));
+  const pemakai = new Map<string, number>();
+  for (const tokens of tokenAnggota) for (const t of new Set(tokens)) pemakai.set(t, (pemakai.get(t) ?? 0) + 1);
+  const targetTokens = cleanTarget.split(/\s+/).filter((t) => t.length >= 2 && (pemakai.get(t) ?? 0) < 2);
 
   if (targetTokens.length === 0) return null;
 
   let bestMatch: FamilyMemberCandidate | null = null;
   let highestScore = 0;
 
-  for (const member of members) {
-    const cleanMember = member.nama.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-    const memberTokens = cleanMember.split(/\s+/).filter((t) => t.length >= 2);
+  members.forEach((member, i) => {
+    const cleanMember = normalisasiNama(member.nama);
+    const memberTokens = tokenAnggota[i];
 
     let score = 0;
 
@@ -91,8 +104,8 @@ export function matchBestFamilyMember(
       }
     }
 
-    // Prioritize child over parents if relationship is known
-    if (member.hubungan === 'ANAK') {
+    // Prioritize child over parents if relationship is known (hanya bila ada kata pembeda yang cocok)
+    if (score > 0 && member.hubungan === 'ANAK') {
       score += 10;
     }
 
@@ -100,7 +113,7 @@ export function matchBestFamilyMember(
       highestScore = score;
       bestMatch = member;
     }
-  }
+  });
 
   // Minimum score threshold to consider a valid match
   return highestScore >= 20 ? bestMatch : null;

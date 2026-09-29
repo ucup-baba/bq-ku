@@ -5,8 +5,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { uploadToBucket } from '@/lib/storage/upload';
 import { generateStandardizedFileName } from '@/lib/utils/file-naming';
 import { classifyAndExtractDocument, classifyMultiPagePdf } from '@/lib/ocr/gemini-batch';
-import { matchBestFamilyMember } from '@/lib/utils/formatters';
-import { parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from '@/lib/ocr/parser';
+import { sesuaikanDenganSantri } from '@/lib/ocr/anggota-santri';
+import { extractGenderFromNik } from '@/lib/ocr/parser';
 
 // Klien mengirim satu berkas per request; 120 dtk memberi ruang untuk PDF multi-halaman
 // (halaman diproses paralel, tiap panggilan Gemini dibatasi waktunya).
@@ -123,28 +123,7 @@ export async function POST(req: NextRequest) {
             }
 
             for (const pdfResult of pdfResults) {
-              let finalExtracted = pdfResult.data;
-              if (namaSantri && pdfResult.data?.anggotaKeluarga && pdfResult.data.anggotaKeluarga.length > 0) {
-                const matched = matchBestFamilyMember(namaSantri, pdfResult.data.anggotaKeluarga);
-                if (matched) {
-                  let bDate = matched.tanggalLahir || pdfResult.data.tanggalLahir;
-                  if (bDate) bDate = parseIndonesianDate(bDate) || bDate;
-                  else if (matched.nik) bDate = extractBirthDateFromNik(matched.nik) || undefined;
-
-                  let gender = matched.gender || pdfResult.data.jenisKelamin;
-                  if (/LAKI|IKHWAN|PRIA/i.test(gender || '')) gender = 'IKHWAN';
-                  else if (/PEREMPUAN|AKHWAT|WANITA/i.test(gender || '')) gender = 'AKHWAT';
-
-                  finalExtracted = {
-                    ...pdfResult.data,
-                    namaLengkap: matched.nama,
-                    nik: matched.nik || pdfResult.data.nik,
-                    tempatLahir: matched.tempatLahir || pdfResult.data.tempatLahir,
-                    tanggalLahir: bDate,
-                    jenisKelamin: gender,
-                  };
-                }
-              }
+              const finalExtracted = sesuaikanDenganSantri(namaSantri, pdfResult.data);
 
               // Determine gender for naming & state
               let itemGender = finalExtracted?.jenisKelamin || jenisKelamin;
@@ -207,28 +186,7 @@ export async function POST(req: NextRequest) {
               continue;
             }
 
-            let finalExtracted = result.data;
-            if (namaSantri && result.data?.anggotaKeluarga && result.data.anggotaKeluarga.length > 0) {
-              const matched = matchBestFamilyMember(namaSantri, result.data.anggotaKeluarga);
-              if (matched) {
-                let bDate = matched.tanggalLahir || result.data.tanggalLahir;
-                if (bDate) bDate = parseIndonesianDate(bDate) || bDate;
-                else if (matched.nik) bDate = extractBirthDateFromNik(matched.nik) || undefined;
-
-                let gender = matched.gender || result.data.jenisKelamin;
-                if (/LAKI|IKHWAN|PRIA/i.test(gender || '')) gender = 'IKHWAN';
-                else if (/PEREMPUAN|AKHWAT|WANITA/i.test(gender || '')) gender = 'AKHWAT';
-
-                finalExtracted = {
-                  ...result.data,
-                  namaLengkap: matched.nama,
-                  nik: matched.nik || result.data.nik,
-                  tempatLahir: matched.tempatLahir || result.data.tempatLahir,
-                  tanggalLahir: bDate,
-                  jenisKelamin: gender,
-                };
-              }
-            }
+            const finalExtracted = sesuaikanDenganSantri(namaSantri, result.data);
 
             results.push({
               index: i,
@@ -302,30 +260,7 @@ export async function POST(req: NextRequest) {
 
           // Return each detected document from the PDF with its own page upload
           for (const pdfResult of pdfResults) {
-            let finalExtracted = pdfResult.data;
-
-            // Smart auto-match family member for KK
-            if (namaSantri && pdfResult.data?.anggotaKeluarga && pdfResult.data.anggotaKeluarga.length > 0) {
-              const matched = matchBestFamilyMember(namaSantri, pdfResult.data.anggotaKeluarga);
-              if (matched) {
-                let bDate = matched.tanggalLahir || pdfResult.data.tanggalLahir;
-                if (bDate) bDate = parseIndonesianDate(bDate) || bDate;
-                else if (matched.nik) bDate = extractBirthDateFromNik(matched.nik) || undefined;
-
-                let gender = matched.gender || pdfResult.data.jenisKelamin;
-                if (/LAKI|IKHWAN|PRIA/i.test(gender || '')) gender = 'IKHWAN';
-                else if (/PEREMPUAN|AKHWAT|WANITA/i.test(gender || '')) gender = 'AKHWAT';
-
-                finalExtracted = {
-                  ...pdfResult.data,
-                  namaLengkap: matched.nama,
-                  nik: matched.nik || pdfResult.data.nik,
-                  tempatLahir: matched.tempatLahir || pdfResult.data.tempatLahir,
-                  tanggalLahir: bDate,
-                  jenisKelamin: gender,
-                };
-              }
-            }
+            const finalExtracted = sesuaikanDenganSantri(namaSantri, pdfResult.data);
 
             // Determine gender for naming & state
             let itemGender = finalExtracted?.jenisKelamin || jenisKelamin;
@@ -396,30 +331,7 @@ export async function POST(req: NextRequest) {
             continue;
           }
 
-          let finalExtracted = result.data;
-
-          // Smart auto-match family member for KK
-          if (namaSantri && result.data?.anggotaKeluarga && result.data.anggotaKeluarga.length > 0) {
-            const matched = matchBestFamilyMember(namaSantri, result.data.anggotaKeluarga);
-            if (matched) {
-              let bDate = matched.tanggalLahir || result.data.tanggalLahir;
-              if (bDate) bDate = parseIndonesianDate(bDate) || bDate;
-              else if (matched.nik) bDate = extractBirthDateFromNik(matched.nik) || undefined;
-
-              let gender = matched.gender || result.data.jenisKelamin;
-              if (/LAKI|IKHWAN|PRIA/i.test(gender || '')) gender = 'IKHWAN';
-              else if (/PEREMPUAN|AKHWAT|WANITA/i.test(gender || '')) gender = 'AKHWAT';
-
-              finalExtracted = {
-                ...result.data,
-                namaLengkap: matched.nama,
-                nik: matched.nik || result.data.nik,
-                tempatLahir: matched.tempatLahir || result.data.tempatLahir,
-                tanggalLahir: bDate,
-                jenisKelamin: gender,
-              };
-            }
-          }
+          const finalExtracted = sesuaikanDenganSantri(namaSantri, result.data);
 
           results.push({
             index: i,

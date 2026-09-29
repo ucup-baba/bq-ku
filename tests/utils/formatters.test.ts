@@ -98,6 +98,22 @@ describe('formatters utility', () => {
       const match = matchBestFamilyMember('zulkarnain', members);
       expect(match).toBeNull();
     });
+
+    describe('marga/nama yang dipakai bersama tidak cukup untuk dianggap cocok', () => {
+      const keluarga = (...anak: string[]): FamilyMemberCandidate[] => [
+        { nama: 'AHMAD ALLAYDRUS', hubungan: 'KEPALA KELUARGA' } as FamilyMemberCandidate,
+        ...anak.map(nama => ({ nama, hubungan: 'ANAK' } as FamilyMemberCandidate)),
+      ];
+      it('nama depan tak ditemukan → null, bukan saudara yang semarga', () => {
+        expect(matchBestFamilyMember('Chotidjah Allaydrus', keluarga('ZAINAB', 'CINDELARAS ALLAYDRUS'))).toBeNull();
+      });
+      it('OCR memecah marga ("AL AYDRUS") tetap memilih pemilik nama depan', () => {
+        expect(matchBestFamilyMember('Chotidjah Allaydrus', keluarga('CHOTIJAH AL AYDRUS', 'CINDELARAS ALLAYDRUS'))?.nama).toBe('CHOTIJAH AL AYDRUS');
+      });
+      it('ejaan lama (ch→kh, dj→j) dicocokkan dengan ejaan baru', () => {
+        expect(matchBestFamilyMember('Chotidjah Allaydrus', keluarga('KHODIJAH ALLAYDRUS', 'CINDELARAS ALLAYDRUS'))?.nama).toBe('KHODIJAH ALLAYDRUS');
+      });
+    });
   });
 
   describe('formatJam', () => {

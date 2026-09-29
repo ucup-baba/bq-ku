@@ -348,6 +348,13 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
     }
 
     applyExtractedData(extracted, fileUrl, kategori);
+
+    // Nama ketikan tak ada di KK (sesuaikanDenganSantri mengosongkan data pribadi): beri tahu, jangan diam-diam.
+    if (kategori === 'KARTU_KELUARGA' && !extracted.namaLengkap && extracted.anggotaKeluarga?.length && formData.namaLengkap.trim()) {
+      setOcrAutoFilledNotice(
+        `Nama "${formData.namaLengkap}" tidak ditemukan di Kartu Keluarga — periksa ejaannya. Data keluarga (No. KK, orang tua, alamat) tetap diisi.`,
+      );
+    }
   };
 
   // Handler untuk hasil Magic Multi-Scan (Batch)
