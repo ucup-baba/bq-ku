@@ -1,13 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik } from './parser';
+import { bacaDokumenAi, type KonteksAi } from '@/lib/ai/baca';
+import { AiBatasError } from '@/lib/ai/batas';
 
 export async function processGeminiVisionOcr(
   imagePath: string,
-  kategoriHint: string
+  kategoriHint: string,
+  konteks: KonteksAi,
 ): Promise<{ rawText: string; data: ExtractedDocumentData } | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
 
   try {
     const ext = path.extname(imagePath).toLowerCase();
@@ -70,49 +71,14 @@ Catatan Khusus Kartu Keluarga (KK):
 - "tanggalLahir" SEMUA anggota keluarga wajib berformat YYYY-MM-DD agar dapat dibaca oleh input date browser.
 - "namaLengkap" dan "nik" di root default-kan ke calon santri (anak usia sekolah, contoh: Rahmat Kurniawan).`;
 
-    const candidateModels = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-flash-latest'];
-    let candidate: string | null = null;
-
-    for (const modelName of candidateModels) {
-      try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: prompt },
-                    { inlineData: { mimeType, data: base64Data } }
-                  ]
-                }
-              ],
-              generationConfig: {
-                responseMimeType: 'application/json'
-              }
-            })
-          }
-        );
-
-        if (res.ok) {
-          const d = await res.json();
-          const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            candidate = text;
-            break;
-          }
-        } else {
-          const errText = await res.text();
-          console.warn(`Model ${modelName} returned status ${res.status}: ${errText.slice(0, 80)}, mencoba model berikutnya...`);
-        }
-      } catch (mErr) {
-        console.warn(`Model ${modelName} fetch error:`, mErr);
-      }
+    let candidate: string;
+    try {
+      candidate = (await bacaDokumenAi({ prompt, berkas: { base64: base64Data, mimeType }, konteks })).teks;
+    } catch (e) {
+      if (e instanceof AiBatasError) throw e;
+      console.warn('AI OCR gagal, beralih ke OCR lokal:', e instanceof Error ? e.message : e);
+      return null;
     }
-
-    if (!candidate) return null;
 
     const cleanJsonStr = candidate.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
     const parsed = JSON.parse(cleanJsonStr);
@@ -203,6 +169,7 @@ Catatan Khusus Kartu Keluarga (KK):
       data,
     };
   } catch (error) {
+    if (error instanceof AiBatasError) throw error;
     console.error('Gemini Vision OCR error:', error);
     return null;
   }

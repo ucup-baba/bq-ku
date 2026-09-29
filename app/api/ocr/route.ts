@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireUser, authErrorResponse } from '@/lib/auth/session';
 import { processOcrImage } from '@/lib/ocr/engine';
 import { parseOcrText } from '@/lib/ocr/parser';
+import { AiBatasError } from '@/lib/ai/batas';
 
 export async function POST(req: NextRequest) {
   try {
-    const { supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
+    const { user } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
+    const konteks = { fitur: 'ocr_tunggal' as const, penggunaId: user.id };
     const contentType = req.headers.get('content-type') || '';
 
     if (contentType.includes('application/json')) {
@@ -30,7 +32,7 @@ export async function POST(req: NextRequest) {
         if (!allowedOrigin || !String(fileUrl).startsWith(allowedOrigin)) {
           return NextResponse.json({ error: 'URL berkas tidak dikenal (bukan dari storage aplikasi)' }, { status: 400 });
         }
-        const result = await processOcrImage(fileUrl, kategori);
+        const result = await processOcrImage(fileUrl, kategori, konteks);
         return NextResponse.json({
           success: true,
           rawText: result.rawText,
@@ -53,7 +55,7 @@ export async function POST(req: NextRequest) {
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
 
-      const result = await processOcrImage(buffer, kategori);
+      const result = await processOcrImage(buffer, kategori, konteks);
 
       return NextResponse.json({
         success: true,
@@ -65,6 +67,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Format permintaan tidak didukung' }, { status: 400 });
   } catch (error: any) {
     const authRes = authErrorResponse(error); if (authRes) return authRes;
+    if (error instanceof AiBatasError) {
+      return NextResponse.json({ error: error.message, code: error.kode }, { status: 429 });
+    }
     console.error('OCR processing error:', error);
     return NextResponse.json({ error: 'Gagal memproses OCR: ' + error.message }, { status: 500 });
   }

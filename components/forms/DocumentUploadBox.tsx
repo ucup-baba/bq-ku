@@ -218,6 +218,12 @@ export function DocumentUploadBox({
         throw new Error('Gagal membaca hasil analisis OCR.');
       }
 
+      if (ocrRes.status === 429 && ocrJson.code === 'BATAS_AI') {
+        // Batas AI tercapai: berkas sudah terunggah — tetap dilampirkan tanpa isian otomatis.
+        setErrorMessage(ocrJson.error);
+        onDataExtracted?.({} as ExtractedDocumentData, fileUrl, selectedKategori, selectedFile?.name);
+        return;
+      }
       if (!ocrRes.ok || !ocrJson.success) {
         throw new Error(ocrJson.error || 'Gagal memproses OCR.');
       }

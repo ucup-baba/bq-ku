@@ -3,6 +3,8 @@ import path from 'path';
 import { PDFDocument } from 'pdf-lib';
 import { petakanTerbatas } from './konkurensi';
 import { ExtractedDocumentData, parseIndonesianDate, extractBirthDateFromNik, extractGenderFromNik } from './parser';
+import { bacaDokumenAi, type KonteksAi } from '@/lib/ai/baca';
+import { AiBatasError } from '@/lib/ai/batas';
 
 /**
  * Split a multi-page PDF into individual 1-page PDF buffers.
@@ -27,20 +29,20 @@ export async function splitPdfPages(pdfBuffer: Buffer): Promise<Buffer[]> {
   }
 }
 
-/**
- * Auto-classify a document image/PDF and extract structured data in one Gemini Vision call.
- */
-/** Batas waktu satu panggilan model, dan total waktu per dokumen termasuk model cadangan. */
-export const BATAS_PER_MODEL_MS = 30_000;
+/** Total waktu per dokumen, termasuk penyedia cadangan. */
 export const BATAS_PER_DOKUMEN_MS = 50_000;
+
+/**
+ * Auto-classify a document image/PDF and extract structured data in one AI vision call
+ * (penyedia utama/cadangan diatur di halaman AI & OCR).
+ */
 
 export async function classifyAndExtractDocument(
   imageBuffer: Buffer,
   mimeType: string,
+  konteks: KonteksAi,
   batasTotalMs = BATAS_PER_DOKUMEN_MS,
 ): Promise<{ kategori: string; rawText: string; data: ExtractedDocumentData } | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
 
   try {
     const base64Data = imageBuffer.toString('base64');
@@ -97,52 +99,14 @@ Kembalikan HANYA JSON valid (tanpa markdown) dengan format:
   ]
 }`;
 
-    const candidateModels = ['gemini-flash-lite-latest', 'gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-flash-latest'];
-    let candidate: string | null = null;
-
-    // Setiap model dibatasi waktunya; model cadangan hanya dicoba bila sisa waktu masih cukup,
-    // agar Gemini yang lambat/kewalahan (503) tidak membuat fungsi melewati maxDuration.
-    const mulai = Date.now();
-    for (const modelName of candidateModels) {
-      const sisa = batasTotalMs - (Date.now() - mulai);
-      if (sisa < 5_000) break;
-      try {
-        const res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            signal: AbortSignal.timeout(Math.min(BATAS_PER_MODEL_MS, sisa)),
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: prompt },
-                    { inlineData: { mimeType, data: base64Data } }
-                  ]
-                }
-              ],
-              generationConfig: {
-                responseMimeType: 'application/json'
-              }
-            })
-          }
-        );
-
-        if (res.ok) {
-          const d = await res.json();
-          const text = d.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) {
-            candidate = text;
-            break;
-          }
-        }
-      } catch (mErr) {
-        console.warn(`[batch] Model ${modelName} fetch error:`, mErr);
-      }
+    let candidate: string;
+    try {
+      candidate = (await bacaDokumenAi({ prompt, berkas: { base64: base64Data, mimeType }, konteks, batasTotalMs })).teks;
+    } catch (e) {
+      if (e instanceof AiBatasError) throw e;
+      console.warn('[batch] AI gagal:', e instanceof Error ? e.message : e);
+      return null;
     }
-
-    if (!candidate) return null;
 
     const cleanJsonStr = candidate.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
     const parsed = JSON.parse(cleanJsonStr);
@@ -200,6 +164,7 @@ Kembalikan HANYA JSON valid (tanpa markdown) dengan format:
 
     return { kategori, rawText: candidate, data };
   } catch (err) {
+    if (err instanceof AiBatasError) throw err;
     console.error('[batch] classifyAndExtractDocument error:', err);
     return null;
   }
@@ -219,12 +184,13 @@ export interface MultiPagePdfResult {
  */
 export async function classifyMultiPagePdf(
   pdfBuffer: Buffer,
+  konteks: KonteksAi,
 ): Promise<MultiPagePdfResult[]> {
   try {
     const pageBuffers = await splitPdfPages(pdfBuffer);
     // Halaman diproses paralel (maks. 4 sekaligus): total waktu ≈ halaman terlama, bukan jumlahnya.
     const perHalaman = await petakanTerbatas(pageBuffers, 4, async (pageBuf, pageIdx) => {
-      const pageResult = await classifyAndExtractDocument(pageBuf, 'application/pdf');
+      const pageResult = await classifyAndExtractDocument(pageBuf, 'application/pdf', konteks);
       return pageResult ? {
         halaman: pageIdx + 1,
         kategori: pageResult.kategori,
@@ -235,6 +201,7 @@ export async function classifyMultiPagePdf(
     });
     return perHalaman.filter((r): r is MultiPagePdfResult => r !== null);
   } catch (err) {
+    if (err instanceof AiBatasError) throw err;
     console.error('[batch] classifyMultiPagePdf error:', err);
     return [];
   }

@@ -75,7 +75,8 @@ async function optimizeAndUpload(
 
 export async function POST(req: NextRequest) {
   try {
-    const { supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
+    const { user, supabase } = await requireUser(['SUPERADMIN', 'ADMIN_SANTRI']);
+    const konteks = { fitur: 'ocr_massal' as const, penggunaId: user.id };
     const contentType = req.headers.get('content-type') || '';
 
     // SUPPORT 1: JSON Payload (fileUrls already uploaded to Supabase Storage - avoids Vercel 4.5MB limit)
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
           const isPdf = item.fileName.toLowerCase().endsWith('.pdf') || item.fileUrl.toLowerCase().includes('.pdf');
 
           if (isPdf) {
-            const pdfResults = await classifyMultiPagePdf(buffer);
+            const pdfResults = await classifyMultiPagePdf(buffer, konteks);
             if (pdfResults.length === 0) {
               results.push({
                 index: i,
@@ -172,7 +173,7 @@ export async function POST(req: NextRequest) {
           } else {
             // Image
             const mimeType = item.fileUrl.endsWith('.png') ? 'image/png' : item.fileUrl.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
-            const result = await classifyAndExtractDocument(buffer, mimeType);
+            const result = await classifyAndExtractDocument(buffer, mimeType, konteks);
             if (!result) {
               results.push({
                 index: i,
@@ -244,7 +245,7 @@ export async function POST(req: NextRequest) {
 
         if (isPdf) {
           // Multi-page PDF: classify each page as potentially different document
-          const pdfResults = await classifyMultiPagePdf(buffer);
+          const pdfResults = await classifyMultiPagePdf(buffer, konteks);
 
           if (pdfResults.length === 0) {
             results.push({
@@ -316,7 +317,7 @@ export async function POST(req: NextRequest) {
           );
 
           // Classify and extract via Gemini
-          const result = await classifyAndExtractDocument(finalBuffer, finalMime);
+          const result = await classifyAndExtractDocument(finalBuffer, finalMime, konteks);
 
           if (!result) {
             results.push({

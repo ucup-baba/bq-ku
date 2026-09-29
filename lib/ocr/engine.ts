@@ -5,12 +5,15 @@ import { execFile } from 'child_process';
 import { promisify } from 'util';
 import { ExtractedDocumentData, parseOcrText } from './parser';
 import { processGeminiVisionOcr } from './gemini';
+import type { KonteksAi } from '@/lib/ai/baca';
+import { AiBatasError } from '@/lib/ai/batas';
 
 const execFileAsync = promisify(execFile);
 
 export async function processOcrImage(
   imageBufferOrUrl: string | Buffer,
-  kategori: string
+  kategori: string,
+  konteks: KonteksAi,
 ): Promise<{ rawText: string; data: ExtractedDocumentData }> {
   let rawText = '';
   let imagePathToRecognize: string | null = null;
@@ -91,11 +94,12 @@ export async function processOcrImage(
     // 1. Try Gemini AI Vision OCR first for high-accuracy Indonesian document extraction (supports Images & PDF)
     if (imagePathToRecognize && fs.existsSync(imagePathToRecognize)) {
       try {
-        const geminiResult = await processGeminiVisionOcr(imagePathToRecognize, kategori);
+        const geminiResult = await processGeminiVisionOcr(imagePathToRecognize, kategori, konteks);
         if (geminiResult && geminiResult.data && (geminiResult.data.namaLengkap || geminiResult.data.noKk || geminiResult.data.nik)) {
           return geminiResult;
         }
       } catch (geminiErr) {
+        if (geminiErr instanceof AiBatasError) throw geminiErr;
         console.warn('Gemini OCR failed, falling back to local OCR:', geminiErr);
       }
     }
@@ -157,6 +161,8 @@ export async function processOcrImage(
       }
     }
   } catch (err) {
+    // Batas AI tercapai: jangan beralih ke OCR lokal diam-diam — admin diminta mengisi manual.
+    if (err instanceof AiBatasError) throw err;
     console.error('OCR Processing error:', err);
     if (!rawText && typeof imageBufferOrUrl === 'string' && !imageBufferOrUrl.includes('/')) {
       rawText = imageBufferOrUrl;

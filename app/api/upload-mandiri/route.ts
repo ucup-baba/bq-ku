@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     // Process OCR for verification
     let ocrResult: any = null;
     try {
-      ocrResult = await processOcrImage(finalBuffer, kategori);
+      ocrResult = await processOcrImage(finalBuffer, kategori, { fitur: 'ocr_mandiri', penggunaId: null });
 
       // Strict validation: if document has a detected student name, check against santri.namaLengkap
       if (
