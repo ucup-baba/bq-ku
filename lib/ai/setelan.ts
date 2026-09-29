@@ -2,6 +2,9 @@ import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { SETELAN_AI_BAWAAN, skemaSetelanAi, type Penyedia, type SetelanAi } from './model';
+import type { RingkasanPemakaian } from './pemakaian';
+
+export type DataHalamanAi = { setelan: SetelanAi; kunci: Record<Penyedia, boolean>; ringkasan: RingkasanPemakaian };
 
 /** Dibaca dengan kunci admin: Admin Santri yang memindai tidak punya hak baca `pengaturan`. */
 export async function bacaSetelanAi(): Promise<SetelanAi> {
