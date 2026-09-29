@@ -3,13 +3,22 @@ import { AngkaNaik } from '@/components/ui/AngkaNaik';
 import { DoodleCoretan } from '@/components/ui/DoodleStickers';
 import { DoodleGambar } from '@/components/ui/DoodleGambar';
 import { kelasKartu } from '@/components/ui/Kartu';
+import { DindingFoto } from '@/components/ui/DindingFoto';
 import type { RingkasanSantri } from '@/lib/santri/ringkasan';
 
-export function HeroSantri({ ringkasan, className }: { ringkasan: RingkasanSantri; className?: string }) {
+/** Kartu total santri. `foto` (dari fotoDinding) → dinding foto berjalan di belakang angka; kosong → hero polos. */
+export function HeroSantri({ ringkasan, foto = [], className }: { ringkasan: RingkasanSantri; foto?: string[]; className?: string }) {
   const { total, ikhwan, akhwat } = ringkasan;
   const persen = (n: number) => (total === 0 ? 0 : Math.max((n / total) * 100, n > 0 ? 4 : 0));
   return (
-    <section aria-labelledby="judul-hero-santri" className={kelasKartu('hero', `relative overflow-hidden p-4 md:p-6 ${className ?? ''}`)}>
+    <section aria-labelledby="judul-hero-santri" className={kelasKartu('hero', `relative isolate overflow-hidden p-4 md:p-6 ${className ?? ''}`)}>
+      {foto.length > 0 && (
+        <>
+          <DindingFoto foto={foto} className="-z-20" />
+          {/* Warna hero di atas foto: kiri pekat agar angka terbaca, kanan lebih tembus. */}
+          <div aria-hidden="true" className="absolute inset-0 -z-10 bg-gradient-to-r from-[#0E9F54]/90 via-[#0E9F54]/60 to-[#0B5FA5]/30" />
+        </>
+      )}
       <DoodleGambar className="pointer-events-none absolute -right-1 -top-1 text-white/35">
         <DoodleCoretan className="h-8 w-20" />
       </DoodleGambar>

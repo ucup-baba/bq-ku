@@ -94,6 +94,18 @@ body {
   }
 }
 
+/* ——— Dinding foto (hero Beranda) ———
+   Bidang dimiringkan 3D; tiap kolom bergeser -50% (isinya digandakan) agar berulang mulus.
+   Jarak antar-ubin memakai padding (bukan gap) supaya -50% tepat satu putaran. */
+.dinding-foto { perspective: 900px; mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent); }
+.dinding-bidang { position: absolute; inset: -40% -25%; display: flex; justify-content: center; gap: 10px;
+  transform: rotateX(18deg) rotateZ(-14deg); transform-style: preserve-3d; }
+.dinding-kolom { display: flex; flex-direction: column; width: clamp(72px, 16%, 132px); flex-shrink: 0;
+  animation: dinding-naik linear infinite; will-change: transform; }
+.dinding-ubin { display: block; padding-bottom: 10px; }
+.dinding-ubin img { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 12px; }
+@keyframes dinding-naik { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+
 /* ——— Bottom nav bertakik ———
    Takik = lubang lingkaran di tepi atas bar (mask). Posisi takik aktif (--takik-x) dan
    jari-jarinya (--takik-r) didaftarkan sebagai @property agar bisa dianimasikan mulus. */

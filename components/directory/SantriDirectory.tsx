@@ -1,6 +1,6 @@
 'use client';
-import { useMemo, useState } from 'react';
-import { MagnifyingGlass, X, Funnel, Users } from '@phosphor-icons/react';
+import { useEffect, useMemo, useState } from 'react';
+import { MagnifyingGlass, X, Funnel, Users, SquaresFour, ListBullets } from '@phosphor-icons/react';
 import { twMerge } from 'tailwind-merge';
 import type { Santri } from '@/lib/db/santri-repo';
 import { saringSantri, hitungGender, type FilterSantri } from '@/lib/santri/filter';
@@ -12,7 +12,11 @@ import { TombolIkon } from '@/components/ui/Tombol';
 import { LembarBawah } from '@/components/ui/LembarBawah';
 import { kelasInput } from '@/components/ui/kelas';
 import { BarisSantri } from '@/components/santri/BarisSantri';
+import { KartuSantri } from '@/components/santri/KartuSantri';
 import { useModeRuang } from '@/components/ruang/ModeRuang';
+
+const KUNCI_TAMPILAN = 'bq-direktori-tampilan';
+type Tampilan = 'galeri' | 'daftar';
 
 const LABEL_JENJANG: Record<FilterSantri['jenjang'], string> = {
   SEMUA: 'Semua', SMP: 'SMP', SMA: 'SMA', SMK: 'SMK', ALUMNI: 'Alumni',
@@ -22,6 +26,16 @@ export function SantriDirectory({ initialSantriList }: { initialSantriList: Sant
   const mode = useModeRuang();
   const [filter, setFilter] = useState<FilterSantri>({ q: '', gender: 'SEMUA', jenjang: 'SEMUA' });
   const [jenjangBuka, setJenjangBuka] = useState(false);
+  const [tampilan, setTampilan] = useState<Tampilan>('galeri');
+  // Pilihan tampilan per perangkat; dibaca setelah hidrasi agar markup server tetap sama.
+  useEffect(() => {
+    try { if (localStorage.getItem(KUNCI_TAMPILAN) === 'daftar') setTampilan('daftar'); } catch { /* abaikan */ }
+  }, []);
+  const gantiTampilan = () => {
+    const baru: Tampilan = tampilan === 'galeri' ? 'daftar' : 'galeri';
+    setTampilan(baru);
+    try { localStorage.setItem(KUNCI_TAMPILAN, baru); } catch { /* abaikan */ }
+  };
   const ubah = (p: Partial<FilterSantri>) => setFilter(f => ({ ...f, ...p }));
 
   const tersaring = useMemo(() => saringSantri(initialSantriList, filter), [initialSantriList, filter]);
@@ -55,6 +69,8 @@ export function SantriDirectory({ initialSantriList }: { initialSantriList: Sant
               {LABEL_JENJANG[filter.jenjang]} <X size={12} weight="bold" aria-hidden="true" />
             </button>
           )}
+          <TombolIkon ikon={tampilan === 'galeri' ? ListBullets : SquaresFour} ukuran="sm" onClick={gantiTampilan}
+            label={tampilan === 'galeri' ? 'Tampilkan sebagai daftar' : 'Tampilkan sebagai galeri'} className="ml-auto" />
         </div>
       </div>
 
@@ -65,8 +81,12 @@ export function SantriDirectory({ initialSantriList }: { initialSantriList: Sant
             {initialSantriList.length === 0 ? 'Belum ada santri terdaftar.' : 'Tidak ada santri yang cocok dengan pencarian.'}
           </p>
         </Kartu>
+      ) : tampilan === 'galeri' ? (
+        <ul data-audit-daftar data-tampilan="galeri" className="bergilir grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 lg:grid-cols-4 2xl:grid-cols-5">
+          {tersaring.map((s, i) => <li key={s.id}><KartuSantri santri={s} indeks={i} href={mode.rute.santri(s.id)} /></li>)}
+        </ul>
       ) : (
-        <ul data-audit-daftar className="bergilir grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+        <ul data-audit-daftar data-tampilan="daftar" className="bergilir grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
           {tersaring.map((s, i) => <li key={s.id}><BarisSantri santri={s} indeks={i} href={mode.rute.santri(s.id)} /></li>)}
         </ul>
       )}

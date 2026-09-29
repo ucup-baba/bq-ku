@@ -37,3 +37,16 @@ describe('Beranda Santri', () => {
     expect(semua).not.toContain('href="/tambah"');
   });
 });
+
+describe('HeroSantri dinding foto', () => {
+  it('tanpa foto: hero polos', () => {
+    expect(renderToStaticMarkup(<HeroSantri ringkasan={ringkasan} />)).not.toContain('dinding-foto');
+  });
+  it('dengan foto: dinding berjalan di belakang angka, tersembunyi dari pembaca layar', () => {
+    const foto = ['a', 'b', 'c', 'd', 'e', 'f'].map(x => `https://x/${x}.jpg`);
+    const h = renderToStaticMarkup(<HeroSantri ringkasan={ringkasan} foto={foto} />);
+    expect(h).toMatch(/aria-hidden="true" class="dinding-foto/);
+    expect(h).toContain('src="https://x/a.jpg"');
+    expect(h).toContain('Total santri');
+  });
+});

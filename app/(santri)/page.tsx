@@ -2,6 +2,7 @@ import { listSantri } from '@/lib/db/santri-repo';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { getSessionUser } from '@/lib/auth/session';
 import { ringkasanSantri, perluDilengkapi } from '@/lib/santri/ringkasan';
+import { fotoDinding } from '@/lib/santri/dinding-foto';
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
 import { HeroSantri } from '@/components/santri/beranda/HeroSantri';
 import { CarouselAngkaSantri } from '@/components/santri/beranda/CarouselAngkaSantri';
@@ -27,7 +28,7 @@ export default async function HomePage() {
         subTampilDiHp
       />
       <div className="bergilir grid grid-cols-1 gap-4 md:grid-cols-12 md:gap-5">
-        <HeroSantri className="order-1 md:col-span-7" ringkasan={ringkasan} />
+        <HeroSantri className="order-1 md:col-span-7" ringkasan={ringkasan} foto={fotoDinding(santriList)} />
         <CarouselAngkaSantri className="order-2 md:order-3 md:col-span-12" ringkasan={ringkasan} />
         <PerluDilengkapi className="order-3 md:order-2 md:col-span-5" santri={perluDilengkapi(santriList)} />
         <SantriTerbaru className="order-4 md:col-span-12" santri={santriList} />
