@@ -7,6 +7,7 @@ import {
 } from '@phosphor-icons/react';
 import { usePasangAplikasi } from '@/components/pwa/usePasangAplikasi';
 import { SaklarKelolaBerkas } from './SaklarKelolaBerkas';
+import { BarisAi } from './BarisAi';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useTheme } from '@/components/theme/ThemeProvider';
 import { useNotifikasi } from '@/components/notifikasi/NotifikasiProvider';
@@ -210,6 +211,8 @@ export function HalamanAkun({ room }: { room: Room }) {
                 <CaretRight size={16} weight="bold" className="text-bq-redup" aria-hidden="true" />
               </Link>
             )}
+
+            {superadmin && <BarisAi />}
 
             {superadmin && <SaklarKelolaBerkas />}
 

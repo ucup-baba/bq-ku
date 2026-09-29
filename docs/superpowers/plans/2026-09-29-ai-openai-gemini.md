@@ -1228,7 +1228,7 @@ describe('HalamanAi', () => {
     expect(h).toContain('Kunci belum dipasang di Vercel');
   });
   it('pilihan model & opsi tanpa cadangan', () => {
-    expect(h).toContain('value="gpt-5.4-mini"');
+    expect(h).toContain('value="openai|gpt-5.4-mini"');
     expect(h).toContain('Tanpa cadangan');
   });
   it('riwayat menandai cadangan', () => {
@@ -1330,7 +1330,7 @@ export function HalamanAi({ awal }: { awal: DataHalamanAi }) {
   const modelDipakai = [s.utama, s.cadangan].filter((x): x is PilihanModel => !!x);
 
   const ubahHarga = (model: string, kunci: 'masukPerJuta' | 'keluarPerJuta', nilai: number) =>
-    setS(v => ({ ...v, harga: { ...v.harga, [model]: { masukPerJuta: 0, keluarPerJuta: 0, ...v.harga[model], [kunci]: nilai } } }));
+    setS(v => ({ ...v, harga: { ...v.harga, [model]: { ...(v.harga[model] ?? { masukPerJuta: 0, keluarPerJuta: 0 }), [kunci]: nilai } } }));
 
   const simpan = async () => {
     setBusy(true); setGalat(null); setPesan(null);
