@@ -21,7 +21,7 @@ const SURAT_LEMBAGA: ItemMenu = { href: '/lembaga/surat', label: 'Surat', labelP
 const BERKAS_LEMBAGA: ItemMenu = { href: '/lembaga/berkas', label: 'Berkas lembaga', labelPendek: 'Berkas', ikon: 'folder', warna: 'ungu' };
 const KEUANGAN_LEMBAGA: ItemMenu = { href: '/lembaga/keuangan', label: 'Keuangan', labelPendek: 'Keuangan', ikon: 'keuangan', warna: 'hijau' };
 
-const PENGGUNA: ItemMenu = { href: '/pengguna', label: 'Kelola Pengguna', labelPendek: 'Pengguna', ikon: 'pengguna', warna: 'ungu' };
+const SURAT_SANTRI: ItemMenu = { href: '/surat', label: 'Surat Santri', labelPendek: 'Surat', ikon: 'surat', warna: 'ungu' };
 
 /**
  * Item rail desktop. Ruang Donatur sengaja tanpa "Buat Surat": aksi utama itu tampil
@@ -30,18 +30,17 @@ const PENGGUNA: ItemMenu = { href: '/pengguna', label: 'Kelola Pengguna', labelP
 export function menuRail(room: Room, o: OpsiMenu): ItemMenu[] {
   if (room === 'lembaga') return [BERANDA_LEMBAGA, SANTRI_LEMBAGA, DONATUR_LEMBAGA, SURAT_LEMBAGA, BERKAS_LEMBAGA, KEUANGAN_LEMBAGA];
   if (room === 'donatur') return [BERANDA_DONATUR, DAFTAR_DONATUR, DAFTAR_SURAT];
-  return [BERANDA_SANTRI, DIREKTORI, INPUT_BERKAS, ...(o.canManageUsers ? [PENGGUNA] : [])];
+  return [BERANDA_SANTRI, DIREKTORI, INPUT_BERKAS, SURAT_SANTRI];
 }
 
 export type SlotHp =
   | { jenis: 'tautan'; item: ItemMenu; utama: boolean }
-  | { jenis: 'tema' }
   | { jenis: 'akun' };
 
 /**
  * Susunan bottom nav HP (selalu 5 slot): 2 tautan, tombol utama di tengah, slot ke-4, lalu Akun.
- * Pindah ruangan & tema ada di halaman Akun, jadi slot ke-4 dipakai tujuan yang sering dibuka:
- * Daftar Surat (donatur) atau Pengguna (santri, pengelola akun). Tanpa tujuan itu → tombol tema.
+ * Pindah ruangan, tema & kelola pengguna ada di halaman Akun, jadi slot ke-4 dipakai tujuan
+ * yang sering dibuka: Daftar Surat (donatur) atau Surat Santri (santri).
  * Ruang Lembaga: Beranda, Santri, Berkas lembaga (tengah), Donatur, Akun.
  */
 export function slotHp(room: Room, o: OpsiMenu): SlotHp[] {
@@ -52,9 +51,8 @@ export function slotHp(room: Room, o: OpsiMenu): SlotHp[] {
   const [a, b, tengah] = room === 'donatur'
     ? [BERANDA_DONATUR, DAFTAR_DONATUR, BUAT_SURAT]
     : [BERANDA_SANTRI, DIREKTORI, TAMBAH_BERKAS];
-  const keempat: SlotHp = room === 'donatur' ? tautan(DAFTAR_SURAT)
-    : o.canManageUsers ? tautan(PENGGUNA) : { jenis: 'tema' };
-  return [tautan(a), tautan(b), tautan(tengah, true), keempat, { jenis: 'akun' }];
+  const keempat = room === 'donatur' ? DAFTAR_SURAT : SURAT_SANTRI;
+  return [tautan(a), tautan(b), tautan(tengah, true), tautan(keempat), { jenis: 'akun' }];
 }
 
 const BERANDA = new Set(['/', '/donatur', '/lembaga']);

@@ -1,9 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sun, Moon } from '@phosphor-icons/react';
 import { useAuth } from '@/components/auth/AuthProvider';
-import { useTheme } from '@/components/theme/ThemeProvider';
 import { slotHp, itemAktif, sembunyikanNavHp, type SlotHp } from '@/lib/nav/menu';
 import type { Room } from '@/lib/auth/rooms';
 import { IKON_MENU } from './ikon-menu';
@@ -31,7 +29,6 @@ const kelasIkon = 'tekan flex h-12 w-12 items-center justify-center rounded-full
 export function BottomNav({ room }: { room: Room }) {
   const pathname = usePathname();
   const { user, rooms, canManageUsers } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const { total } = useNotifikasi();
   if (sembunyikanNavHp(pathname)) return null;
 
@@ -51,15 +48,6 @@ export function BottomNav({ room }: { room: Room }) {
   } as React.CSSProperties;
 
   const render = (s: SlotHp, i: number) => {
-    if (s.jenis === 'tema') {
-      const gelap = theme === 'dark';
-      return (
-        <button type="button" onClick={toggleTheme} aria-label={gelap ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
-          title={gelap ? 'Mode terang' : 'Mode gelap'} className={kelasIkon}>
-          {gelap ? <Sun size={24} weight="bold" aria-hidden="true" /> : <Moon size={24} weight="bold" aria-hidden="true" />}
-        </button>
-      );
-    }
     if (s.jenis === 'akun') {
       const aktifIni = i === aktif;
       const label = total > 0 ? `Akun, ${total} notifikasi` : 'Akun';

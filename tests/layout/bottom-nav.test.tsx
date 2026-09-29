@@ -9,7 +9,6 @@ vi.mock('next/link', () => ({
 vi.mock('@/components/auth/AuthProvider', () => ({
   useAuth: () => ({ user: { nama: 'Ucup' }, roles: [], rooms: s.rooms, canManageUsers: false, logout: async () => {} }),
 }));
-vi.mock('@/components/theme/ThemeProvider', () => ({ useTheme: () => ({ theme: 'light', toggleTheme: () => {} }) }));
 
 const notif = vi.hoisted(() => ({ total: 0 }));
 vi.mock('@/components/notifikasi/NotifikasiProvider', () => ({ useNotifikasi: () => ({ daftar: [], total: notif.total, muatUlang: () => {} }) }));
@@ -41,11 +40,11 @@ describe('BottomNav', () => {
     expect(h).not.toContain('aria-current="page"');
   });
 
-  it('ruang santri tanpa hak kelola pengguna: slot ke-4 tombol mode gelap/terang, tetap 5 item', () => {
+  it('ruang santri: slot ke-4 Surat Santri, tetap 5 item', () => {
     s.path = '/'; s.rooms = ['santri'];
     const h = renderToStaticMarkup(<BottomNav room="santri" />);
     expect(h.match(/<li/g)).toHaveLength(5);
-    expect(h).toContain('aria-label="Ganti ke mode gelap"');
+    expect(h).toContain('href="/surat"');
     expect(h).toContain('href="/akun"');
   });
 

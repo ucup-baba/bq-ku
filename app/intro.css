@@ -1,0 +1,38 @@
+/* Intro pembuka (menyambung dari layar pembuka PWA: latar #0F231F + logo).
+   Ikon PWA berlatar sama & lambang BQ hanya ±2/3 tingginya, jadi lingkaran coretan (--ring) mengikuti lambang, bukan kotak ikon. */
+.intro { --logo: 260px; --ring: calc(var(--logo) * .72 + 60px); --lift: 0px; position: fixed; inset: 0; z-index: 100;
+  background: #0F231F; color: #EFF5F1; cursor: pointer; animation: intro-out 420ms cubic-bezier(.7,0,.3,1) 1.6s forwards; }
+html[data-intro="skip"] .intro { display: none; }
+.intro.leaving { animation: intro-out 260ms cubic-bezier(.7,0,.3,1) forwards; }
+.intro-stage { position: absolute; left: 50%; top: calc(50% - var(--lift)); width: var(--ring); height: var(--ring);
+  transform: translate(-50%, -50%); display: grid; place-items: center; }
+@media (display-mode: standalone) { .intro { --lift: 12px; } }
+.intro-logo { width: var(--logo); height: var(--logo); max-width: none; position: absolute; left: 50%; top: 50%; margin: calc(var(--logo) / -2) 0 0 calc(var(--logo) / -2); z-index: 1;
+  animation: intro-thump 700ms cubic-bezier(.34,1.56,.64,1) 300ms both; }
+.intro-scribble, .intro-sparks { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; stroke-linecap: round; stroke-linejoin: round; }
+.intro-scribble { stroke: #0E9F54; }
+.intro-sparks { stroke: #8CD640; }
+.intro-scribble path { stroke-width: 5; stroke-dasharray: 1; stroke-dashoffset: 1; animation: intro-draw 650ms ease-out 400ms forwards; }
+.intro-sparks path { stroke-width: 4; transform-box: fill-box; transform-origin: center; transform: scale(0); animation: intro-pop 380ms cubic-bezier(.34,1.8,.64,1) forwards; }
+.intro-sparks path:nth-child(1) { animation-delay: 600ms; }
+.intro-sparks path:nth-child(2) { animation-delay: 720ms; }
+.intro-sparks path:nth-child(3) { animation-delay: 820ms; }
+.intro-sparks path:nth-child(4) { animation-delay: 900ms; }
+.intro-text { position: absolute; left: 0; right: 0; top: calc(50% - var(--lift) + var(--ring) / 2 + 20px); margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  clip-path: inset(0 100% 0 0); animation: intro-write 600ms steps(12) 650ms forwards; }
+.intro-text b { font-family: var(--font-handwriting), cursive; font-size: 44px; font-weight: 700; line-height: 1; }
+.intro-text small { font-family: var(--font-handwriting), cursive; font-size: 20px; opacity: .75; }
+
+@keyframes intro-thump { 0% { transform: scale(1); } 35% { transform: scale(.9) rotate(-4deg); } 70% { transform: scale(1.06) rotate(2deg); } 100% { transform: scale(1) rotate(0); } }
+@keyframes intro-draw { to { stroke-dashoffset: 0; } }
+@keyframes intro-pop { to { transform: scale(1); } }
+@keyframes intro-write { to { clip-path: inset(0 0 0 0); } }
+@keyframes intro-out { to { transform: translateY(-104%) rotate(-3deg); opacity: .6; visibility: hidden; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .intro, .intro.leaving { animation: intro-fade 300ms ease 700ms forwards; }
+  .intro *, .intro-text { animation: none !important; clip-path: none; }
+  .intro-scribble path { stroke-dashoffset: 0; }
+  .intro-sparks path { transform: none; }
+}
+@keyframes intro-fade { to { opacity: 0; visibility: hidden; } }

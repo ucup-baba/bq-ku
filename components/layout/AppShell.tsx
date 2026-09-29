@@ -5,6 +5,7 @@ import { RailSidebar } from './RailSidebar';
 import { BottomNav } from './BottomNav';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { NotifikasiProvider } from '@/components/notifikasi/NotifikasiProvider';
+import { IntroSplash } from '@/components/intro/IntroSplash';
 import type { Room } from '@/lib/auth/rooms';
 
 export function AppShell({ room, children }: { room: Room; children: React.ReactNode }) {
@@ -20,6 +21,7 @@ export function AppShell({ room, children }: { room: Room; children: React.React
         <div key={pathname} className="animate-halaman">{children}</div>
       </main>
       <BottomNav room={room} />
+      <IntroSplash />
     </div>
     </NotifikasiProvider>
   );

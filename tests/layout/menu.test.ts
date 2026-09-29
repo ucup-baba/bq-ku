@@ -8,9 +8,10 @@ describe('menuRail', () => {
   it('ruang donatur: Beranda, Donatur, Surat — tanpa Buat Surat (aksi utama ada di header halaman)', () => {
     expect(menuRail('donatur', dua).map(i => i.href)).toEqual(['/donatur', '/donatur/daftar', '/donatur/surat']);
   });
-  it('ruang santri menampilkan Pengguna hanya untuk pengelola akun', () => {
-    expect(menuRail('santri', dua).map(i => i.href)).toEqual(['/', '/santri', '/tambah', '/pengguna']);
-    expect(menuRail('santri', { canManageUsers: false, jumlahRuang: 1 }).map(i => i.href)).toEqual(['/', '/santri', '/tambah']);
+  it('ruang santri: Beranda, Direktori, Santri baru, Surat — kelola pengguna cukup di halaman Akun', () => {
+    for (const canManageUsers of [true, false]) {
+      expect(menuRail('santri', { canManageUsers, jumlahRuang: 1 }).map(i => i.href)).toEqual(['/', '/santri', '/tambah', '/surat']);
+    }
   });
 });
 
@@ -23,11 +24,13 @@ describe('slotHp', () => {
       expect(s[3]).toMatchObject({ jenis: 'tautan', utama: false, item: { href: '/donatur/surat' } });
     }
   });
-  it('santri: slot ke-4 Pengguna untuk pengelola akun, selain itu tombol tema', () => {
-    expect(slotHp('santri', dua)[3]).toMatchObject({ jenis: 'tautan', item: { href: '/pengguna' } });
-    const s = slotHp('santri', { canManageUsers: false, jumlahRuang: 1 });
-    expect(s.map(x => x.jenis)).toEqual(['tautan', 'tautan', 'tautan', 'tema', 'akun']);
-    expect(s[2]).toMatchObject({ utama: true, item: { href: '/tambah' } });
+  it('santri: slot ke-4 Surat Santri untuk semua admin', () => {
+    for (const canManageUsers of [true, false]) {
+      const s = slotHp('santri', { canManageUsers, jumlahRuang: 1 });
+      expect(s.map(x => x.jenis)).toEqual(['tautan', 'tautan', 'tautan', 'tautan', 'akun']);
+      expect(s[2]).toMatchObject({ utama: true, item: { href: '/tambah' } });
+      expect(s[3]).toMatchObject({ utama: false, item: { href: '/surat' } });
+    }
   });
   it('tidak ada tujuan ganda dalam satu bottom nav', () => {
     for (const room of ['donatur', 'santri', 'lembaga'] as const) {
