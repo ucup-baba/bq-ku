@@ -67,7 +67,7 @@ export function LangkahBerkas({ f }: { f: SantriFormCtx }) {
                 Identitas Utama Santri (Nama)
                 {isNameLockedFromKk ? (
                   <span className="text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-teal-200 dark:border-teal-800">
-                    <LockKey size={12} weight="fill" /> Terkunci dari Kartu Keluarga
+                    <LockKey size={12} weight="fill" /> Terkunci dari berkas
                   </span>
                 ) : ocrFilledFields.namaLengkap ? (
                   <span className="text-xs font-bold text-lime-600 dark:text-lime-400 bg-lime-100 dark:bg-lime-950/60 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -94,7 +94,7 @@ export function LangkahBerkas({ f }: { f: SantriFormCtx }) {
               <span>Nama Lengkap Calon Santri *</span>
               {isNameLockedFromKk ? (
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 dark:text-teal-300 bg-teal-100 dark:bg-teal-950/60 px-2 py-0.5 rounded-full border border-teal-200 dark:border-teal-800">
-                  <LockKey size={12} weight="fill" /> Terkunci dari KK
+                  <LockKey size={12} weight="fill" /> Terkunci
                 </span>
               ) : (
                 <span className="text-xs font-normal text-slate-400 dark:text-slate-500">

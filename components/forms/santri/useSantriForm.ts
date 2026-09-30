@@ -9,6 +9,7 @@ import { toTitleCase, deriveEducationFromDocument, checkNameMatch, rapikanAlamat
 import type { DocumentMismatchData } from '@/components/modals/DocumentGuardModal';
 import { santriClientSchema, zodFieldErrors } from '@/lib/validation/santri';
 import type { KolomFoto } from '@/lib/santri/foto';
+import { milikOrtu } from '@/lib/santri/pilihan-nama';
 
 export interface OpsiSantriForm {
   initialData?: any;
@@ -358,7 +359,8 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
   };
 
   // Handler untuk hasil Magic Multi-Scan (Batch)
-  const handleBatchOcrCompleted = (results: BatchItemResult[]) => {
+  /** `namaTerpilih`: nama santri yang dipilih admin di Pindai Massal — dipakai & dikunci; KK tidak menimpanya. */
+  const handleBatchOcrCompleted = (results: BatchItemResult[], namaTerpilih?: string) => {
     if (!results || results.length === 0) return;
 
     // 1. Urutkan agar Kartu Keluarga diproses terlebih dahulu sebagai jangkar data master
@@ -370,6 +372,11 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
 
     let currentForm = { ...formData };
     let masterName = currentForm.namaLengkap;
+    if (namaTerpilih?.trim()) {
+      masterName = namaTerpilih.trim();
+      currentForm.namaLengkap = masterName;
+      setIsNameLockedFromKk(true);
+    }
     const addedDocs: any[] = [];
     const newOcrTags: Record<string, boolean> = { ...ocrFilledFields };
 
@@ -377,14 +384,17 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
       if (!item.extracted || item.error) continue;
       const ext = item.extracted;
 
-      // Jika belum ada master name dan item adalah KK, tetapkan nama dari KK
-      if (item.kategori === 'KARTU_KELUARGA' && ext.namaLengkap) {
+      // Berkas orang tua (KTP ayah/ibu): dilampirkan & mengisi data keluarga, bukan data pribadi santri.
+      const ortu = milikOrtu(item.kategori);
+
+      // Tanpa nama pilihan admin, nama dari KK menjadi acuan (perilaku lama)
+      if (!namaTerpilih && item.kategori === 'KARTU_KELUARGA' && ext.namaLengkap) {
         masterName = ext.namaLengkap;
         setIsNameLockedFromKk(true);
       }
 
       // Validasi kesesuaian nama jika bukan KK dan master name sudah ada
-      if (item.kategori !== 'KARTU_KELUARGA' && masterName && ext.namaLengkap) {
+      if (!ortu && item.kategori !== 'KARTU_KELUARGA' && masterName && ext.namaLengkap) {
         const match = checkNameMatch(masterName, ext.namaLengkap);
         if (!match.isMatch) {
           console.warn(`[Batch] Melewati berkas ${item.fileName} karena nama (${ext.namaLengkap}) tidak cocok dengan (${masterName})`);
@@ -405,11 +415,12 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
       }
 
       // Map fields ke formulir
-      if (ext.namaLengkap && (!currentForm.namaLengkap || item.kategori === 'KARTU_KELUARGA')) {
+      if (!namaTerpilih && !ortu && ext.namaLengkap && (!currentForm.namaLengkap || item.kategori === 'KARTU_KELUARGA')) {
         currentForm.namaLengkap = toTitleCase(ext.namaLengkap);
         newOcrTags.namaLengkap = true;
       }
-      if (ext.nik && !currentForm.nik) {
+      if (namaTerpilih) newOcrTags.namaLengkap = true;
+      if (!ortu && ext.nik && !currentForm.nik) {
         currentForm.nik = ext.nik;
         newOcrTags.nik = true;
       }
@@ -417,26 +428,26 @@ export function useSantriForm({ initialData, isEditing = false, onSuccess, onGal
         currentForm.noKk = ext.noKk;
         newOcrTags.noKk = true;
       }
-      if (ext.nisn && !currentForm.nisn) {
+      if (!ortu && ext.nisn && !currentForm.nisn) {
         currentForm.nisn = ext.nisn;
         newOcrTags.nisn = true;
       }
-      if (ext.tempatLahir && !currentForm.tempatLahir) {
+      if (!ortu && ext.tempatLahir && !currentForm.tempatLahir) {
         currentForm.tempatLahir = rapikanNamaTempat(ext.tempatLahir);
         newOcrTags.tempatLahir = true;
       }
-      const rawTgl = ext.tanggalLahir || (ext.nik ? extractBirthDateFromNik(ext.nik) : null);
+      const rawTgl = ortu ? null : ext.tanggalLahir || (ext.nik ? extractBirthDateFromNik(ext.nik) : null);
       if (rawTgl && !currentForm.tanggalLahir) {
         currentForm.tanggalLahir = parseIndonesianDate(rawTgl) || rawTgl;
         newOcrTags.tanggalLahir = true;
       }
       // Deteksi Jenis Kelamin secara akurat (rumus NIK + teks dokumen)
       let detectedGender: 'IKHWAN' | 'AKHWAT' | undefined = undefined;
-      if (ext.nik) {
+      if (!ortu && ext.nik) {
         const gNik = extractGenderFromNik(ext.nik);
         if (gNik) detectedGender = gNik;
       }
-      if (ext.jenisKelamin) {
+      if (!ortu && ext.jenisKelamin) {
         if (/PEREMPUAN|AKHWAT|WANITA/i.test(ext.jenisKelamin)) detectedGender = 'AKHWAT';
         else if (/LAKI|IKHWAN|PRIA/i.test(ext.jenisKelamin)) detectedGender = 'IKHWAN';
       }

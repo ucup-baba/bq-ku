@@ -26,6 +26,7 @@ import { checkNameMatch, toTitleCase } from '@/lib/utils/formatters';
 import { petakanTerbatas } from '@/lib/ocr/konkurensi';
 import { pesanGagalPindai } from '@/lib/ocr/pesan-gagal';
 import { PilihHalamanPdf } from './PilihHalamanPdf';
+import { kumpulkanNama, namaBawaan, milikOrtu } from '@/lib/santri/pilihan-nama';
 
 type StatusPindai = 'menunggu' | 'mengunggah' | 'memindai' | 'selesai' | 'gagal';
 type Unggahan = { fileUrl: string; storagePath: string; fileName: string };
@@ -44,11 +45,17 @@ export interface BatchItemResult {
 export interface BatchScanModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onBatchApply: (results: BatchItemResult[]) => void;
+  /** `namaSantri`: nama yang dipilih admin dari hasil pindai (bukan nama anggota KK). */
+  onBatchApply: (results: BatchItemResult[], namaSantri?: string) => void;
   targetNamaSantri?: string;
   tahunMasuk?: number | string;
   jenisKelamin?: string;
 }
+
+/** Label ringkas sumber nama di pilihan "Nama santri yang dipakai". */
+const LABEL_SUMBER: Record<string, string> = {
+  AKTA_KELAHIRAN: 'Akta', KARTU_KELUARGA: 'KK', SKL_IJAZAH: 'Ijazah', KIP_PIP: 'KIP', KRM_PKH_KKS: 'KRM/PKH', SKTM: 'SKTM', LAINNYA: 'Lainnya',
+};
 
 const CATEGORY_LABELS: Record<string, { label: string; icon: any; color: string }> = {
   KARTU_KELUARGA: { label: 'Kartu Keluarga (KK)', icon: FileText, color: 'text-blue-600 bg-blue-50 dark:bg-blue-950/60 dark:text-blue-400 border-blue-200' },
@@ -78,6 +85,9 @@ export function BatchScanModal({
   const [statusBerkas, setStatusBerkas] = useState<StatusPindai[]>([]);
   // PDF yang menunggu dipilih halamannya sebelum masuk daftar pindai (satu per satu).
   const [antreanPdf, setAntreanPdf] = useState<File[]>([]);
+  // Nama santri yang dipakai: salah satu nama terbaca dari berkas, atau ditulis sendiri.
+  const [namaDipilih, setNamaDipilih] = useState('');
+  const [namaSendiri, setNamaSendiri] = useState<string | null>(null);
   // Hasil unggah per berkas disimpan agar "Coba lagi" tidak mengunggah ulang.
   const unggahanRef = useRef<Array<Unggahan | undefined>>([]);
 
@@ -176,16 +186,9 @@ export function BatchScanModal({
     const sebelumnya = (batchResults ?? []).filter(r => !target.includes(r.index));
     const resultsData = [...sebelumnya, ...baru].sort((a, b) => a.index - b.index);
 
-    // Nama acuan: nama santri di formulir, atau nama dari KK, atau nama pertama yang terbaca.
-    const kkResult = resultsData.find(r => r.kategori === 'KARTU_KELUARGA' && r.extracted?.namaLengkap);
-    const masterName = targetNamaSantri || kkResult?.extracted?.namaLengkap || resultsData.find(r => r.extracted?.namaLengkap)?.extracted?.namaLengkap;
-    setBatchResults(resultsData.map(r => {
-      let isMatch = true;
-      if (masterName && r.extracted?.namaLengkap && r.kategori !== 'KARTU_KELUARGA') {
-        isMatch = checkNameMatch(masterName, r.extracted.namaLengkap).isMatch;
-      }
-      return { ...r, isMatch };
-    }));
+    setBatchResults(resultsData);
+    setNamaDipilih(namaBawaan(kumpulkanNama(resultsData, targetNamaSantri)));
+    setNamaSendiri(null);
     setIsProcessing(false);
   };
 
@@ -193,7 +196,7 @@ export function BatchScanModal({
     if (!batchResults) return;
     // Filter out items with errors
     const validResults = batchResults.filter(r => r.extracted && !r.error);
-    onBatchApply(validResults);
+    onBatchApply(validResults, namaAkhir || undefined);
     handleResetModal();
     onClose();
   };
@@ -201,6 +204,8 @@ export function BatchScanModal({
   const handleResetModal = () => {
     setSelectedFiles([]);
     setAntreanPdf([]);
+    setNamaDipilih('');
+    setNamaSendiri(null);
     setStatusBerkas([]);
     unggahanRef.current = [];
     setBatchResults(null);
@@ -208,6 +213,12 @@ export function BatchScanModal({
     setErrorBanner(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
+
+  const pilihanNama = batchResults ? kumpulkanNama(batchResults, targetNamaSantri) : [];
+  const namaAkhir = (namaSendiri ?? namaDipilih).trim();
+  /** Cocok/tidaknya berkas milik santri dihitung terhadap nama yang dipilih. */
+  const cocok = (r: BatchItemResult) =>
+    !namaAkhir || !r.extracted?.namaLengkap || checkNameMatch(namaAkhir, r.extracted.namaLengkap).isMatch;
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col justify-end sm:justify-center sm:items-center bg-black/60 backdrop-blur-sm p-0 sm:p-4 overflow-y-auto">
@@ -484,7 +495,8 @@ export function BatchScanModal({
                   };
                   const CatIcon = catConfig.icon;
                   const hasError = !!result.error;
-                  const isMatch = result.isMatch !== false;
+                  const ortu = milikOrtu(result.kategori);
+                  const isMatch = ortu || cocok(result);
 
                   return (
                     <div
@@ -508,7 +520,11 @@ export function BatchScanModal({
                               <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100">
                                 {catConfig.label}
                               </span>
-                              {isMatch ? (
+                              {ortu ? (
+                                <span className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-bold">
+                                  Milik orang tua
+                                </span>
+                              ) : isMatch ? (
                                 <span className="text-xs bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold flex items-center gap-1">
                                   <Check size={10} weight="bold" /> Cocok
                                 </span>
@@ -554,6 +570,36 @@ export function BatchScanModal({
                   );
                 })}
               </div>
+
+              {/* Nama santri yang dipakai — dipilih dari nama yang terbaca di berkas ini (bukan anggota KK) */}
+              {(pilihanNama.length > 0 || namaSendiri !== null) && (
+                <fieldset className="space-y-2 rounded-2xl border border-teal-200 bg-teal-50/60 p-4 dark:border-teal-800 dark:bg-teal-950/30">
+                  <legend className="px-1 text-xs font-extrabold text-slate-900 dark:text-slate-100">Nama santri yang dipakai</legend>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Pilih ejaan yang benar — biasanya sesuai Akta Kelahiran.</p>
+                  {pilihanNama.map(p => (
+                    <label key={p.nama} className="flex cursor-pointer items-center justify-between gap-3 rounded-xl bg-white px-3 py-2.5 text-xs dark:bg-slate-800/80">
+                      <span className="flex min-w-0 items-center gap-2.5">
+                        <input type="radio" name="nama-santri" className="h-4 w-4 accent-teal-600"
+                          checked={namaSendiri === null && namaDipilih === p.nama}
+                          onChange={() => { setNamaDipilih(p.nama); setNamaSendiri(null); }} />
+                        <b className="truncate text-slate-900 dark:text-slate-100">{p.nama}</b>
+                      </span>
+                      <span className="shrink-0 text-right text-slate-500 dark:text-slate-400">
+                        {[...p.sumber.map(k => LABEL_SUMBER[k] ?? CATEGORY_LABELS[k]?.label ?? k), ...(p.dariFormulir ? ['Formulir'] : [])].join(' · ')}
+                      </span>
+                    </label>
+                  ))}
+                  <label className="flex cursor-pointer items-center gap-2.5 rounded-xl bg-white px-3 py-2 text-xs dark:bg-slate-800/80">
+                    <input type="radio" name="nama-santri" className="h-4 w-4 accent-teal-600"
+                      checked={namaSendiri !== null} onChange={() => setNamaSendiri(namaSendiri ?? namaDipilih)} />
+                    <span className="shrink-0 font-semibold text-slate-700 dark:text-slate-200">Tulis sendiri:</span>
+                    <input type="text" value={namaSendiri ?? ''} placeholder="Nama lengkap santri" aria-label="Tulis nama santri sendiri"
+                      onFocus={() => { if (namaSendiri === null) setNamaSendiri(namaDipilih); }}
+                      onChange={e => setNamaSendiri(e.target.value)}
+                      className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-transparent px-2 py-1.5 text-xs dark:border-slate-700" />
+                  </label>
+                </fieldset>
+              )}
             </div>
           )}
         </div>

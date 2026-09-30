@@ -30,7 +30,7 @@ import { BatchScanModal, BatchItemResult } from './BatchScanModal';
 
 export interface DocumentUploadBoxProps {
   onDataExtracted?: (data: ExtractedDocumentData, fileUrl: string, kategori: string, fileName?: string) => void;
-  onBatchExtracted?: (results: BatchItemResult[]) => void;
+  onBatchExtracted?: (results: BatchItemResult[], namaSantri?: string) => void;
   targetNamaSantri?: string;
   tahunMasuk?: number | string;
   jenisKelamin?: string;
@@ -811,9 +811,9 @@ export function DocumentUploadBox({
       <BatchScanModal
         isOpen={isBatchModalOpen}
         onClose={() => setIsBatchModalOpen(false)}
-        onBatchApply={(results) => {
+        onBatchApply={(results, namaSantri) => {
           if (onBatchExtracted) {
-            onBatchExtracted(results);
+            onBatchExtracted(results, namaSantri);
           }
         }}
         targetNamaSantri={targetNamaSantri}
