@@ -25,6 +25,7 @@ import { ExtractedDocumentData } from '@/lib/ocr/parser';
 import { checkNameMatch, toTitleCase } from '@/lib/utils/formatters';
 import { petakanTerbatas } from '@/lib/ocr/konkurensi';
 import { pesanGagalPindai } from '@/lib/ocr/pesan-gagal';
+import { PilihHalamanPdf } from './PilihHalamanPdf';
 
 type StatusPindai = 'menunggu' | 'mengunggah' | 'memindai' | 'selesai' | 'gagal';
 type Unggahan = { fileUrl: string; storagePath: string; fileName: string };
@@ -75,6 +76,8 @@ export function BatchScanModal({
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [statusBerkas, setStatusBerkas] = useState<StatusPindai[]>([]);
+  // PDF yang menunggu dipilih halamannya sebelum masuk daftar pindai (satu per satu).
+  const [antreanPdf, setAntreanPdf] = useState<File[]>([]);
   // Hasil unggah per berkas disimpan agar "Coba lagi" tidak mengunggah ulang.
   const unggahanRef = useRef<Array<Unggahan | undefined>>([]);
 
@@ -96,6 +99,14 @@ export function BatchScanModal({
       return;
     }
 
+    const isPdf = (f: File) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf');
+    const pdfBaru = validFiles.filter(isPdf);
+    if (pdfBaru.length > 0) setAntreanPdf(prev => [...prev, ...pdfBaru]);
+    tambahKeDaftar(validFiles.filter(f => !isPdf(f)));
+  };
+
+  const tambahKeDaftar = (validFiles: File[]) => {
+    if (validFiles.length === 0) return;
     setSelectedFiles(prev => {
       const combined = [...prev, ...validFiles];
       if (combined.length > 10) {
@@ -189,6 +200,7 @@ export function BatchScanModal({
 
   const handleResetModal = () => {
     setSelectedFiles([]);
+    setAntreanPdf([]);
     setStatusBerkas([]);
     unggahanRef.current = [];
     setBatchResults(null);
@@ -243,8 +255,18 @@ export function BatchScanModal({
             </div>
           )}
 
+          {/* STEP 1a: Pilih halaman PDF gabungan (hanya halaman tercentang yang dipindai) */}
+          {!batchResults && !isProcessing && antreanPdf.length > 0 && (
+            <PilihHalamanPdf
+              key={`${antreanPdf[0].name}-${antreanPdf[0].size}-${antreanPdf[0].lastModified}`}
+              berkas={antreanPdf[0]}
+              onBatal={() => setAntreanPdf(q => q.slice(1))}
+              onSelesai={hasil => { tambahKeDaftar([hasil]); setAntreanPdf(q => q.slice(1)); }}
+            />
+          )}
+
           {/* STEP 1: Upload Dropzone (if results not yet processed) */}
-          {!batchResults && !isProcessing && (
+          {!batchResults && !isProcessing && antreanPdf.length === 0 && (
             <div className="space-y-4">
               {isNameEmpty && (
                 <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border-2 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-3">
@@ -345,7 +367,7 @@ export function BatchScanModal({
                 </h4>
                 {selectedFiles.length === 0 && (
                   <p className="text-xs sm:text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-2 leading-relaxed">
-                    Foto dokumen (KK, Akta, SKL, KTP) atau 1 PDF gabungan. Gemini AI otomatis membaca isinya.
+                    Foto dokumen (KK, Akta, SKL, KTP) atau PDF gabungan — halaman PDF bisa dipilih dulu. AI otomatis membaca isinya.
                   </p>
                 )}
 
@@ -553,11 +575,11 @@ export function BatchScanModal({
             <button
               type="button"
               onClick={() => handleStartBatchOcr()}
-              disabled={selectedFiles.length === 0 || isProcessing}
+              disabled={selectedFiles.length === 0 || isProcessing || antreanPdf.length > 0}
               className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white disabled:opacity-50 cursor-pointer active:scale-95"
             >
               <Sparkle size={16} weight="fill" />
-              <span>{isProcessing ? 'Memindai…' : selectedFiles.length > 0 ? `Pindai ${selectedFiles.length} berkas` : 'Pilih berkas dulu'}</span>
+              <span>{isProcessing ? 'Memindai…' : antreanPdf.length > 0 ? 'Pilih halaman dulu' : selectedFiles.length > 0 ? `Pindai ${selectedFiles.length} berkas` : 'Pilih berkas dulu'}</span>
             </button>
           ) : (
             <button
