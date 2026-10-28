@@ -1,27 +1,59 @@
 import { FamilyMemberCandidate } from '@/lib/ocr/parser';
 
+// Gelar dengan penulisan baku yang tidak mengikuti pola "huruf awal kapital".
+const GELAR_BAKU: Record<string, string> = {
+  'dr': 'dr.', 'dr.': 'dr.', 'drg': 'drg.', 'drg.': 'drg.',
+  'prof': 'Prof.', 'prof.': 'Prof.', 'ir': 'Ir.', 'ir.': 'Ir.',
+  'h.': 'H.', 'hj': 'Hj.', 'hj.': 'Hj.', 'kh.': 'K.H.', 'k.h.': 'K.H.',
+  'lc': 'Lc.', 'lc.': 'Lc.', 'mba': 'MBA', 'ph.d': 'Ph.D.', 'ph.d.': 'Ph.D.',
+  's.ip': 'S.IP', 's.ip.': 'S.IP.', 'm.ip': 'M.IP', 'm.ip.': 'M.IP.',
+};
+// Singkatan spesialis (Sp.X) yang TIDAK ditulis kapital semua; selain ini kapital (Sp.OT, Sp.PD, Sp.OG, ...).
+const SPESIALIS_BUKAN_KAPITAL: Record<string, string> = { rad: 'Rad', an: 'An', ak: 'Ak', ort: 'Ort' };
+// Gelar depan yang sering menempel ke nama tanpa spasi ("dr.Risa").
+const GELAR_DEPAN_MENEMPEL = /(^|\s)(dr|drg|prof|ir|hj?)\.(?=\p{L})/giu;
+
+/** Gelar belakang (S.Pd, M.Kes, Sp.OT, Lc., Ph.D, A.Md, MBA) — dipisah dari nama dengan koma. */
+function gelarBelakang(kata: string): boolean {
+  return /^(sp|s|m)\.[a-z]/i.test(kata) || /^(a\.md|ph\.d|lc|mba)\.?$/i.test(kata);
+}
+
+function rapikanKata(kata: string): string {
+  const koma = kata.endsWith(',');
+  const inti = koma ? kata.slice(0, -1) : kata;
+  const kecil = inti.toLowerCase();
+  let hasil: string;
+  if (inti === 'Dr.' || inti === 'Dr') {
+    hasil = 'Dr.'; // diketik "Dr." (D kapital, r kecil) = gelar doktor S3 — dipertahankan
+  } else if (GELAR_BAKU[kecil]) {
+    hasil = GELAR_BAKU[kecil];
+  } else if (/^sp\.[a-z-]+\.?$/i.test(inti)) {
+    const titik = inti.endsWith('.');
+    const kode = kecil.slice(3).replace(/\.$/, '');
+    hasil = `Sp.${SPESIALIS_BUKAN_KAPITAL[kode] ?? kode.toUpperCase()}${titik ? '.' : ''}`;
+  } else if (inti.includes('.')) {
+    // Gelar/singkatan bertitik umum: s.pd → S.Pd, m.kes → M.Kes, a.md → A.Md
+    hasil = kecil.split('.').map(b => (b ? b.charAt(0).toUpperCase() + b.slice(1) : '')).join('.');
+  } else {
+    hasil = kecil.charAt(0).toUpperCase() + kecil.slice(1);
+  }
+  return koma ? hasil + ',' : hasil;
+}
+
 /**
- * Mengubah string menjadi format Title Case (huruf awal kata besar)
- * Contoh: "muhammad hanif" -> "Muhammad Hanif"
- * Menangani gelar/singkatan umum secara wajar.
+ * Merapikan nama orang: huruf awal kata kapital, gelar ditulis baku
+ * (dr. Risa Dumastoro, Sp.OT — bukan Dr.Risa Dumastoro Sp.Ot), spasi setelah gelar depan,
+ * dan koma sebelum gelar belakang. "Dr." (D kapital) dianggap gelar doktor S3 dan dipertahankan.
+ * Contoh: "muhammad hanif" -> "Muhammad Hanif".
  */
 export function toTitleCase(input: string): string {
   if (!input) return '';
-  return input
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .map((word) => {
-      // Jika kata seperti S.Pd, S.T, Lc, dll.
-      if (word.includes('.')) {
-        return word
-          .split('.')
-          .map((part) => (part.length > 0 ? part.charAt(0).toUpperCase() + part.slice(1) : ''))
-          .join('.');
-      }
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(' ');
+  const kata = input.trim().replace(GELAR_DEPAN_MENEMPEL, '$1$2. ').split(/\s+/).filter(Boolean).map(rapikanKata);
+  // Koma sebelum setiap gelar belakang ("Nama, S.Pd., M.Pd.").
+  for (let i = 1; i < kata.length; i++) {
+    if (gelarBelakang(kata[i]) && !kata[i - 1].endsWith(',')) kata[i - 1] += ',';
+  }
+  return kata.join(' ');
 }
 
 function levenshteinDistance(a: string, b: string): number {

@@ -19,6 +19,29 @@ describe('formatters utility', () => {
     it('handles empty input gracefully', () => {
       expect(toTitleCase('')).toBe('');
     });
+
+    it('menulis gelar dokter & spesialis secara baku', () => {
+      expect(toTitleCase('Dr.Risa Dumastoro Sp.Ot.')).toBe('Dr. Risa Dumastoro, Sp.OT.');
+      expect(toTitleCase('dr.risa dumastoro sp.ot')).toBe('dr. Risa Dumastoro, Sp.OT');
+      expect(toTitleCase('DR. RISA DUMASTORO, SP.OT')).toBe('dr. Risa Dumastoro, Sp.OT');
+      expect(toTitleCase('drg budi santoso sp.rad')).toBe('drg. Budi Santoso, Sp.Rad');
+      expect(toTitleCase('dr. ani sp.pd')).toBe('dr. Ani, Sp.PD');
+    });
+
+    it('gelar doktor S3 (Dr. kapital) dipertahankan, termasuk Dr. dr.', () => {
+      expect(toTitleCase('Dr. dr. risa dumastoro, sp.ot.')).toBe('Dr. dr. Risa Dumastoro, Sp.OT.');
+    });
+
+    it('gelar akademik & haji', () => {
+      expect(toTitleCase('h. ahmad fauzi s.pd.i m.pd')).toBe('H. Ahmad Fauzi, S.Pd.I, M.Pd');
+      expect(toTitleCase('HJ. SITI AMINAH, S.E.')).toBe('Hj. Siti Aminah, S.E.');
+      expect(toTitleCase('aris eko purwanto s.t')).toBe('Aris Eko Purwanto, S.T');
+      expect(toTitleCase('prof.dr. budi m.kes')).toBe('Prof. dr. Budi, M.Kes');
+    });
+
+    it('inisial nama tidak dianggap gelar', () => {
+      expect(toTitleCase('m. hanif')).toBe('M. Hanif');
+    });
   });
 
   describe('matchBestFamilyMember', () => {
