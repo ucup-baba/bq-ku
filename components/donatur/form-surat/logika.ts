@@ -5,7 +5,7 @@ import type { SuratData } from '@/lib/surat/data';
 import type { Sapaan, JenisDonasi, GayaTulisan } from '@/lib/db/donatur-repo';
 
 export type FormState = {
-  nama: string; sapaan: Sapaan; bentuk: 'UANG' | 'BARANG'; nominal: number;
+  nama: string; alamat?: string; sapaan: Sapaan; bentuk: 'UANG' | 'BARANG'; nominal: number;
   deskripsiBarang: string; tanggalSurat: string; nomorSurat: string; keterangan: string;
   gayaTulisan: GayaTulisan;
 };
@@ -28,6 +28,7 @@ export function hitungPratinjau(s: FormState): SuratData {
     tanggalTeks: formatDateIndonesian(s.tanggalSurat),
     sapaan: s.sapaan,
     namaDonatur: toTitleCase(s.nama || ''),
+    alamat: s.alamat?.trim() || null,
     barisNilai: s.bentuk === 'UANG'
       ? { tipe: 'UANG', rupiah: formatRupiah(s.nominal || 0), terbilang: terbilang(s.nominal || 0) }
       : { tipe: 'BARANG', deskripsi: s.deskripsiBarang || '-' },

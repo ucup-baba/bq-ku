@@ -1,6 +1,7 @@
 import type { SuratData } from '@/lib/surat/data';
 import type { SuratAssets } from '@/lib/surat/assets';
 import type { GayaTulisan } from '@/lib/db/donatur-repo';
+import { pasIsian } from '@/lib/surat/pas-isian';
 
 const TINTA = '#1d3b8f';
 const TEKS = '#111';
@@ -15,18 +16,20 @@ function fontIsian(gaya: GayaTulisan): { fontFamily: string; scale: number } {
 export function SuratTemplate({ data, assets }: { data: SuratData; assets: SuratAssets }) {
   const { fontFamily: fontTangan, scale } = fontIsian(data.gayaTulisan);
   const fsIsian = Math.round(FS * scale);
+  const lokasi = pasIsian(data.alamat || 'di Tempat', 55, fsIsian);
+  const keterangan = data.keterangan?.trim() ? pasIsian(data.keterangan, 45, fsIsian) : null;
 
   // Satori (mesin next/og) hanya mengenal border-style "solid"/"dashed" —
   // "dotted" ditolak ("Invalid value for CSS property borderBottomStyle").
   /** Isian tulisan tangan: tinta biru, duduk di atas garis putus-putus. */
-  const isian = (isi: string, minWidth = 320, align: 'flex-start' | 'center' = 'flex-start') => (
+  const isian = (isi: string, minWidth = 320, align: 'flex-start' | 'center' = 'flex-start', ukuran = fsIsian) => (
     <div
       style={{
         display: 'flex',
         justifyContent: align,
         fontFamily: fontTangan,
         color: TINTA,
-        fontSize: fsIsian,
+        fontSize: ukuran,
         lineHeight: 1,
         borderBottom: '2px dashed #444',
         minWidth,
@@ -82,7 +85,8 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
               <div style={{ display: 'flex' }}>Bapak/Ibu/Sdr :</div>
               {isian(data.namaDonatur, 400)}
             </div>
-            <div style={{ display: 'flex', paddingLeft: 4 }}>{isian('Tempat', 900)}</div>
+            {/* Alamat donatur; kosong → "di Tempat" (penulisan baku surat). Panjang → huruf dikecilkan agar tetap satu garis. */}
+            <div style={{ display: 'flex', paddingLeft: 4 }}>{isian(lokasi.teks, 900, 'flex-start', lokasi.ukuran)}</div>
           </div>
 
           {/* Isi */}
@@ -110,6 +114,15 @@ export function SuratTemplate({ data, assets }: { data: SuratData; assets: Surat
                 <div style={{ display: 'flex', width: 150 }}>Berupa</div>
                 <div style={{ display: 'flex' }}>:</div>
                 {isian(data.barisNilai.deskripsi, 740)}
+              </div>
+            )}
+
+            {/* Keterangan (opsional) — hanya dicetak bila diisi */}
+            {keterangan && (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, paddingLeft: 60 }}>
+                <div style={{ display: 'flex', width: 150 }}>Keterangan</div>
+                <div style={{ display: 'flex' }}>:</div>
+                {isian(keterangan.teks, 740, 'flex-start', keterangan.ukuran)}
               </div>
             )}
 

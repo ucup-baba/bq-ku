@@ -40,7 +40,7 @@ export function useFormSurat(awal?: SuratWithRelasi) {
   const d0 = awal?.donasi;
 
   const [donatur, setDonatur] = useState<PilihDonaturValue>(
-    d0 ? { donaturId: d0.donatur.id, nama: d0.donatur.nama, sapaan: d0.donatur.sapaan, noWa: d0.donatur.noWa || '' }
+    d0 ? { donaturId: d0.donatur.id, nama: d0.donatur.nama, sapaan: d0.donatur.sapaan, noWa: d0.donatur.noWa || '', alamat: d0.donatur.alamat || '' }
        : { donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' });
   const [pesanDonaturAwal, setPesanDonaturAwal] = useState<string | null>(null);
   // true begitu pengguna memilih donatur secara manual SEBELUM prefill ?donaturId= selesai —
@@ -58,7 +58,7 @@ export function useFormSurat(awal?: SuratWithRelasi) {
         const data = await res.json();
         if (batal || dipilihManualRef.current) return;
         if (!res.ok || !data.data) { setPesanDonaturAwal('Donatur tidak ditemukan. Silakan pilih atau tambahkan donatur.'); return; }
-        setDonatur({ donaturId: data.data.id, nama: data.data.nama, sapaan: data.data.sapaan, noWa: data.data.noWa || '' });
+        setDonatur({ donaturId: data.data.id, nama: data.data.nama, sapaan: data.data.sapaan, noWa: data.data.noWa || '', alamat: data.data.alamat || '' });
       } catch {
         if (!batal && !dipilihManualRef.current) setPesanDonaturAwal('Gagal memuat data donatur. Silakan pilih atau tambahkan donatur.');
       }
@@ -154,7 +154,7 @@ export function useFormSurat(awal?: SuratWithRelasi) {
   const ubahNomorSurat = (v: string) => { setNomorSurat(v); setNomorDiedit(true); };
 
   const state: FormState = {
-    nama: donatur.nama, sapaan: donatur.sapaan, bentuk, nominal,
+    nama: donatur.nama, alamat: donatur.alamat, sapaan: donatur.sapaan, bentuk, nominal,
     deskripsiBarang, tanggalSurat, nomorSurat, keterangan, gayaTulisan,
   };
   const pratinjau = hitungPratinjau(state);
@@ -207,7 +207,7 @@ export function useFormSurat(awal?: SuratWithRelasi) {
       if (!donaturId) {
         const resDonatur = await fetch('/api/donatur', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nama: donatur.nama, sapaan: donatur.sapaan, noWa: donatur.noWa || undefined }),
+          body: JSON.stringify({ nama: donatur.nama, sapaan: donatur.sapaan, noWa: donatur.noWa || undefined, alamat: donatur.alamat?.trim() || undefined }),
         });
         const dataDonatur = await resDonatur.json();
         if (resDonatur.status === 400 && dataDonatur.fields) {

@@ -17,6 +17,8 @@ export type PilihDonaturValue = {
   nama: string;
   sapaan: Sapaan;
   noWa: string;
+  /** Alamat (opsional) — dicetak di bawah nama pada surat; kosong → "di Tempat". */
+  alamat?: string;
 };
 
 const OPSI_SAPAAN: Array<{ value: Sapaan; label: string }> = [
@@ -118,7 +120,7 @@ export function PilihDonatur({
   }, []);
 
   const pilihDonatur = (d: Donatur) => {
-    onChange({ donaturId: d.id, nama: d.nama, sapaan: d.sapaan, noWa: d.noWa || '' });
+    onChange({ donaturId: d.id, nama: d.nama, sapaan: d.sapaan, noWa: d.noWa || '', alamat: d.alamat || '' });
     setQ('');
     setHasil([]);
     setBukaDropdown(false);
@@ -133,6 +135,7 @@ export function PilihDonatur({
       nama: namaFinal,
       sapaan: value.sapaan || 'BAPAK',
       noWa: value.noWa || '',
+      alamat: value.alamat || '',
     });
     setTimeout(() => {
       inputNamaBaruRef.current?.focus();
@@ -145,7 +148,7 @@ export function PilihDonatur({
       setQ(value.nama);
       setBukaDropdown(true);
     }
-    onChange({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' });
+    onChange({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '', alamat: '' });
     setTimeout(() => {
       inputCariRef.current?.focus();
     }, 50);
@@ -157,7 +160,7 @@ export function PilihDonatur({
     setQ('');
     setHasil([]);
     setBukaDropdown(false);
-    onChange({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '' });
+    onChange({ donaturId: undefined, nama: '', sapaan: 'BAPAK', noWa: '', alamat: '' });
     setTimeout(() => {
       inputCariRef.current?.focus();
     }, 50);
@@ -274,6 +277,16 @@ export function PilihDonatur({
             {errors?.noWa && <span className="block text-xs text-rose-600 font-medium">{errors.noWa}</span>}
           </label>
         </div>
+
+        <label className="block space-y-1">
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Alamat (opsional)</span>
+          <input
+            value={value.alamat ?? ''}
+            onChange={e => onChange({ ...value, alamat: e.target.value })}
+            className={`${field} ${borderNormal}`}
+            placeholder="mis. Jl. Kaliurang Km 14, Sleman — kosong: &quot;di Tempat&quot;"
+          />
+        </label>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           💡 Donatur baru ini akan otomatis disimpan ke database saat surat ucapan dibuat.
         </p>
