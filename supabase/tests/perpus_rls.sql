@@ -15,7 +15,7 @@ set local role anon;
 select jumlah from public.perpus_donasi_publik;
 rollback;
 
--- Harus galat: permission denied
+-- Harus galat: view tidak bisa diubah (permission denied atau "not automatically updatable")
 begin;
 set local role anon;
 delete from public.perpus_katalog_publik;

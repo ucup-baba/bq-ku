@@ -59,7 +59,7 @@ Dijalankan manual di SQL Editor Supabase (seperti migrasi sebelumnya). Semua tab
 | `nomor_panggil` text **unique** | gabungan; tersusun oleh fungsi aplikasi, bukan diketik bebas |
 | `nomor_panggil_lama` text null | kode dari sheet, untuk penggantian label bertahap |
 | `eksemplar` int default 1 | |
-| `sampul_path` text null | Storage bucket yang sama, prefix `perpus/sampul/` |
+| `sampul_path` text null | bucket publik `perpus-sampul` (bucket `berkas` diakses lewat signed URL yang kedaluwarsa, tidak cocok dengan halaman ber-cache) |
 | `asal` text | `koleksi_awal` / `wakaf` / `pengadaan` |
 | `donasi_id`, `pengadaan_id` fk null | |
 | `aktif` bool default true | nonaktif = hilang dari katalog publik |
@@ -143,7 +143,9 @@ API di `app/api/perpus/…` (admin) dan `app/api/perpus-publik/…` (anggota), d
 
 - Env baru: `PERPUS_HOST` (mis. `perpusbq.vercel.app`; boleh daftar dipisah koma untuk preview/lokal `perpus.localhost`). **Nilai domain ditentukan pengguna saat deploy.**
 - `proxy.ts`: bila `host ∈ PERPUS_HOST` → cabang perpus: `/` → redirect `/id` atau `/en`; path tanpa `[lang]` → tambah `id`; rewrite internal `/<lang>/…` → `/perpusbq/<lang>/…` (folder fisik `app/perpusbq/[lang]`; bukan route group di root karena `[lang]` akan bentrok dengan route bq-ku, dan bukan folder `_…` karena itu folder privat Next yang tidak di-route). Halaman publik perpus tidak perlu login; `/[lang]/pinjamanku` & API anggota wajib sesi; sesi tanpa baris `perpus_anggota` diarahkan ke `/[lang]/daftar`. Logika ruangan bq-ku **tidak** dijalankan di host perpus. Di host bq-ku, path `/perpusbq` ditolak (404).
-- Supabase Auth: tambahkan `https://<PERPUS_HOST>/auth/callback` ke Redirect URLs; callback memakai `next` yang menyertakan `lang`.
+- Halaman bq-ku berada di route group `app/(bqku)` dengan root layout sendiri, sehingga `app/perpusbq/[lang]` juga punya root layout sendiri (tanpa `PendingGate`, `lang` dinamis). `app/manifest.ts` & `app/favicon.ico` wajib tetap di akar `app/`; di host perpus `/manifest.webmanifest` di-rewrite ke `app/perpusbq/manifest`.
+- Sampai Tahap 3, host perpus menolak `/api/*` dan `/auth/*` (404) karena penjaga ruangan bq-ku tidak berjalan di sana. Tahap 3 membuka `/api/perpus-publik` dan `/auth/callback`.
+- Supabase Auth (Tahap 3): tambahkan `https://<PERPUS_HOST>/auth/callback` ke Redirect URLs; callback memakai `next` yang menyertakan `lang`.
 - Vercel: tambahkan domain ke proyek `bq-ku` (deploy tetap manual: `vercel --prod`, lalu cek `vercel ls`).
 
 ## 8. Tema & Bahasa
