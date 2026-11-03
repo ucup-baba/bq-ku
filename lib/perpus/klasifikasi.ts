@@ -1,11 +1,14 @@
 import 'server-only';
 import { z } from 'zod';
 import { bacaDokumenAi } from '@/lib/ai/baca';
+import { AiBatasError } from '@/lib/ai/batas';
 import type { PilihanModel } from '@/lib/ai/model';
 import { KELAS_DDC, kelasSah } from '@/lib/perpus/ddc';
 
 /** Permintaan pengguna: klasifikasi buku memakai Gemini, terlepas dari setelan OCR utama. */
 export const MODEL_KLASIFIKASI: PilihanModel = { penyedia: 'gemini', model: 'gemini-flash-lite-latest' };
+/** Flash-Lite sering 503 "high demand"; cadangan tetap Gemini agar sesuai permintaan. */
+export const MODEL_KLASIFIKASI_CADANGAN: PilihanModel = { penyedia: 'gemini', model: 'gemini-flash-latest' };
 
 export type UsulanKelas = { kelasDdc: string; alasan: string; yakin: number };
 
@@ -46,9 +49,16 @@ export function uraiJawaban(teks: string, jumlah: number): (UsulanKelas | null)[
 }
 
 export async function usulkanKelas(buku: { judul: string; penulis: string }[], penggunaId: string): Promise<(UsulanKelas | null)[]> {
-  const { teks } = await bacaDokumenAi({
-    prompt: promptKlasifikasi(buku), berkas: null, modelPaksa: MODEL_KLASIFIKASI,
+  const panggil = (modelPaksa: PilihanModel) => bacaDokumenAi({
+    prompt: promptKlasifikasi(buku), berkas: null, modelPaksa,
     konteks: { fitur: 'klasifikasi_buku', penggunaId },
   });
+  let teks: string;
+  try {
+    ({ teks } = await panggil(MODEL_KLASIFIKASI));
+  } catch (e) {
+    if (e instanceof AiBatasError) throw e;
+    ({ teks } = await panggil(MODEL_KLASIFIKASI_CADANGAN));
+  }
   return uraiJawaban(teks, buku.length);
 }

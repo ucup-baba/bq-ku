@@ -11,6 +11,7 @@ import { kelasInput } from '@/components/ui/kelas';
 
 type Usulan = { kelasDdc: string; alasan: string; yakin: number };
 const UKURAN_BATCH = 10;
+const SEJALAN = 3;
 
 export function AuditKode() {
   const [buku, setBuku] = useState<Buku[]>([]);
@@ -28,25 +29,45 @@ export function AuditKode() {
   };
   useEffect(() => { muat(); }, []);
 
+  /**
+   * Hanya buku yang belum punya usulan; SEJALAN batch dikirim bersamaan. Batch yang gagal (mis. Gemini 503)
+   * dilewati agar sisanya tetap jalan; tekan tombol lagi untuk mencoba yang tersisa. Batas AI habis → berhenti.
+   */
   const usulkanSemua = async () => {
     setGalat(null);
-    for (let i = 0; i < buku.length; i += UKURAN_BATCH) {
-      const batch = buku.slice(i, i + UKURAN_BATCH);
-      setProgres(`AI ${Math.min(i + UKURAN_BATCH, buku.length)}/${buku.length}…`);
-      const res = await fetch('/api/perpus/klasifikasi', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ buku: batch.map(b => ({ judul: b.judul, penulis: b.penulis })) }),
-      });
-      const d = await res.json();
-      if (!res.ok) { setGalat(d.error || 'AI gagal'); break; }
-      const baru: Record<string, Usulan> = {};
-      batch.forEach((b, j) => { if (d.data[j]) baru[b.id] = d.data[j]; });
-      setUsulan(p => ({ ...p, ...baru }));
-      setPilihan(p => ({ ...Object.fromEntries(Object.entries(baru).map(([id, u]) => [id, u.kelasDdc])), ...p }));
-      setCentang(p => new Set([...p, ...Object.entries(baru).filter(([, u]) => u.yakin >= 0.8).map(([id]) => id)]));
-    }
+    const sisa = buku.filter(b => !usulan[b.id]);
+    const batch: Buku[][] = [];
+    for (let i = 0; i < sisa.length; i += UKURAN_BATCH) batch.push(sisa.slice(i, i + UKURAN_BATCH));
+    let selesai = 0, gagal = 0, berhenti: string | null = null;
+    const kerjakan = async (isi: Buku[]) => {
+      if (berhenti) return;
+      try {
+        const res = await fetch('/api/perpus/klasifikasi', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ buku: isi.map(b => ({ judul: b.judul, penulis: b.penulis })) }),
+        });
+        const d = await res.json();
+        if (res.status === 429) { berhenti = d.error || 'Batas AI tercapai'; return; }
+        if (!res.ok) { gagal += isi.length; return; }
+        const baru: Record<string, Usulan> = {};
+        isi.forEach((b, j) => { if (d.data[j]) baru[b.id] = d.data[j]; });
+        setUsulan(p => ({ ...p, ...baru }));
+        setPilihan(p => ({ ...Object.fromEntries(Object.entries(baru).map(([id, u]) => [id, u.kelasDdc])), ...p }));
+        setCentang(p => new Set([...p, ...Object.entries(baru).filter(([, u]) => u.yakin >= 0.8).map(([id]) => id)]));
+      } catch {
+        gagal += isi.length;
+      } finally {
+        selesai += isi.length;
+        setProgres(`AI ${selesai}/${sisa.length}…`);
+      }
+    };
+    setProgres(`AI 0/${sisa.length}…`);
+    for (let i = 0; i < batch.length; i += SEJALAN) await Promise.all(batch.slice(i, i + SEJALAN).map(kerjakan));
     setProgres(null);
+    if (berhenti) setGalat(berhenti);
+    else if (gagal) setGalat(`${gagal} buku belum mendapat usulan (AI sedang sibuk). Tekan "Usulkan" lagi untuk mencoba sisanya.`);
   };
+  const belumDiusulkan = buku.filter(b => !usulan[b.id]).length;
 
   const terapkan = async () => {
     const items = [...centang].filter(id => pilihan[id]).map(id => ({ id, kelasDdc: pilihan[id] }));
@@ -68,7 +89,9 @@ export function AuditKode() {
         aksi={/* <a> biasa: next/link akan mem-prefetch rute API CSV */
           <a href="/api/perpus/label" download className={kelasTombolUtama}><DownloadSimple size={18} weight="bold" aria-hidden /> Label CSV</a>} />
       <div className="flex flex-wrap gap-2">
-        <TombolUtama ikon={Sparkle} onClick={usulkanSemua} disabled={!!progres || !buku.length}>Usulkan semua (AI)</TombolUtama>
+        <TombolUtama ikon={Sparkle} onClick={usulkanSemua} disabled={!!progres || !belumDiusulkan}>
+          {belumDiusulkan === buku.length ? 'Usulkan semua (AI)' : `Usulkan ${belumDiusulkan} sisanya (AI)`}
+        </TombolUtama>
         <TombolUtama ikon={CheckCircle} onClick={terapkan} disabled={!!progres || !centang.size}>Terapkan {centang.size} terpilih</TombolUtama>
         {progres && <span className="self-center text-sm text-bq-redup">{progres}</span>}
       </div>
