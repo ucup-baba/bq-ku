@@ -14,7 +14,7 @@ export type KonteksAi = { fitur: FiturAi; penggunaId: string | null };
 const BATAS_PER_PANGGILAN_MS = 60_000;
 const SISA_MIN_CADANGAN_MS = 5_000;
 
-const PANGGIL: Record<Penyedia, (model: string, prompt: string, berkas: BerkasAi, batasMs: number) => Promise<HasilPanggil>> = {
+const PANGGIL: Record<Penyedia, (model: string, prompt: string, berkas: BerkasAi | null, batasMs: number) => Promise<HasilPanggil>> = {
   openai: panggilOpenai,
   gemini: panggilGemini,
 };
@@ -27,11 +27,12 @@ function jsonBersih(teks: string): string {
 }
 
 /**
- * Satu pindai: cek batas → penyedia utama → cadangan (bila ada & sisa waktu cukup).
+ * Satu panggilan AI: cek batas → penyedia utama → cadangan (bila ada & sisa waktu cukup).
+ * `modelPaksa` (mis. klasifikasi buku = Gemini) melewati setelan utama/cadangan. `berkas` null = teks saja.
  * Setiap percobaan dicatat ke pemakaian_ai dengan idPermintaan yang sama.
  */
-export async function bacaDokumenAi({ prompt, berkas, konteks, batasTotalMs = BATAS_PER_PANGGILAN_MS }: {
-  prompt: string; berkas: BerkasAi; konteks: KonteksAi; batasTotalMs?: number;
+export async function bacaDokumenAi({ prompt, berkas, konteks, batasTotalMs = BATAS_PER_PANGGILAN_MS, modelPaksa }: {
+  prompt: string; berkas: BerkasAi | null; konteks: KonteksAi; batasTotalMs?: number; modelPaksa?: PilihanModel;
 }): Promise<{ teks: string; penyedia: Penyedia; model: string }> {
   const setelan = await bacaSetelanAi();
   const pemakaian = await ambilRingkasanPemakaian().catch(() => ({ pindaiHariIni: 0, biayaBulanIni: 0 }));
@@ -40,8 +41,8 @@ export async function bacaDokumenAi({ prompt, berkas, konteks, batasTotalMs = BA
 
   const idPermintaan = randomUUID();
   const mulai = Date.now();
-  const urutan: [PilihanModel, 'utama' | 'cadangan'][] = [[setelan.utama, 'utama']];
-  if (setelan.cadangan) urutan.push([setelan.cadangan, 'cadangan']);
+  const urutan: [PilihanModel, 'utama' | 'cadangan'][] = [[modelPaksa ?? setelan.utama, 'utama']];
+  if (setelan.cadangan && !modelPaksa) urutan.push([setelan.cadangan, 'cadangan']);
   const galat: string[] = [];
 
   for (const [pilihan, peran] of urutan) {

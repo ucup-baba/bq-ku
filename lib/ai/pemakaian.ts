@@ -3,7 +3,7 @@ import { createAdminSupabase } from '@/lib/supabase/admin';
 import type { Penyedia } from './model';
 import { awalBulanWib, awalHariWib } from './waktu';
 
-export type FiturAi = 'ocr_tunggal' | 'ocr_massal' | 'ocr_mandiri';
+export type FiturAi = 'ocr_tunggal' | 'ocr_massal' | 'ocr_mandiri' | 'klasifikasi_buku';
 export type BarisPemakaian = {
   idPermintaan: string; waktu: string; penggunaId: string | null; fitur: FiturAi; peran: 'utama' | 'cadangan';
   penyedia: Penyedia; model: string; tokenMasuk: number; tokenKeluar: number; biayaRp: number | null;

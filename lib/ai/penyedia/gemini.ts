@@ -1,6 +1,6 @@
 import { galatHttp, type BerkasAi, type HasilPanggil } from './tipe';
 
-export async function panggilGemini(model: string, prompt: string, berkas: BerkasAi, batasMs: number): Promise<HasilPanggil> {
+export async function panggilGemini(model: string, prompt: string, berkas: BerkasAi | null, batasMs: number): Promise<HasilPanggil> {
   const kunci = process.env.GEMINI_API_KEY;
   if (!kunci) throw new Error('GEMINI_API_KEY belum dipasang');
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${kunci}`, {
@@ -8,7 +8,7 @@ export async function panggilGemini(model: string, prompt: string, berkas: Berka
     signal: AbortSignal.timeout(batasMs),
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }, { inlineData: { mimeType: berkas.mimeType, data: berkas.base64 } }] }],
+      contents: [{ parts: [{ text: prompt }, ...(berkas ? [{ inlineData: { mimeType: berkas.mimeType, data: berkas.base64 } }] : [])] }],
       generationConfig: { responseMimeType: 'application/json', temperature: 0 },
     }),
   });
