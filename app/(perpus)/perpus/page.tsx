@@ -1,7 +1,7 @@
-import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
+import { BerandaPerpus } from '@/components/perpus/BerandaPerpus';
 
 export const metadata = { title: 'Ruang Perpus — BQ-ku' };
 
 export default function BerandaPerpusPage() {
-  return <KepalaHalaman judul="Ruang Perpus" sub="Perpustakaan Baitul Qowwam" />;
+  return <BerandaPerpus />;
 }
