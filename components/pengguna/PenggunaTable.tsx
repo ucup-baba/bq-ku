@@ -16,6 +16,7 @@ const ROLE_BADGE: Record<UserRole, string> = {
   PENGURUS: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-200',
   ADMIN_SANTRI: 'bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200',
   ADMIN_DONATUR: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200',
+  PUSTAKAWAN: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200',
   VIEWER: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 };
 const RUANGAN_FILTER: { value: 'semua' | Room; label: string }[] = [
@@ -23,6 +24,7 @@ const RUANGAN_FILTER: { value: 'semua' | Room; label: string }[] = [
   { value: 'santri', label: ROOM_LABEL.santri },
   { value: 'donatur', label: ROOM_LABEL.donatur },
   { value: 'lembaga', label: ROOM_LABEL.lembaga },
+  { value: 'perpus', label: ROOM_LABEL.perpus },
 ];
 const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : 'Belum pernah';
 const fmtMasuk = (r: Row) => r.status === 'MENUNGGU' ? 'Menunggu masuk pertama via Google' : fmt(r.lastSignInAt);

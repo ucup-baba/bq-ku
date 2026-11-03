@@ -26,4 +26,8 @@ describe('izin berbasis banyak peran', () => {
     expect(getRoleLabel('PENGURUS')).toBe('Pengurus Yayasan');
     expect(ALL_ROLES).toContain('PENGURUS');
   });
+  it('peran Pustakawan terdaftar', () => {
+    expect(ALL_ROLES).toContain('PUSTAKAWAN');
+    expect(getRoleLabel('PUSTAKAWAN')).toBe('Pustakawan');
+  });
 });

@@ -59,3 +59,20 @@ describe('panggilOpenai', () => {
     await expect(panggilOpenai('gpt-5.4-mini', 'p', berkasGambar, 10_000)).rejects.toThrow(/429/);
   });
 });
+
+describe('tanpa berkas', () => {
+  it('Gemini hanya mengirim teks', async () => {
+    const f = jawab({ candidates: [{ content: { parts: [{ text: '{}' }] } }], usageMetadata: {} });
+    vi.stubGlobal('fetch', f);
+    await panggilGemini('gemini-flash-lite-latest', 'klasifikasi JSON', null, 10_000);
+    const body = JSON.parse(String((f.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+    expect(body.contents[0].parts).toEqual([{ text: 'klasifikasi JSON' }]);
+  });
+  it('OpenAI hanya mengirim input_text', async () => {
+    const f = jawab({ output_text: '{}', usage: {} });
+    vi.stubGlobal('fetch', f);
+    await panggilOpenai('gpt-5.4-mini', 'klasifikasi JSON', null, 10_000);
+    const body = JSON.parse(String((f.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+    expect(body.input[0].content).toEqual([{ type: 'input_text', text: 'klasifikasi JSON' }]);
+  });
+});

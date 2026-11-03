@@ -2,11 +2,11 @@ import { infoModel } from '../model';
 import { galatHttp, type BerkasAi, type HasilPanggil } from './tipe';
 
 /** Responses API: gambar sebagai input_image, PDF sebagai input_file. Prompt wajib memuat kata "JSON" (json_object). */
-export async function panggilOpenai(model: string, prompt: string, berkas: BerkasAi, batasMs: number): Promise<HasilPanggil> {
+export async function panggilOpenai(model: string, prompt: string, berkas: BerkasAi | null, batasMs: number): Promise<HasilPanggil> {
   const kunci = process.env.OPENAI_API_KEY;
   if (!kunci) throw new Error('OPENAI_API_KEY belum dipasang');
-  const dataUrl = `data:${berkas.mimeType};base64,${berkas.base64}`;
-  const lampiran = berkas.mimeType === 'application/pdf'
+  const dataUrl = berkas ? `data:${berkas.mimeType};base64,${berkas.base64}` : '';
+  const lampiran = !berkas ? null : berkas.mimeType === 'application/pdf'
     ? { type: 'input_file', filename: 'berkas.pdf', file_data: dataUrl }
     : { type: 'input_image', image_url: dataUrl, detail: 'high' };
   const res = await fetch('https://api.openai.com/v1/responses', {
@@ -15,7 +15,7 @@ export async function panggilOpenai(model: string, prompt: string, berkas: Berka
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${kunci}` },
     body: JSON.stringify({
       model,
-      input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }, lampiran] }],
+      input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }, ...(lampiran ? [lampiran] : [])] }],
       text: { format: { type: 'json_object' } },
       ...(infoModel({ penyedia: 'openai', model })?.dukungTemperature ? { temperature: 0 } : {}),
     }),

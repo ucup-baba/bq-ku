@@ -67,4 +67,23 @@ describe('bacaDokumenAi', () => {
     await expect(bacaDokumenAi({ ...p, batasTotalMs: 5_020 })).rejects.toThrow(/Semua penyedia AI gagal/);
     expect(panggil.gemini).not.toHaveBeenCalled();
   });
+  it('modelPaksa: hanya model itu, tanpa cadangan; berkas boleh null', async () => {
+    panggil.gemini.mockResolvedValue({ teks: '{"hasil":[]}', tokenMasuk: 3, tokenKeluar: 2 });
+    const h = await bacaDokumenAi({
+      prompt: 'JSON', berkas: null, konteks: { fitur: 'klasifikasi_buku', penggunaId: 'u1' },
+      modelPaksa: { penyedia: 'gemini', model: 'gemini-flash-lite-latest' },
+    });
+    expect(h).toEqual({ teks: '{"hasil":[]}', penyedia: 'gemini', model: 'gemini-flash-lite-latest' });
+    expect(panggil.openai).not.toHaveBeenCalled();
+    expect(panggil.gemini.mock.calls[0][2]).toBeNull();
+    expect(catatan[0]).toMatchObject({ fitur: 'klasifikasi_buku', peran: 'utama', berhasil: true });
+  });
+  it('modelPaksa gagal → tidak mencoba cadangan', async () => {
+    panggil.gemini.mockRejectedValue(new Error('Gemini HTTP 503'));
+    await expect(bacaDokumenAi({
+      prompt: 'JSON', berkas: null, konteks: { fitur: 'klasifikasi_buku', penggunaId: null },
+      modelPaksa: { penyedia: 'gemini', model: 'gemini-flash-lite-latest' },
+    })).rejects.toThrow(/503/);
+    expect(panggil.openai).not.toHaveBeenCalled();
+  });
 });

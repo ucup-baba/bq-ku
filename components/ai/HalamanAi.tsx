@@ -160,7 +160,7 @@ export function HalamanAi({ awal }: { awal: DataHalamanAi }) {
             {r.terakhir.map((x, i) => (
               <li key={`${x.idPermintaan}-${x.peran}-${i}`} className="flex flex-wrap items-center justify-between gap-2 py-2 text-xs">
                 <span className="min-w-0">
-                  <span className="block font-bold text-bq-tinta">{x.namaPengguna ?? (x.fitur === 'ocr_mandiri' ? 'Unggah mandiri wali' : '—')} · {infoModel(x)?.label ?? x.model}</span>
+                  <span className="block font-bold text-bq-tinta">{x.namaPengguna ?? (x.fitur === 'ocr_mandiri' ? 'Unggah mandiri wali' : x.fitur === 'klasifikasi_buku' ? 'Klasifikasi buku' : '—')} · {infoModel(x)?.label ?? x.model}</span>
                   <span className="block text-bq-redup">{new Date(x.waktu).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'short', timeStyle: 'short' })} · {(x.tokenMasuk + x.tokenKeluar).toLocaleString('id-ID')} token{x.biayaRp !== null && ` · ${rp(x.biayaRp)}`}</span>
                 </span>
                 <span className={`rounded-full px-2 py-0.5 font-bold ${x.berhasil ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'}`}

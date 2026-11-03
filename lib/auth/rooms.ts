@@ -1,16 +1,17 @@
 import type { UserRole } from './roles';
 
-export type Room = 'santri' | 'donatur' | 'lembaga';
+export type Room = 'santri' | 'donatur' | 'lembaga' | 'perpus';
 
 export const ROOM_COOKIE = 'bq_room';
-export const ROOM_HOME: Record<Room, string> = { santri: '/', donatur: '/donatur', lembaga: '/lembaga' };
-export const ROOM_LABEL: Record<Room, string> = { santri: 'Ruang Santri', donatur: 'Ruang Donatur', lembaga: 'Ruang Lembaga' };
+export const ROOM_HOME: Record<Room, string> = { santri: '/', donatur: '/donatur', lembaga: '/lembaga', perpus: '/perpus' };
+export const ROOM_LABEL: Record<Room, string> = { santri: 'Ruang Santri', donatur: 'Ruang Donatur', lembaga: 'Ruang Lembaga', perpus: 'Ruang Perpus' };
 
 export function roomsFor(roles: UserRole[]): Room[] {
   const out: Room[] = [];
   if (roles.some(r => r === 'SUPERADMIN' || r === 'ADMIN_SANTRI' || r === 'VIEWER')) out.push('santri');
   if (roles.some(r => r === 'SUPERADMIN' || r === 'ADMIN_DONATUR')) out.push('donatur');
   if (roles.some(r => r === 'SUPERADMIN' || r === 'PENGURUS')) out.push('lembaga');
+  if (roles.some(r => r === 'SUPERADMIN' || r === 'PUSTAKAWAN')) out.push('perpus');
   return out;
 }
 
@@ -20,11 +21,12 @@ export function pathNetral(pathname: string): boolean {
 }
 
 /** Halaman Akun di dalam ruangan aktif (nav & rail tetap milik ruangan itu). */
-export const ROOM_AKUN: Record<Room, string> = { santri: '/akun', donatur: '/donatur/akun', lembaga: '/lembaga/akun' };
+export const ROOM_AKUN: Record<Room, string> = { santri: '/akun', donatur: '/donatur/akun', lembaga: '/lembaga/akun', perpus: '/perpus/akun' };
 
 /** Ruangan yang dituju sebuah path. Default: santri. */
 export function roomOfPath(pathname: string): Room {
   const di = (awal: string) => pathname === awal || pathname.startsWith(awal + '/');
+  if (di('/perpus') || di('/api/perpus')) return 'perpus';
   if (di('/lembaga') || di('/api/lembaga')) return 'lembaga';
   if (di('/donatur') || di('/api/donatur')) return 'donatur';
   return 'santri';
