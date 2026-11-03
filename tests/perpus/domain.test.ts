@@ -43,6 +43,9 @@ describe('ruteHostPerpus', () => {
       expect(ruteHostPerpus(p, null)).toEqual({ jenis: 'tolak' });
     }
   });
+  it('manifest memakai milik perpus, bukan manifest bq-ku', () => {
+    expect(ruteHostPerpus('/manifest.webmanifest', null)).toEqual({ jenis: 'tulis-ulang', ke: '/perpusbq/manifest' });
+  });
   it('aset internal Next dilewatkan', () => {
     expect(ruteHostPerpus('/_next/webpack-hmr', null)).toEqual({ jenis: 'lewat' });
   });

@@ -29,6 +29,7 @@ export function bahasaDari(accept: string | null): Bahasa {
 export function ruteHostPerpus(pathname: string, accept: string | null): RutePerpus {
   if (pathname.startsWith('/_next/')) return { jenis: 'lewat' };
   if (/^\/(api|auth|perpusbq)(\/|$)/.test(pathname)) return { jenis: 'tolak' };
+  if (pathname === '/manifest.webmanifest') return { jenis: 'tulis-ulang', ke: '/perpusbq/manifest' };
   if (pathname === '/') return { jenis: 'alihkan', ke: `/${bahasaDari(accept)}` };
   if (adaBahasa(pathname.split('/')[1])) return { jenis: 'tulis-ulang', ke: `/perpusbq${pathname}` };
   return { jenis: 'alihkan', ke: `/id${pathname}` };

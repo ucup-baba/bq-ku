@@ -22,6 +22,7 @@ const config: Config = {
         'warm-cream': '#F6F8F3',
         'citron-lime': '#84CC16',
         'dusty-coral': '#FB7185',
+        perpus: { kertas: 'var(--p-kertas)', 'kertas-dalam': 'var(--p-kertas-dalam)', tinta: 'var(--p-tinta)', 'tinta-lembut': 'var(--p-tinta-lembut)', teal: 'var(--p-teal)', lime: 'var(--p-lime)', 'lime-tint': 'var(--p-lime-tint)', galat: 'var(--p-galat)' },
         bq: {
           bg: token('bg'),
           surface: token('surface'),
