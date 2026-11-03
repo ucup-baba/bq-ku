@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
 const getClaims = vi.fn();
@@ -109,5 +109,46 @@ describe('proxy: penjaga ruangan', () => {
 
     const resHome = await proxy(req('/'));
     expect(resHome.headers.get('location')).toBeNull();
+  });
+});
+
+describe('proxy: host perpus', () => {
+  beforeEach(() => { vi.stubEnv('PERPUS_HOST', 'perpus.localhost'); });
+  afterEach(() => { vi.unstubAllEnvs(); });
+
+  const reqHost = (path: string, host: string, accept?: string) => new NextRequest(new URL(path, `http://${host}`), {
+    headers: { host, ...(accept ? { 'accept-language': accept } : {}) },
+  });
+
+  it('/ → redirect sesuai Accept-Language, tanpa memeriksa sesi', async () => {
+    const res = await proxy(reqHost('/', 'perpus.localhost', 'en-US,en'));
+    expect(res.status).toBe(307);
+    expect(new URL(res.headers.get('location')!).pathname).toBe('/en');
+    expect(getClaims).not.toHaveBeenCalled();
+  });
+  it('redirect mempertahankan host publik, bukan host internal server', async () => {
+    const r = new NextRequest(new URL('/katalog?q=a', 'http://localhost:3000'), { headers: { host: 'perpus.localhost:3000' } });
+    const tujuan = new URL((await proxy(r)).headers.get('location')!);
+    expect(tujuan.host).toBe('perpus.localhost:3000');
+    expect(tujuan.pathname + tujuan.search).toBe('/id/katalog?q=a');
+  });
+  it('/id/katalog?q=a di-rewrite dengan query utuh', async () => {
+    const res = await proxy(reqHost('/id/katalog?q=a', 'perpus.localhost'));
+    const tujuan = new URL(res.headers.get('x-middleware-rewrite')!);
+    expect(tujuan.pathname).toBe('/perpusbq/id/katalog');
+    expect(tujuan.search).toBe('?q=a');
+  });
+  it('API bq-ku → 404 di host perpus', async () => {
+    const res = await proxy(reqHost('/api/santri', 'perpus.localhost'));
+    expect(res.status).toBe(404);
+  });
+  it('/perpusbq di host bq-ku → 404', async () => {
+    const res = await proxy(reqHost('/perpusbq/id', 'bq-ku.vercel.app'));
+    expect(res.status).toBe(404);
+  });
+  it('host bq-ku tetap memakai penjaga ruangan', async () => {
+    getClaims.mockResolvedValue({ data: { claims: null }, error: null });
+    const res = await proxy(reqHost('/donatur', 'bq-ku.vercel.app'));
+    expect(new URL(res.headers.get('location')!).pathname).toBe('/login');
   });
 });
