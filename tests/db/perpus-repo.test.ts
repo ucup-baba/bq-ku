@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { tambahBuku, simpanRencana, terapkanAudit } from '@/lib/db/perpus-repo';
+import { tambahBuku, simpanRencana, terapkanAudit, unggahSampulBuku } from '@/lib/db/perpus-repo';
 import { NomorBentrokError } from '@/lib/perpus/nomor-panggil';
 import type { RencanaImpor } from '@/lib/perpus/impor';
 
@@ -67,5 +67,24 @@ describe('terapkanAudit', () => {
     expect(c.rpc).toHaveBeenCalledWith('perpus_terapkan_nomor', {
       perubahan: [{ id: 'a', kelasDdc: '899.221', kodePengarang: 'LIY', kodeJudul: 'r', noSeri: null, nomorPanggil: '899.221 LIY r' }],
     });
+  });
+});
+
+describe('unggahSampulBuku', () => {
+  it('mengunggah ke bucket sampul lalu menghapus file lama', async () => {
+    const upload = vi.fn().mockResolvedValue({ error: null });
+    const remove = vi.fn().mockResolvedValue({ error: null });
+    let panggil = 0;
+    const c = {
+      storage: { from: (b: string) => { expect(b).toBe('perpus-sampul'); return { upload, remove }; } },
+      from: () => rantai(panggil++ === 0
+        ? { data: { sampulPath: 'b1/lama.webp' }, error: null }
+        : { data: { id: 'b1', sampulPath: 'b1/baru.webp' }, error: null }),
+    } as never;
+    const hasil = await unggahSampulBuku(c, 'b1', Buffer.from('x'));
+    expect(hasil.id).toBe('b1');
+    expect(upload.mock.calls[0][0]).toMatch(/^b1\/\d+\.webp$/);
+    expect(upload.mock.calls[0][2]).toMatchObject({ contentType: 'image/webp' });
+    expect(remove).toHaveBeenCalledWith(['b1/lama.webp']);
   });
 });
