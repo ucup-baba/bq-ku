@@ -11,6 +11,7 @@ import { LembarBawah } from '@/components/ui/LembarBawah';
 import { PesanGalat } from '@/components/ui/PesanGalat';
 import { kelasInput } from '@/components/ui/kelas';
 import { FormBuku } from './FormBuku';
+import { UnggahSampul } from './UnggahSampul';
 
 export function DaftarBuku() {
   const [q, setQ] = useState('');
@@ -42,12 +43,13 @@ export function DaftarBuku() {
       <KepalaHalaman judul="Buku" sub={buku ? `${buku.length} judul` : undefined} aksi={<TombolUtama ikon={Plus} onClick={() => setTambah(true)}>Tambah</TombolUtama>} />
       <label className="relative block">
         <MagnifyingGlass size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-bq-redup" aria-hidden />
-        <input className={`${kelasInput} pl-11`} placeholder="Cari judul, penulis, atau nomor panggil" value={q} onChange={e => setQ(e.target.value)} />
+        <input className={`${kelasInput} pl-11`} placeholder="Cari judul, penulis, atau nomor panggil" aria-label="Cari judul, penulis, atau nomor panggil" value={q} onChange={e => setQ(e.target.value)} />
       </label>
       {galat && <PesanGalat pesan={galat} />}
       <div className="space-y-2">
         {buku?.map(b => (
           <Kartu key={b.id} className={`p-3 flex items-center gap-3 ${b.aktif ? '' : 'opacity-50'}`}>
+            <UnggahSampul buku={b} onGalat={setGalat} onSimpan={baru => setBuku(prev => prev?.map(x => (x.id === baru.id ? baru : x)) ?? null)} />
             <span className="font-mono text-xs font-bold w-32 shrink-0 text-bq-tinta">{b.nomorPanggil}</span>
             <div className="min-w-0 flex-1">
               <p className="font-bold text-bq-tinta truncate">{b.judul}</p>

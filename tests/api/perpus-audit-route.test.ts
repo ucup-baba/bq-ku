@@ -24,9 +24,15 @@ describe('audit perpus', () => {
   });
   it('label → CSV lampiran', async () => {
     repo.listBuku.mockResolvedValue([{ judul: 'Rasa', nomorPanggil: '899.221 LIY r', nomorPanggilLama: '813 LIY R', eksemplar: 1, statusKode: 'baku' }]);
-    const res = await LABEL();
+    const res = await LABEL({ url: 'http://x/api/perpus/label' } as never);
     expect(res.headers.get('Content-Type')).toContain('text/csv');
     expect(res.headers.get('Content-Disposition')).toContain('label-perpus.csv');
     expect(await res.text()).toBe('Judul,Nomor lama,Nomor baru\r\nRasa,813 LIY R,899.221 LIY r\r\n');
+  });
+  it('format=pdf mengembalikan PDF', async () => {
+    repo.listBuku.mockResolvedValue([{ judul: 'Rasa', nomorPanggil: '899.221 LIY r', nomorPanggilLama: '813 LIY R', eksemplar: 1, statusKode: 'baku' }]);
+    const res = await LABEL({ url: 'http://x/api/perpus/label?format=pdf' } as never);
+    expect(res.headers.get('Content-Type')).toBe('application/pdf');
+    expect(res.headers.get('Content-Disposition')).toContain('label-perpus.pdf');
   });
 });
