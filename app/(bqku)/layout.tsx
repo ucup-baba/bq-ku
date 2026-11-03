@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Caveat } from "next/font/google";
-import "./globals.css";
-import "./intro.css";
+import "../globals.css";
+import "../intro.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { PendingGate } from "@/components/auth/PendingGate";
