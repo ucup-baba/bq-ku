@@ -1,4 +1,4 @@
-export type UserRole = 'SUPERADMIN' | 'PENGURUS' | 'ADMIN_SANTRI' | 'ADMIN_DONATUR' | 'VIEWER';
+export type UserRole = 'SUPERADMIN' | 'PENGURUS' | 'ADMIN_SANTRI' | 'ADMIN_DONATUR' | 'PUSTAKAWAN' | 'VIEWER';
 
 export interface UserSession {
   id: string;
@@ -15,7 +15,7 @@ export function canVerifyDocuments(roles: UserRole[]): boolean { return has(role
 export function canManageUsers(roles: UserRole[]): boolean { return has(roles, 'SUPERADMIN'); }
 export function canManageDonatur(roles: UserRole[]): boolean { return has(roles, 'SUPERADMIN', 'ADMIN_DONATUR'); }
 
-export const ALL_ROLES: UserRole[] = ['SUPERADMIN', 'PENGURUS', 'ADMIN_SANTRI', 'ADMIN_DONATUR', 'VIEWER'];
+export const ALL_ROLES: UserRole[] = ['SUPERADMIN', 'PENGURUS', 'ADMIN_SANTRI', 'ADMIN_DONATUR', 'PUSTAKAWAN', 'VIEWER'];
 
 export function getRoleLabel(role: UserRole): string {
   switch (role) {
@@ -23,6 +23,7 @@ export function getRoleLabel(role: UserRole): string {
     case 'PENGURUS': return 'Pengurus Yayasan';
     case 'ADMIN_SANTRI': return 'Admin Santri';
     case 'ADMIN_DONATUR': return 'Admin Donatur';
+    case 'PUSTAKAWAN': return 'Pustakawan';
     case 'VIEWER': return 'Viewer / Wali Santri';
     default: return role;
   }

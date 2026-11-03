@@ -5,11 +5,19 @@ describe('ruangan', () => {
   it('memetakan peran ke ruangan', () => {
     expect(roomsFor(['ADMIN_SANTRI'])).toEqual(['santri']);
     expect(roomsFor(['ADMIN_DONATUR'])).toEqual(['donatur']);
-    expect(roomsFor(['SUPERADMIN'])).toEqual(['santri', 'donatur', 'lembaga']);
+    expect(roomsFor(['SUPERADMIN'])).toEqual(['santri', 'donatur', 'lembaga', 'perpus']);
     expect(roomsFor(['PENGURUS'])).toEqual(['lembaga']);
     expect(roomsFor(['PENGURUS', 'ADMIN_SANTRI'])).toEqual(['santri', 'lembaga']);
     expect(roomsFor(['ADMIN_SANTRI', 'ADMIN_DONATUR'])).toEqual(['santri', 'donatur']);
     expect(roomsFor(['VIEWER'])).toEqual(['santri']);
+  });
+  it('ruang perpus untuk pustakawan', () => {
+    expect(roomsFor(['PUSTAKAWAN'])).toEqual(['perpus']);
+    expect(roomOfPath('/perpus')).toBe('perpus');
+    expect(roomOfPath('/perpus/buku')).toBe('perpus');
+    expect(roomOfPath('/api/perpus/buku')).toBe('perpus');
+    expect(roomOfPath('/perpusbq')).toBe('santri');
+    expect(ROOM_HOME.perpus).toBe('/perpus');
   });
   it('menentukan ruangan dari path', () => {
     expect(roomOfPath('/donatur')).toBe('donatur');
