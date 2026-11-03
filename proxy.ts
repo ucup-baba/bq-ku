@@ -4,8 +4,24 @@ import { isPublicPath } from '@/lib/auth/public-paths';
 import { roomsFor, roomOfPath, pathNetral, ROOM_HOME, ROOM_COOKIE } from '@/lib/auth/rooms';
 import type { UserRole } from '@/lib/auth/roles';
 import { identitasDari } from '@/lib/auth/identitas';
+import { hostPerpus, ruteHostPerpus } from '@/lib/perpus/domain';
+
+function proxyPerpus(request: NextRequest) {
+  const rute = ruteHostPerpus(request.nextUrl.pathname, request.headers.get('accept-language'));
+  if (rute.jenis === 'lewat') return NextResponse.next();
+  if (rute.jenis === 'tolak') return new NextResponse('Not Found', { status: 404 });
+  const url = request.nextUrl.clone();
+  url.pathname = rute.ke;
+  if (rute.jenis === 'tulis-ulang') return NextResponse.rewrite(url);
+  // nextUrl bisa memuat host internal server; pengunjung harus tetap di domain perpus.
+  url.host = request.headers.get('host')!;
+  return NextResponse.redirect(url);
+}
 
 export async function proxy(request: NextRequest) {
+  if (hostPerpus(request.headers.get('host'))) return proxyPerpus(request);
+  if (/^\/perpusbq(\/|$)/.test(request.nextUrl.pathname)) return new NextResponse('Not Found', { status: 404 });
+
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ['*.trycloudflare.com', 'localhost:3001', 'localhost:3000'],
+  allowedDevOrigins: ['*.trycloudflare.com', 'localhost:3001', 'localhost:3000', 'perpus.localhost'],
+  experimental: { globalNotFound: true },
   async headers() {
     return [
       {

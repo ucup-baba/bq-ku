@@ -28,6 +28,23 @@ export type RingkasanPerpus = {
   totalInfaq: number; totalPengadaan: number; saldo: number; donatur: number;
 };
 
+export type BukuPublik = {
+  id: string; idPendek: string; judul: string; penulis: string;
+  nomorPanggil: string | null; kelasDdc: string; eksemplar: number; tersedia: number;
+  sampulPath: string | null; asal: AsalBuku; namaDonatur: string | null; createdAt: string;
+};
+
+export type DonasiPublik = {
+  id: string; tanggal: string | null; tanggalTeks: string | null; nama: string;
+  jenis: JenisDonasiPerpus; jumlahBuku: number | null;
+  buku: { idPendek: string; judul: string }[];
+};
+
+export type RingkasanPublik = {
+  judul: number; eksemplar: number; donatur: number;
+  totalInfaq: number; totalPengadaan: number; saldo: number;
+};
+
 export const LABEL_ASAL: Record<AsalBuku, string> = {
   koleksi_awal: 'Koleksi awal', wakaf: 'Wakaf', pengadaan: 'Pengadaan',
 };

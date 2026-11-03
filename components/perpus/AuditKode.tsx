@@ -86,8 +86,11 @@ export function AuditKode() {
   return (
     <div className="space-y-4">
       <KepalaHalaman judul="Audit kode" sub={`${buku.length} buku perlu dipindah ke DDC baku`} subTampilDiHp
-        aksi={/* <a> biasa: next/link akan mem-prefetch rute API CSV */
-          <a href="/api/perpus/label" download className={kelasTombolUtama}><DownloadSimple size={18} weight="bold" aria-hidden /> Label CSV</a>} />
+        aksi={/* <a> biasa: next/link akan mem-prefetch rute API */
+          <div className="flex gap-2">
+            <a href="/api/perpus/label" download className={kelasTombolUtama}><DownloadSimple size={18} weight="bold" aria-hidden /> Label CSV</a>
+            <a href="/api/perpus/label?format=pdf" download className={kelasTombolUtama}><DownloadSimple size={18} weight="bold" aria-hidden /> Label PDF</a>
+          </div>} />
       <div className="flex flex-wrap gap-2">
         <TombolUtama ikon={Sparkle} onClick={usulkanSemua} disabled={!!progres || !belumDiusulkan}>
           {belumDiusulkan === buku.length ? 'Usulkan semua (AI)' : `Usulkan ${belumDiusulkan} sisanya (AI)`}

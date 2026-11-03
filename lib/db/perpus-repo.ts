@@ -3,6 +3,7 @@ import { escapeOrFilterValue } from '@/lib/db/filters';
 import { kodePengarang, selesaikanBentrok, NomorBentrokError } from '@/lib/perpus/nomor-panggil';
 import { rencanakanNomorBaru } from '@/lib/perpus/audit';
 import { hitungRingkasan } from '@/lib/perpus/ringkasan';
+import { BUCKET_SAMPUL, pathSampul } from '@/lib/perpus/sampul';
 import type { RencanaImpor } from '@/lib/perpus/impor';
 import type { Buku, DonasiPerpus, Pengadaan, RingkasanPerpus, StatusKode } from '@/lib/perpus/tipe';
 import type { BukuInput, BukuUbahInput, DonasiPerpusInput, PengadaanInput } from '@/lib/validation/perpus';
@@ -67,6 +68,19 @@ export async function ubahBuku(c: SupabaseClient, id: string, input: BukuUbahInp
     .eq('id', id).select('*').single();
   if (error?.code === UNIK_DILANGGAR) throw new NomorBentrokError((nomor as { nomorPanggil?: string }).nomorPanggil ?? '');
   if (error) throw new Error(`Gagal mengubah buku: ${error.message}`);
+  return data as Buku;
+}
+
+export async function unggahSampulBuku(c: SupabaseClient, id: string, webp: Buffer): Promise<Buku> {
+  const { data: lama, error: galatBaca } = await c.from('perpus_buku').select('sampulPath').eq('id', id).single();
+  if (galatBaca) throw new Error(`Gagal memuat buku: ${galatBaca.message}`);
+  const path = pathSampul(id, Date.now());
+  const { error: galatUnggah } = await c.storage.from(BUCKET_SAMPUL).upload(path, webp, { contentType: 'image/webp' });
+  if (galatUnggah) throw new Error(`Gagal mengunggah sampul: ${galatUnggah.message}`);
+  const { data, error } = await c.from('perpus_buku').update({ sampulPath: path, updatedAt: now() }).eq('id', id).select('*').single();
+  if (error) throw new Error(`Gagal menyimpan sampul: ${error.message}`);
+  // File lama yatim tidak merugikan siapa pun, jadi kegagalan hapus diabaikan.
+  if (lama.sampulPath) await c.storage.from(BUCKET_SAMPUL).remove([lama.sampulPath]);
   return data as Buku;
 }
 

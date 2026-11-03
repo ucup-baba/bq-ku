@@ -84,7 +84,7 @@ export function FormBuku({ onSimpan }: { onSimpan: (b: Buku) => void }) {
           </select></label>
         <TombolUtama ikon={Sparkle} onClick={usulkan} disabled={sibuk || !judul} className="shrink-0">Usulkan</TombolUtama>
       </div>
-      {usulan && <p className="text-xs text-bq-redup">AI: {usulan}</p>}
+      {usulan && <p role="status" className="text-xs text-bq-redup">AI: {usulan}</p>}
       <div className="grid grid-cols-2 gap-3">
         <label className="block space-y-1"><span className={kelasLabel}>Kode pengarang (otomatis: {kodePengarang(penulis) || '—'})</span>
           <input className={kelasInput} value={kodeManual} onChange={e => setKodeManual(e.target.value.toUpperCase())} maxLength={4} placeholder="opsional" /></label>
@@ -105,18 +105,20 @@ export function FormBuku({ onSimpan }: { onSimpan: (b: Buku) => void }) {
           {(Object.keys(LABEL_ASAL) as AsalBuku[]).map(a => <option key={a} value={a}>{LABEL_ASAL[a]}</option>)}
         </select></label>
       {asal === 'wakaf' && (
-        <select className={kelasInput} value={donasiId} onChange={e => setDonasiId(e.target.value)} aria-label="Donasi buku">
-          <option value="">Pilih donatur wakaf…</option>
-          {donasi.map(d => <option key={d.id} value={d.id}>{d.nama} · {d.jumlahBuku} buku · {d.tanggalTeks || d.tanggal || ''}</option>)}
-        </select>
+        <label className="block space-y-1"><span className={kelasLabel}>Donatur wakaf</span>
+          <select className={kelasInput} value={donasiId} onChange={e => setDonasiId(e.target.value)}>
+            <option value="">Pilih donatur wakaf…</option>
+            {donasi.map(d => <option key={d.id} value={d.id}>{d.nama} · {d.jumlahBuku} buku · {d.tanggalTeks || d.tanggal || ''}</option>)}
+          </select></label>
       )}
       {asal === 'pengadaan' && (
-        <select className={kelasInput} value={pengadaanId} onChange={e => setPengadaanId(e.target.value)} aria-label="Pengadaan">
-          <option value="">Pilih pembelian…</option>
-          {pengadaan.map(p => <option key={p.id} value={p.id}>{p.tanggalTeks || p.tanggal} · Rp{p.total.toLocaleString('id-ID')}</option>)}
-        </select>
+        <label className="block space-y-1"><span className={kelasLabel}>Pembelian</span>
+          <select className={kelasInput} value={pengadaanId} onChange={e => setPengadaanId(e.target.value)}>
+            <option value="">Pilih pembelian…</option>
+            {pengadaan.map(p => <option key={p.id} value={p.id}>{p.tanggalTeks || p.tanggal} · Rp{p.total.toLocaleString('id-ID')}</option>)}
+          </select></label>
       )}
-      <p className="text-sm">Nomor panggil: <span className="font-mono font-bold">{pratinjau}</span> <span className="text-xs text-bq-redup">(bila bentrok, server menambah huruf)</span></p>
+      <p role="status" className="text-sm">Nomor panggil: <span className="font-mono font-bold">{pratinjau}</span> <span className="text-xs text-bq-redup">(bila bentrok, server menambah huruf)</span></p>
       {galat && <PesanGalat pesan={galat} />}
       <TombolUtama type="submit" ikon={FloppyDisk} disabled={sibuk} className="w-full">Simpan buku</TombolUtama>
     </form>
