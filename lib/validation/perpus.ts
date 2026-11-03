@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import { kelasSah } from '@/lib/perpus/ddc';
+import { hariIniWib } from '@/lib/perpus/pinjaman';
+import { nomorWali } from '@/lib/santri/pengingat';
 import { isTanggalIso } from '@/lib/validation/query';
 
 const kelas = z.string().trim().refine(kelasSah, 'Kelas DDC tidak dikenal');
@@ -60,3 +62,26 @@ export const klasifikasiSchema = z.object({
 export const auditTerapkanSchema = z.object({
   items: z.array(z.object({ id: z.string().uuid(), kelasDdc: kelas })).min(1).max(300),
 });
+
+const tanggalMendatang = z.string().trim().refine(isTanggalIso, 'Tanggal tidak valid')
+  .refine(v => v >= hariIniWib(), 'Jatuh tempo tidak boleh lewat');
+
+export const daftarAnggotaSchema = z.object({
+  nama: z.string().trim().min(2, 'Nama minimal 2 huruf').max(120),
+  noWa: z.string().transform(v => nomorWali(v) ?? '').refine(v => /^62\d{8,13}$/.test(v), 'Nomor WhatsApp tidak valid'),
+});
+export type DaftarAnggotaInput = z.infer<typeof daftarAnggotaSchema>;
+
+export const ajukanSchema = z.object({ bukuId: z.string().uuid() });
+export const aksiAnggotaSchema = z.object({ aksi: z.enum(['batal', 'klaim']) });
+
+export const aksiPustakawanSchema = z.discriminatedUnion('aksi', [
+  z.object({ aksi: z.literal('acc'), jatuhTempo: tanggalMendatang.nullable().default(null) }),
+  z.object({ aksi: z.literal('tolak'), catatan: teksOpsional }),
+  z.object({ aksi: z.literal('verifikasi') }),
+  z.object({ aksi: z.literal('tandai_kembali') }),
+  z.object({ aksi: z.literal('perpanjang'), jatuhTempo: tanggalMendatang }),
+]);
+export type AksiPustakawanInput = z.infer<typeof aksiPustakawanSchema>;
+
+export const statusAnggotaSchema = z.object({ status: z.enum(['aktif', 'diblokir']) });

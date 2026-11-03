@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { bukuSchema, donasiPerpusSchema, auditTerapkanSchema, klasifikasiSchema } from '@/lib/validation/perpus';
+import { aksiAnggotaSchema, aksiPustakawanSchema, daftarAnggotaSchema, statusAnggotaSchema } from '@/lib/validation/perpus';
 
 describe('validasi perpus', () => {
   it('buku: kelas harus terdaftar; nilai bawaan terisi', () => {
@@ -20,5 +21,28 @@ describe('validasi perpus', () => {
   it('klasifikasi maksimal 10 buku; audit butuh kelas sah', () => {
     expect(klasifikasiSchema.safeParse({ buku: Array(11).fill({ judul: 'a', penulis: '' }) }).success).toBe(false);
     expect(auditTerapkanSchema.safeParse({ items: [{ id: '2f9a2b4e-3c1d-4e5f-8a9b-0c1d2e3f4a5b', kelasDdc: '999' }] }).success).toBe(false);
+  });
+});
+
+describe('skema pinjaman', () => {
+  it('nomor WA dinormalkan ke 62', () => {
+    expect(daftarAnggotaSchema.parse({ nama: 'Aisyah', noWa: '0812-3456-7890' }).noWa).toBe('6281234567890');
+  });
+  it('nomor WA terlalu pendek ditolak', () => {
+    expect(daftarAnggotaSchema.safeParse({ nama: 'Aisyah', noWa: '0812' }).success).toBe(false);
+  });
+  it('anggota hanya boleh batal & klaim', () => {
+    expect(aksiAnggotaSchema.safeParse({ aksi: 'batal' }).success).toBe(true);
+    expect(aksiAnggotaSchema.safeParse({ aksi: 'acc' }).success).toBe(false);
+  });
+  it('ACC tanpa tanggal memakai bawaan; tanggal lampau ditolak', () => {
+    expect(aksiPustakawanSchema.parse({ aksi: 'acc' })).toEqual({ aksi: 'acc', jatuhTempo: null });
+    expect(aksiPustakawanSchema.safeParse({ aksi: 'acc', jatuhTempo: '2020-01-01' }).success).toBe(false);
+  });
+  it('perpanjang wajib tanggal', () => {
+    expect(aksiPustakawanSchema.safeParse({ aksi: 'perpanjang' }).success).toBe(false);
+  });
+  it('status anggota hanya aktif/diblokir', () => {
+    expect(statusAnggotaSchema.safeParse({ status: 'hapus' }).success).toBe(false);
   });
 });
