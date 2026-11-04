@@ -6,6 +6,7 @@ import { tanggalPublik } from '@/lib/perpus/format-publik';
 import { t, type KunciTeks } from '@/lib/perpus/i18n';
 import { hariIniWib, terlambat, type KodeGalat } from '@/lib/perpus/pinjaman';
 import type { Pinjamanku } from '@/lib/perpus/tipe';
+import { WARNA_STATUS, gayaWarna } from '@/lib/perpus/warna';
 import { createBrowserSupabase } from '@/lib/supabase/client';
 
 export function PinjamankuKlien({ lang }: { lang: Bahasa }) {
@@ -57,7 +58,7 @@ export function PinjamankuKlien({ lang }: { lang: Bahasa }) {
           <li key={p.id} className="p-kartu space-y-2 p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <Link href={`/${lang}/buku/${p.idPendek}`} className="min-w-0 font-bold underline-offset-2 hover:underline">{p.judul}</Link>
-              <span className="p-label">{t(lang, `status.${p.status}`)}</span>
+              <span className="p-label" style={gayaWarna(WARNA_STATUS[p.status])}>{t(lang, `status.${p.status}`)}</span>
             </div>
             {p.jatuhTempo && p.status === 'dipinjam' && (
               <p className="text-sm">

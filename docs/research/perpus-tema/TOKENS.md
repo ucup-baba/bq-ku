@@ -13,11 +13,26 @@ Diekstrak dengan skill `clone-website` **fase 1 saja** (rekon & ekstraksi global
 | tinta-lembut | `#3d4a44` | teks sekunder; redup `#526158` |
 | evergreen | `#122922` | judul & teks nav |
 | jungle-teal | `#3f8f77` | aksen sekunder; versi gelap `#1f5c49` |
-| lime | `#c9ff5c` | aksen utama: tombol CTA, item nav aktif, teks chip gelap |
-| lime-dalam / lime-hi | `#b3ee3f` / `#d6ee30` | hover/halo fokus |
-| lime-tint | ±`#f2f9bd` | baris terpilih di daftar |
+| lime | `#d6ee30` | aksen utama: tombol CTA, item nav aktif, teks chip gelap |
+| lime-dalam | `#c4dc1f` | hover |
+| lime-tint | ±`#f4f8c4` | baris terpilih di daftar |
 | garis halus | `#0f2e1f24` | pemisah tipis |
 | galat | `#9c3828` | |
+
+## Warna kategori (ditambahkan 4 Nov 2026)
+
+Ailene memberi tiap materi blok warna sendiri (thumbnail, chip, gelembung). Ekstraksi pertama hanya mencatat warna tombol & nav, sehingga situs terasa hijau semua. Di Perpus BQ warna ini menandai genre dan status; pasangan latar & teksnya ada di `lib/perpus/warna.ts`.
+
+| nama | latar | teks |
+|---|---|---|
+| amber | `#e9a93f` | `#2a1c06` |
+| periwinkle | `#7c75ff` | `#16133f` |
+| terracotta | `#d97757` | `#2a1006` |
+| krem | `#f8efdc` | `#6e4709` |
+| lavender | `#eeedff` | `#16133f` |
+| indigo | `#16133f` | `#eeedff` |
+| teal | `#3f8f77` | `#021510` |
+| lime | `#d6ee30` | `#1a2004` |
 
 ## Warna (mode gelap)
 
