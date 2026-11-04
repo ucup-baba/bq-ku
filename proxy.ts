@@ -1,15 +1,50 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type SetAllCookies } from '@supabase/ssr';
 import { isPublicPath } from '@/lib/auth/public-paths';
 import { roomsFor, roomOfPath, pathNetral, ROOM_HOME, ROOM_COOKIE } from '@/lib/auth/rooms';
 import type { UserRole } from '@/lib/auth/roles';
 import { identitasDari } from '@/lib/auth/identitas';
-import { hostPerpus, ruteHostPerpus } from '@/lib/perpus/domain';
+import type { Bahasa } from '@/lib/perpus/ddc';
+import { hostPerpus, putusanSesi, ruteHostPerpus, type HalamanSesi } from '@/lib/perpus/domain';
 
-function proxyPerpus(request: NextRequest) {
+/**
+ * Hanya memutuskan redirect. Halaman di baliknya tidak membaca cookie di server, jadi cukup
+ * meneruskan cookie hasil refresh ke browser (refresh token Supabase sekali pakai).
+ */
+async function sesiPerpus(request: NextRequest, ke: string, halaman: HalamanSesi, lang: Bahasa) {
+  let cookieBaru: Parameters<SetAllCookies>[0] = [];
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return request.cookies.getAll(); }, setAll(list) { cookieBaru = list; } } },
+  );
+  const user = await identitasDari(supabase);
+  const { data: anggota } = user
+    ? await supabase.from('perpus_anggota').select('status').eq('userId', user.id).maybeSingle()
+    : { data: null };
+  const tujuan = putusanSesi(halaman, lang, { masuk: !!user, anggota: !!anggota }, request.nextUrl.searchParams.get('next'));
+
+  const url = request.nextUrl.clone();
+  let res: NextResponse;
+  if (tujuan) {
+    const [path, query] = tujuan.split('?');
+    url.pathname = path;
+    url.search = query ? `?${query}` : '';
+    url.host = request.headers.get('host')!;
+    res = NextResponse.redirect(url);
+  } else {
+    url.pathname = ke;
+    res = NextResponse.rewrite(url);
+  }
+  cookieBaru.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+  return res;
+}
+
+async function proxyPerpus(request: NextRequest) {
   const rute = ruteHostPerpus(request.nextUrl.pathname, request.headers.get('accept-language'));
   if (rute.jenis === 'lewat') return NextResponse.next();
   if (rute.jenis === 'tolak') return new NextResponse('Not Found', { status: 404 });
+  if (rute.jenis === 'tulis-ulang' && rute.sesi) return sesiPerpus(request, rute.ke, rute.sesi, rute.lang!);
   const url = request.nextUrl.clone();
   url.pathname = rute.ke;
   if (rute.jenis === 'tulis-ulang') return NextResponse.rewrite(url);
@@ -20,7 +55,7 @@ function proxyPerpus(request: NextRequest) {
 
 export async function proxy(request: NextRequest) {
   if (hostPerpus(request.headers.get('host'))) return proxyPerpus(request);
-  if (/^\/perpusbq(\/|$)/.test(request.nextUrl.pathname)) return new NextResponse('Not Found', { status: 404 });
+  if (/^\/(perpusbq|api\/perpus-publik)(\/|$)/.test(request.nextUrl.pathname)) return new NextResponse('Not Found', { status: 404 });
 
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
