@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ATURAN, PinjamanError, bukanPeminjam, galatDariRpc, hariIniWib, jatuhTempoBawaan,
-  pesanPengingatWa, susunAntrian, tambahHari, terlambat, transisi,
+  pesanPengingatWa, susunAntrian, tambahHari, tampilanPinjam, terlambat, transisi,
 } from '@/lib/perpus/pinjaman';
 import type { AksiPinjaman, StatusPinjaman } from '@/lib/perpus/tipe';
 
@@ -96,5 +96,32 @@ describe('bukanPeminjam', () => {
   it('membuang akun nonaktif yang terdaftar anggota', () => {
     const rows = [{ id: 'a', aktif: false }, { id: 'b', aktif: false }, { id: 'c', aktif: true }];
     expect(bukanPeminjam(rows, new Set(['a', 'c'])).map(r => r.id)).toEqual(['b', 'c']);
+  });
+});
+
+describe('tampilanPinjam', () => {
+  const dasar = { masuk: true, anggota: 'aktif', pinjamanAktif: null, tersedia: 1 } as const;
+  it('belum dimuat', () => {
+    expect(tampilanPinjam(null)).toBe('memuat');
+  });
+  it('tamu ke masuk, walau stok habis', () => {
+    expect(tampilanPinjam({ ...dasar, masuk: false, anggota: null, tersedia: 0 })).toBe('masuk');
+  });
+  it('sesi tanpa anggota ke daftar', () => {
+    expect(tampilanPinjam({ ...dasar, anggota: null })).toBe('daftar');
+  });
+  it('pinjaman aktif didahulukan dari stok habis & blokir', () => {
+    expect(tampilanPinjam({ ...dasar, pinjamanAktif: 'dipinjam', tersedia: 0 })).toBe('sudah_ada');
+    expect(tampilanPinjam({ ...dasar, anggota: 'diblokir', pinjamanAktif: 'diajukan' })).toBe('sudah_ada');
+  });
+  it('diblokir didahulukan dari stok habis', () => {
+    expect(tampilanPinjam({ ...dasar, anggota: 'diblokir', tersedia: 0 })).toBe('diblokir');
+  });
+  it('stok habis atau buku tidak ada', () => {
+    expect(tampilanPinjam({ ...dasar, tersedia: 0 })).toBe('habis');
+    expect(tampilanPinjam({ ...dasar, tersedia: null })).toBe('habis');
+  });
+  it('anggota aktif dan stok ada', () => {
+    expect(tampilanPinjam(dasar)).toBe('bisa');
   });
 });

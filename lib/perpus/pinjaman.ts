@@ -1,4 +1,4 @@
-import type { AksiPinjaman, Pinjaman, StatusPinjaman } from '@/lib/perpus/tipe';
+import type { AksiPinjaman, Pinjaman, StatusPinjamBuku, StatusPinjaman } from '@/lib/perpus/tipe';
 
 export const JATUH_TEMPO_BAWAAN_HARI = 14;
 const GESER_WIB_MS = 7 * 3600_000;
@@ -86,3 +86,14 @@ export function pesanPengingatWa(p: { nama: string; judul: string; jatuhTempo: s
 /** Akun nonaktif milik peminjam perpus bukan calon pengguna bq-ku. */
 export const bukanPeminjam = <T extends { id: string; aktif: boolean }>(rows: T[], anggota: Set<string>) =>
   rows.filter(r => r.aktif || !anggota.has(r.id));
+
+export type TampilanPinjam = 'memuat' | 'masuk' | 'daftar' | 'sudah_ada' | 'diblokir' | 'habis' | 'bisa';
+
+export function tampilanPinjam(s: StatusPinjamBuku | null): TampilanPinjam {
+  if (!s) return 'memuat';
+  if (!s.masuk) return 'masuk';
+  if (!s.anggota) return 'daftar';
+  if (s.pinjamanAktif) return 'sudah_ada';
+  if (s.anggota === 'diblokir') return 'diblokir';
+  return (s.tersedia ?? 0) < 1 ? 'habis' : 'bisa';
+}

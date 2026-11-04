@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
 import { SampulBuku } from '@/components/perpus-publik/SampulBuku';
+import { TombolPinjam } from '@/components/perpus-publik/TombolPinjam';
 import { ambilBukuPublik } from '@/lib/db/perpus-publik-repo';
 import { genreDari, LABEL_GENRE, labelKelas, type Bahasa } from '@/lib/perpus/ddc';
 import { adaBahasa } from '@/lib/perpus/domain';
@@ -59,7 +60,10 @@ export default async function DetailBuku({ params }: Props) {
               </div>
             ))}
           </dl>
-          {buku.penulis && <Link href={urlKatalog(lang, { pengarang: buku.penulis })} className="p-tombol">{t(lang, 'buku.lainPenulis')}</Link>}
+          <div className="flex flex-wrap items-start gap-3">
+            <TombolPinjam lang={lang} bukuId={buku.id} idPendek={buku.idPendek} />
+            {buku.penulis && <Link href={urlKatalog(lang, { pengarang: buku.penulis })} className="p-pil">{t(lang, 'buku.lainPenulis')}</Link>}
+          </div>
         </div>
       </article>
     </>
