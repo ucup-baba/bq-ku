@@ -157,4 +157,7 @@ export const id = {
   'beranda.geserKiri': 'Geser ke kiri',
   'beranda.geserKanan': 'Geser ke kanan',
   'penulis.judul': 'Tentang penulis',
+  'penulis.jumlah': '{n} buku',
+  'kartu.tersedia': 'Tersedia',
+  'kartu.dipinjam': 'Dipinjam',
 };

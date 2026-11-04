@@ -50,8 +50,10 @@ export function NavPerpus({ lang }: { lang: Bahasa }) {
       {nama && tautan(PINJAMANKU)}
       {tautan(nama ? AKUN : MASUK, true)}
       <div className="p-nav-bawah">
-        <PengalihBahasa lang={lang} label={t(lang, 'nav.bahasa')} />
-        <div className="p-hanya-desktop"><MenuPengguna lang={lang} nama={nama} /></div>
+        <div className="p-hanya-desktop space-y-3">
+          <PengalihBahasa lang={lang} label={t(lang, 'nav.bahasa')} />
+          <MenuPengguna lang={lang} nama={nama} />
+        </div>
       </div>
     </nav>
   );

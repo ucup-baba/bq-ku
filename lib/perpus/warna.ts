@@ -1,4 +1,4 @@
-import { genreDari, type Genre } from '@/lib/perpus/ddc';
+import type { Genre } from '@/lib/perpus/ddc';
 import type { StatusPinjaman } from '@/lib/perpus/tipe';
 
 export type Warna = { latar: string; teks: string };
@@ -33,7 +33,6 @@ const WARNA_GENRE: Record<Genre, keyof typeof PALET> = {
 };
 
 export const warnaGenre = (genre: Genre): Warna => PALET[WARNA_GENRE[genre]];
-export const warnaKelas = (kelasDdc: string): Warna => warnaGenre(genreDari(kelasDdc));
 
 export const WARNA_STATUS: Record<StatusPinjaman, Warna> = {
   diajukan: PALET.amber,

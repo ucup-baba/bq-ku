@@ -49,7 +49,7 @@ export default async function DetailBuku({ params }: Props) {
     <>
       <Link href={`/${lang}/katalog`} className="p-pil w-fit gap-1"><ArrowLeft size={16} aria-hidden /> {t(lang, 'buku.kembali')}</Link>
       <article className="p-kartu flex flex-col gap-6 p-5 sm:flex-row">
-        <SampulBuku buku={buku} besar />
+        <SampulBuku buku={buku} />
         <div className="min-w-0 flex-1 space-y-4">
           <header className="space-y-1">
             <h1 className="p-h2 text-3xl">{buku.judul}</h1>
@@ -69,7 +69,12 @@ export default async function DetailBuku({ params }: Props) {
           </div>
         </div>
       </article>
-      {penulis && <KartuPenulis lang={lang} penulis={penulis} judul={t(lang, 'penulis.judul')} />}
+      {buku.penulis && (
+        <section className="space-y-3">
+          <h2 className="p-h2">{t(lang, 'penulis.judul')}</h2>
+          <KartuPenulis lang={lang} nama={buku.penulis} penulis={penulis} />
+        </section>
+      )}
       <CatatanBuku lang={lang} bukuId={buku.id} />
     </>
   );

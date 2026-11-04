@@ -1,18 +1,34 @@
 import Link from 'next/link';
-import { genreDari, LABEL_GENRE, type Bahasa } from '@/lib/perpus/ddc';
+import { ArrowRight } from '@phosphor-icons/react/dist/ssr';
+import type { Bahasa } from '@/lib/perpus/ddc';
+import { t } from '@/lib/perpus/i18n';
+import { urlSampul } from '@/lib/perpus/sampul';
+import { desainSampul, judulPanel } from '@/lib/perpus/sampul-motif';
 import type { BukuPublik } from '@/lib/perpus/tipe';
-import { gayaWarna, warnaKelas } from '@/lib/perpus/warna';
-import { SampulBuku } from './SampulBuku';
+import { MotifSampul } from './MotifSampul';
 
-export function KartuBuku({ lang, buku }: { lang: Bahasa; buku: BukuPublik }) {
+export function KartuBuku({ lang, buku, className = '' }: { lang: Bahasa; buku: BukuPublik; className?: string }) {
+  const desain = desainSampul(buku.judul, buku.kelasDdc);
+  const tersedia = buku.tersedia > 0;
   return (
-    <Link href={`/${lang}/buku/${buku.idPendek}`} className="p-kartu p-kartu-tautan flex gap-3 p-3">
-      <SampulBuku buku={buku} />
-      <div className="min-w-0 space-y-1">
-        <p className="font-extrabold leading-snug line-clamp-2">{buku.judul}</p>
-        <p className="text-sm text-perpus-tinta-lembut truncate">{buku.penulis}</p>
-        <p className="w-fit rounded-md px-1.5 py-0.5 text-xs font-bold" style={gayaWarna(warnaKelas(buku.kelasDdc))}>{LABEL_GENRE[genreDari(buku.kelasDdc)][lang]}</p>
-        <p className="font-mono text-xs">{buku.nomorPanggil ?? '—'}</p>
+    <Link href={`/${lang}/buku/${buku.idPendek}`} className={`p-buku ${className}`}>
+      <div className="p-buku-panel" style={{ color: desain.teks }}>
+        <MotifSampul desain={desain} />
+        {buku.sampulPath
+          ? <img src={urlSampul(buku.sampulPath)} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-contain" />
+          : <div aria-hidden className="p-buku-alas" style={{ background: desain.latar }}><p className="p-buku-judul">{judulPanel(buku.judul)}</p></div>}
+        {buku.nomorPanggil && <span className="p-buku-nomor">{buku.nomorPanggil}</span>}
+      </div>
+      <div className="flex flex-1 flex-col gap-0.5 p-3">
+        <p className="line-clamp-2 font-extrabold leading-snug">{buku.judul}</p>
+        <p className="truncate text-sm text-perpus-tinta-lembut">{buku.penulis}</p>
+        <div className="mt-auto flex items-center justify-between pt-2">
+          <span className="flex items-center gap-1.5 text-xs font-bold">
+            <span className={`p-titik ${tersedia ? 'bg-perpus-lime' : 'bg-[#d97757]'}`} />
+            {t(lang, tersedia ? 'kartu.tersedia' : 'kartu.dipinjam')}
+          </span>
+          <span className="p-buku-panah"><ArrowRight size={14} weight="bold" aria-hidden /></span>
+        </div>
       </div>
     </Link>
   );

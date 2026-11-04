@@ -5,12 +5,12 @@ import { SampulBuku } from '@/components/perpus-publik/SampulBuku';
 const buku = { judul: 'Rembulan Tenggelam', penulis: 'Tere Liye', sampulPath: null, kelasDdc: '899.221' };
 
 describe('SampulBuku', () => {
-  it('sampul teks: judul, penulis, tanpa nama genre, berwarna genre', () => {
+  it('tanpa foto: motif, judul, penulis, tanpa nama genre', () => {
     const html = renderToStaticMarkup(<SampulBuku buku={buku} />);
+    expect(html).toContain('<svg');
     expect(html).toContain('Rembulan Tenggelam');
     expect(html).toContain('Tere Liye');
     expect(html).not.toContain('Sastra');
-    expect(html).toContain('background:#7c75ff');
   });
   it('tanpa penulis tetap tampil', () => {
     expect(renderToStaticMarkup(<SampulBuku buku={{ ...buku, penulis: '' }} />)).toContain('Rembulan Tenggelam');
