@@ -85,8 +85,9 @@ ACC sekaligus menandai buku diserahkan (satu langkah); `jatuh_tempo` bawaan = ta
 ### Ketersediaan & keamanan
 - Tersedia = `eksemplar` − jumlah pinjaman `dipinjam | menunggu_verifikasi`. ACC lewat fungsi `perpus_acc_pinjaman(id, jatuh_tempo)` (`security definer`, `select … for update` pada baris buku) supaya eksemplar terakhir tidak di-ACC dua kali.
 - View `perpus_katalog_publik` (judul, penulis, nomor panggil, genre, sampul, asal, nama donatur, tersedia) & `perpus_donasi_publik` (nama, tanggal, jenis, judul buku wakaf; **tanpa** `jumlah`) + `perpus_ringkasan_publik` (total infaq, total pengadaan, saldo). Dibaca role `anon`.
-- RLS: tabel dasar hanya `PUSTAKAWAN`/`SUPERADMIN`; `perpus_anggota` & `perpus_pinjaman` — anggota baca baris miliknya; insert pinjaman hanya status `diajukan` untuk dirinya & bila `status` anggota `aktif`; update miliknya hanya transisi `diajukan → dibatalkan` dan `dipinjam → menunggu_verifikasi` (lewat fungsi RPC, bukan update bebas).
+- RLS: tabel dasar hanya `PUSTAKAWAN`/`SUPERADMIN`; `perpus_anggota` & `perpus_pinjaman` — anggota baca baris miliknya; semua tulisan anggota lewat fungsi `security definer` (`perpus_daftar_anggota`, `perpus_ajukan_pinjaman`, `perpus_batal_pinjaman`, `perpus_klaim_kembali`); anggota tidak punya policy insert/update. Judul pinjaman sendiri dibaca lewat view `perpus_pinjamanku`.
 - Peminjam umum tetap mendapat profil `VIEWER` nonaktif dari `handle_new_user` → tidak punya ruangan bq-ku. Tidak ada perubahan pada trigger itu.
+- Akun nonaktif yang terdaftar di `perpus_anggota` tidak dihitung di notifikasi akun menunggu dan tidak tampil di `/pengguna`. Akun dengan riwayat pinjaman tidak bisa dihapus.
 
 ## 4. Impor (`scripts/impor-perpus.mjs`)
 
@@ -122,7 +123,7 @@ Jalan sekali (`npm run impor:perpus`), memakai service role, idempoten (hapus-is
 | `/[lang]/pinjamanku` | wajib login; daftar pinjaman, status, jatuh tempo; **Batalkan** (diajukan), **Sudah saya kembalikan** (dipinjam) |
 | `/[lang]/masuk`, `/[lang]/daftar` | login Google; form nama + no. WA saat pertama kali |
 
-Navigasi: pil bawah di mobile (Beranda · Katalog · Donatur · Pinjamanku · Masuk/Akun), bilah atas di desktop; pengalih bahasa ID | EN mempertahankan path.
+Navigasi: pil bawah di mobile (Beranda · Katalog · Donatur · Masuk atau Pinjamanku), bilah atas di desktop; Keluar ada di halaman Pinjamanku; pengalih bahasa ID | EN mempertahankan path.
 
 ### Ruang Perpus — domain bq-ku (`app/(perpus-admin)/perpus/…`)
 | path | isi |
@@ -144,8 +145,8 @@ API di `app/api/perpus/…` (admin) dan `app/api/perpus-publik/…` (anggota), d
 - Env baru: `PERPUS_HOST` (mis. `perpusbq.vercel.app`; boleh daftar dipisah koma untuk preview/lokal `perpus.localhost`). **Nilai domain ditentukan pengguna saat deploy.**
 - `proxy.ts`: bila `host ∈ PERPUS_HOST` → cabang perpus: `/` → redirect `/id` atau `/en`; path tanpa `[lang]` → tambah `id`; rewrite internal `/<lang>/…` → `/perpusbq/<lang>/…` (folder fisik `app/perpusbq/[lang]`; bukan route group di root karena `[lang]` akan bentrok dengan route bq-ku, dan bukan folder `_…` karena itu folder privat Next yang tidak di-route). Halaman publik perpus tidak perlu login; `/[lang]/pinjamanku` & API anggota wajib sesi; sesi tanpa baris `perpus_anggota` diarahkan ke `/[lang]/daftar`. Logika ruangan bq-ku **tidak** dijalankan di host perpus. Di host bq-ku, path `/perpusbq` ditolak (404).
 - Halaman bq-ku berada di route group `app/(bqku)` dengan root layout sendiri, sehingga `app/perpusbq/[lang]` juga punya root layout sendiri (tanpa `PendingGate`, `lang` dinamis). `app/manifest.ts` & `app/favicon.ico` wajib tetap di akar `app/`; di host perpus `/manifest.webmanifest` di-rewrite ke `app/perpusbq/manifest`.
-- Sampai Tahap 3, host perpus menolak `/api/*` dan `/auth/*` (404) karena penjaga ruangan bq-ku tidak berjalan di sana. Tahap 3 membuka `/api/perpus-publik` dan `/auth/callback`.
-- Supabase Auth (Tahap 3): tambahkan `https://<PERPUS_HOST>/auth/callback` ke Redirect URLs; callback memakai `next` yang menyertakan `lang`.
+- Host perpus hanya membuka `/auth/callback` dan `/api/perpus-publik`; `/api/*` dan `/auth/*` lain ditolak (404) karena penjaga ruangan bq-ku tidak berjalan di sana, dan `/api/perpus-publik` ditolak di host bq-ku.
+- Supabase Auth (Tahap 3): tambahkan `https://<PERPUS_HOST>/auth/callback` ke Redirect URLs; tujuan setelah login dititipkan lewat cookie `bq_next` yang menyertakan `lang`, karena URL callback harus sama persis dengan entri Redirect URLs.
 - Vercel: tambahkan domain ke proyek `bq-ku` (deploy tetap manual: `vercel --prod`, lalu cek `vercel ls`).
 
 ## 8. Tema & Bahasa
