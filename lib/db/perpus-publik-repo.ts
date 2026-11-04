@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { BukuPublik, DonasiPublik, RingkasanPublik } from '@/lib/perpus/tipe';
+import type { BukuPublik, DonasiPublik, Penulis, RingkasanPublik } from '@/lib/perpus/tipe';
 
 export async function listKatalogPublik(c: SupabaseClient): Promise<BukuPublik[]> {
   const { data, error } = await c.from('perpus_katalog_publik').select('*').order('nomorPanggil', { nullsFirst: false });
@@ -23,4 +23,11 @@ export async function ambilRingkasanPublik(c: SupabaseClient): Promise<Ringkasan
   const { data, error } = await c.from('perpus_ringkasan_publik').select('*').single();
   if (error) throw new Error(`Gagal memuat ringkasan: ${error.message}`);
   return data as RingkasanPublik;
+}
+
+/** Profil hanya pelengkap: bila gagal dimuat, halaman tetap tampil tanpa bio. */
+export async function listPenulisPublik(c: SupabaseClient): Promise<Penulis[]> {
+  const { data, error } = await c.from('perpus_penulis').select('*');
+  if (error) { console.error('Gagal memuat penulis:', error.message); return []; }
+  return (data || []) as Penulis[];
 }
