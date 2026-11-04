@@ -7,6 +7,7 @@ import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
 import { Kartu } from '@/components/ui/Kartu';
 import { TombolUtama } from '@/components/ui/Tombol';
 import { PesanGalat } from '@/components/ui/PesanGalat';
+import { AntrianPinjaman } from './AntrianPinjaman';
 import { rupiah } from './format';
 
 type Pratinjau = { buku: number; donasi: number; pengadaan: number; perluAudit: number; tidakCocok: { sumber: string; judul: string }[]; sudahAda: number };
@@ -60,6 +61,7 @@ export function BerandaPerpus() {
     <div className="space-y-5">
       <KepalaHalaman judul="Ruang Perpus" sub="Perpustakaan Baitul Qowwam" subTampilDiHp />
       {galat && <PesanGalat pesan={galat} />}
+      <AntrianPinjaman />
       {r && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {ubin(<Books size={28} className="text-orange-600" aria-hidden />, 'Judul / eksemplar', `${r.judul} / ${r.eksemplar}`, '/perpus/buku')}
