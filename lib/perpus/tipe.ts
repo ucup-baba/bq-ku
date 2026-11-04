@@ -71,7 +71,7 @@ export type PinjamanAdmin = Pinjaman & {
 export type Pinjamanku = {
   id: string; status: StatusPinjaman; jatuhTempo: string | null; diajukanAt: string;
   dikembalikanAt: string | null; catatan: string | null;
-  idPendek: string; judul: string; penulis: string; nomorPanggil: string | null;
+  idPendek: string; judul: string; penulis: string; nomorPanggil: string | null; kelasDdc: string;
 };
 
 /** Jawaban `GET /api/perpus-publik/status`. */
@@ -80,3 +80,28 @@ export type StatusPinjamBuku = {
 };
 
 export type AnggotaAdmin = Anggota & { pinjaman: { status: StatusPinjaman }[] };
+
+/** Baris view `perpus_catatan_publik`. */
+export type CatatanPublik = { id: string; bukuId: string; isi: string; createdAt: string; updatedAt: string; namaSingkat: string };
+
+/** Baris view `perpus_catatanku`. */
+export type Catatanku = {
+  id: string; bukuId: string; isi: string; publik: boolean; createdAt: string; updatedAt: string;
+  dihapusAt: string | null; alasanHapus: string | null; pemberitahuanDitutupAt: string | null;
+  idPendek: string; judul: string;
+};
+
+/** Jawaban `GET /api/perpus-publik/catatan`. */
+export type CatatanBukuData = { publik: CatatanPublik[]; milikku: Catatanku | null; bolehTulis: boolean };
+
+export type CatatanModerasi = {
+  id: string; isi: string; createdAt: string;
+  anggota: { nama: string }; buku: { judul: string };
+};
+
+export type JenisPenulis = 'penulis' | 'penerbit';
+export type Penulis = {
+  nama: string; jenis: JenisPenulis; bioId: string | null; bioEn: string | null;
+  instagram: string | null; sumber: string | null; updatedAt: string;
+};
+export type PenulisAdmin = { nama: string; jumlahBuku: number; profil: Penulis | null };
