@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { PinjamanError, type KodeGalat } from '@/lib/perpus/pinjaman';
 
 const STATUS_HTTP: Record<KodeGalat, number> = {
-  bukan_anggota: 403, diblokir: 403, terlarang: 403,
-  buku_tidak_ada: 404, pinjaman_tidak_ada: 404,
+  bukan_anggota: 403, diblokir: 403, terlarang: 403, belum_pernah_pinjam: 403,
+  buku_tidak_ada: 404, pinjaman_tidak_ada: 404, catatan_tidak_ada: 404,
   stok_habis: 409, sudah_diajukan: 409, status_tidak_sah: 409,
   tanggal_tidak_sah: 400,
 };

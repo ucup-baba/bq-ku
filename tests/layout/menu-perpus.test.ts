@@ -4,8 +4,11 @@ import { menuRail, slotHp, itemAktif } from '@/lib/nav/menu';
 const o = { canManageUsers: false, jumlahRuang: 1 };
 
 describe('menu Ruang Perpus', () => {
-  it('rail berisi beranda, pinjaman, buku, anggota, donasi, audit', () => {
-    expect(menuRail('perpus', o).map(i => i.href)).toEqual(['/perpus', '/perpus/pinjaman', '/perpus/buku', '/perpus/anggota', '/perpus/donasi', '/perpus/audit']);
+  it('rail pustakawan tanpa moderasi catatan', () => {
+    expect(menuRail('perpus', o).map(i => i.href)).toEqual(['/perpus', '/perpus/pinjaman', '/perpus/buku', '/perpus/anggota', '/perpus/penulis', '/perpus/donasi', '/perpus/audit']);
+  });
+  it('super admin mendapat moderasi catatan', () => {
+    expect(menuRail('perpus', { ...o, canManageUsers: true }).at(-1)?.href).toBe('/perpus/catatan');
   });
   it('HP: 5 slot, Buku di tengah, pinjaman & anggota mengapit', () => {
     const s = slotHp('perpus', o);

@@ -90,3 +90,29 @@ export const ubahAnggotaSchema = z.object({
   noWa: noWaAnggota.optional(),
 }).refine(d => Object.keys(d).length > 0, 'Tidak ada perubahan');
 export type UbahAnggotaInput = z.infer<typeof ubahAnggotaSchema>;
+
+export const catatanSchema = z.object({
+  bukuId: z.string().uuid(),
+  isi: z.string().trim().min(1, 'Catatan kosong').max(1000, 'Catatan maksimal 1000 huruf'),
+  publik: z.boolean().default(true),
+});
+export type CatatanInput = z.infer<typeof catatanSchema>;
+
+export const moderasiSchema = z.object({ alasan: teksOpsional });
+
+const instagram = z.string().trim()
+  .transform(v => v.replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').replace(/\/.*$/, ''))
+  .transform(v => (v === '' ? null : v))
+  .refine(v => v === null || /^[A-Za-z0-9._]{1,30}$/.test(v), 'Akun Instagram tidak valid')
+  .nullable().default(null);
+
+export const penulisSchema = z.object({
+  nama: z.string().trim().min(1).max(200),
+  jenis: z.enum(['penulis', 'penerbit']).default('penulis'),
+  bioId: teksOpsional.refine(v => !v || v.length <= 600, 'Bio maksimal 600 huruf'),
+  bioEn: teksOpsional.refine(v => !v || v.length <= 600, 'Bio maksimal 600 huruf'),
+  instagram,
+  sumber: teksOpsional,
+});
+export type PenulisInput = z.infer<typeof penulisSchema>;
+

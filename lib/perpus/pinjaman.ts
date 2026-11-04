@@ -39,7 +39,8 @@ export function susunAntrian<T extends Pick<Pinjaman, 'status' | 'jatuhTempo'>>(
 }
 
 export type KodeGalat = 'bukan_anggota' | 'diblokir' | 'buku_tidak_ada' | 'stok_habis' | 'sudah_diajukan'
-  | 'pinjaman_tidak_ada' | 'status_tidak_sah' | 'terlarang' | 'tanggal_tidak_sah';
+  | 'pinjaman_tidak_ada' | 'status_tidak_sah' | 'terlarang' | 'tanggal_tidak_sah'
+  | 'belum_pernah_pinjam' | 'catatan_tidak_ada';
 
 const PESAN_GALAT: Record<KodeGalat, string> = {
   bukan_anggota: 'Lengkapi pendaftaran anggota dahulu',
@@ -51,6 +52,8 @@ const PESAN_GALAT: Record<KodeGalat, string> = {
   status_tidak_sah: 'Status pinjaman sudah berubah',
   terlarang: 'Anda tidak memiliki hak untuk tindakan ini',
   tanggal_tidak_sah: 'Jatuh tempo tidak boleh lewat',
+  belum_pernah_pinjam: 'Catatan hanya untuk buku yang pernah dipinjam',
+  catatan_tidak_ada: 'Catatan tidak ditemukan',
 };
 
 export class PinjamanError extends Error {

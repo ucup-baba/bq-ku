@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { BerandaKategori } from '@/components/perpus-publik/BerandaKategori';
 import { KartuBuku } from '@/components/perpus-publik/KartuBuku';
 import { KotakCari } from '@/components/perpus-publik/KotakCari';
-import { ambilRingkasanPublik, listKatalogPublik } from '@/lib/db/perpus-publik-repo';
+import { ambilRingkasanPublik, listKatalogPublik, listPenulisPublik } from '@/lib/db/perpus-publik-repo';
+import { kelompokGenre, kelompokPenulis } from '@/lib/perpus/beranda';
 import { adaBahasa } from '@/lib/perpus/domain';
 import { t } from '@/lib/perpus/i18n';
 import { bukuTerbaru } from '@/lib/perpus/katalog';
@@ -21,7 +23,8 @@ export default async function Beranda({ params }: { params: Promise<{ lang: stri
   const { lang } = await params;
   if (!adaBahasa(lang)) notFound();
   const c = klienAnon();
-  const [ringkasan, buku] = await Promise.all([ambilRingkasanPublik(c), listKatalogPublik(c)]);
+  const [ringkasan, buku, profil] = await Promise.all([ambilRingkasanPublik(c), listKatalogPublik(c), listPenulisPublik(c)]);
+  const penerbit = new Set(profil.filter(p => p.jenis === 'penerbit').map(p => p.nama));
   const statistik = [
     ['statistik.judul', ringkasan.judul, PALET.amber],
     ['statistik.dipinjam', ringkasan.sedangDipinjam, PALET.periwinkle],
@@ -50,6 +53,7 @@ export default async function Beranda({ params }: { params: Promise<{ lang: stri
         </div>
         <Link href={`/${lang}/katalog`} className="p-tombol">{t(lang, 'beranda.semua')}</Link>
       </section>
+      <BerandaKategori lang={lang} genre={kelompokGenre(buku)} penulis={kelompokPenulis(buku, penerbit)} profil={profil} />
     </>
   );
 }

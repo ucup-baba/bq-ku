@@ -59,6 +59,9 @@ export function PinjamankuKlien({ lang }: { lang: Bahasa }) {
             )}
             {p.dikembalikanAt && <p className="text-sm">{t(lang, 'pinjamanku.dikembalikan', { tanggal: tanggalPublik(lang, p.dikembalikanAt.slice(0, 10)) })}</p>}
             {p.catatan && <p className="text-sm">{t(lang, 'pinjamanku.catatan', { isi: p.catatan })}</p>}
+            {(p.status === 'dipinjam' || p.status === 'menunggu_verifikasi' || p.status === 'dikembalikan') && (
+              <Link href={`/${lang}/buku/${p.idPendek}#catatan`} className="block text-sm font-bold underline underline-offset-2">{t(lang, 'catatan.kePinjam')}</Link>
+            )}
             {p.status === 'diajukan' && <button type="button" disabled={sibuk === p.id} onClick={() => aksi(p.id, 'batal')} className="p-pil">{t(lang, 'pinjamanku.batal')}</button>}
             {p.status === 'dipinjam' && <button type="button" disabled={sibuk === p.id} onClick={() => aksi(p.id, 'klaim')} className="p-tombol">{t(lang, 'pinjamanku.klaim')}</button>}
           </li>

@@ -1,9 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react/dist/ssr';
+import { CatatanBuku } from '@/components/perpus-publik/CatatanBuku';
+import { KartuPenulis } from '@/components/perpus-publik/KartuPenulis';
 import { SampulBuku } from '@/components/perpus-publik/SampulBuku';
 import { TombolPinjam } from '@/components/perpus-publik/TombolPinjam';
-import { ambilBukuPublik } from '@/lib/db/perpus-publik-repo';
+import { ambilBukuPublik, listPenulisPublik } from '@/lib/db/perpus-publik-repo';
 import { genreDari, LABEL_GENRE, labelKelas, type Bahasa } from '@/lib/perpus/ddc';
 import { adaBahasa } from '@/lib/perpus/domain';
 import { t } from '@/lib/perpus/i18n';
@@ -35,6 +37,7 @@ export default async function DetailBuku({ params }: Props) {
   const buku = await ambil(id);
   if (!buku) notFound();
   const genre = genreDari(buku.kelasDdc);
+  const penulis = (await listPenulisPublik(klienAnon())).find(p => p.nama === buku.penulis);
   const rincian = [
     ['buku.nomorPanggil', buku.nomorPanggil ?? '—'],
     ['buku.genre', LABEL_GENRE[genre][lang]],
@@ -66,6 +69,8 @@ export default async function DetailBuku({ params }: Props) {
           </div>
         </div>
       </article>
+      {penulis && <KartuPenulis lang={lang} penulis={penulis} judul={t(lang, 'penulis.judul')} />}
+      <CatatanBuku lang={lang} bukuId={buku.id} />
     </>
   );
 }
