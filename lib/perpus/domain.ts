@@ -3,7 +3,7 @@ import type { Bahasa } from '@/lib/perpus/ddc';
 export const BAHASA: readonly Bahasa[] = ['id', 'en'];
 export const adaBahasa = (s: string): s is Bahasa => (BAHASA as readonly string[]).includes(s);
 
-export type HalamanSesi = 'masuk' | 'daftar' | 'pinjamanku';
+export type HalamanSesi = 'masuk' | 'daftar' | 'pinjamanku' | 'akun';
 
 export type RutePerpus =
   | { jenis: 'alihkan'; ke: string }
@@ -36,7 +36,7 @@ export function ruteHostPerpus(pathname: string, accept: string | null): RutePer
   if (pathname === '/') return { jenis: 'alihkan', ke: `/${bahasaDari(accept)}` };
   const lang = pathname.split('/')[1];
   if (adaBahasa(lang)) {
-    const sesi = /^\/(?:id|en)\/(masuk|daftar|pinjamanku)\/?$/.exec(pathname)?.[1] as HalamanSesi | undefined;
+    const sesi = /^\/(?:id|en)\/(masuk|daftar|pinjamanku|akun)\/?$/.exec(pathname)?.[1] as HalamanSesi | undefined;
     return { jenis: 'tulis-ulang', ke: `/perpusbq${pathname}`, ...(sesi ? { sesi, lang } : {}) };
   }
   return { jenis: 'alihkan', ke: `/id${pathname}` };
@@ -54,10 +54,10 @@ const denganNext = (awal: string, next: string) => `${awal}?next=${encodeURIComp
 export function putusanSesi(
   halaman: HalamanSesi, lang: Bahasa, status: { masuk: boolean; anggota: boolean }, nextRaw: string | null,
 ): string | null {
-  const tujuan = nextAman(nextRaw) ?? `/${lang}/pinjamanku`;
+  const tujuan = halaman === 'akun' ? `/${lang}/akun` : nextAman(nextRaw) ?? `/${lang}/pinjamanku`;
   if (!status.masuk) return halaman === 'masuk' ? null : denganNext(`/${lang}/masuk`, tujuan);
   if (!status.anggota) return halaman === 'daftar' ? null : denganNext(`/${lang}/daftar`, tujuan);
-  return halaman === 'pinjamanku' ? null : tujuan;
+  return halaman === 'pinjamanku' || halaman === 'akun' ? null : tujuan;
 }
 
 const bahasaNext = (next: string | null, accept: string | null): Bahasa =>

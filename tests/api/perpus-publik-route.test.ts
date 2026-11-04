@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PinjamanError } from '@/lib/perpus/pinjaman';
 
 const repo = vi.hoisted(() => ({
-  ambilStatusPinjam: vi.fn(), daftarAnggota: vi.fn(), ajukanPinjaman: vi.fn(), aksiAnggota: vi.fn(), listPinjamanku: vi.fn(),
+  ambilStatusPinjam: vi.fn(), ambilAnggota: vi.fn(), daftarAnggota: vi.fn(), ajukanPinjaman: vi.fn(), aksiAnggota: vi.fn(), listPinjamanku: vi.fn(),
 }));
 const requireMasuk = vi.hoisted(() => vi.fn());
 const identitasDari = vi.hoisted(() => vi.fn());
@@ -15,6 +15,7 @@ vi.mock('@/lib/supabase/server', () => ({ createServerSupabase: async () => ({})
 import { AuthError } from '@/lib/auth/session';
 import { GET as STATUS } from '@/app/api/perpus-publik/status/route';
 import { POST as DAFTAR } from '@/app/api/perpus-publik/daftar/route';
+import { GET as AKUN } from '@/app/api/perpus-publik/anggota/route';
 import { GET as LIST, POST as AJUKAN } from '@/app/api/perpus-publik/pinjaman/route';
 import { PATCH as AKSI } from '@/app/api/perpus-publik/pinjaman/[id]/route';
 
@@ -24,7 +25,7 @@ const ctx = { params: Promise.resolve({ id: UUID }) };
 
 beforeEach(() => {
   Object.values(repo).forEach(f => f.mockReset());
-  requireMasuk.mockReset().mockResolvedValue({ userId: 'u1', supabase: {} });
+  requireMasuk.mockReset().mockResolvedValue({ userId: 'u1', email: 'a@x.id', supabase: {} });
   identitasDari.mockReset().mockResolvedValue(null);
 });
 
@@ -47,6 +48,17 @@ describe('API perpus-publik', () => {
   it('daftar tanpa sesi → 401', async () => {
     requireMasuk.mockRejectedValue(new AuthError(401, 'UNAUTHENTICATED', 'Silakan masuk terlebih dahulu'));
     expect((await DAFTAR(json({ nama: 'Aisyah', noWa: '081234567890' }))).status).toBe(401);
+  });
+  it('akun mengembalikan data sendiri dan email sesi', async () => {
+    repo.ambilAnggota.mockResolvedValue({ userId: 'u1', nama: 'Aisyah', noWa: '628123', status: 'aktif' });
+    expect((await (await AKUN()).json()).data).toEqual({ email: 'a@x.id', nama: 'Aisyah', noWa: '628123' });
+    expect(repo.ambilAnggota).toHaveBeenCalledWith({}, 'u1');
+  });
+  it('akun tanpa baris anggota → 403', async () => {
+    repo.ambilAnggota.mockResolvedValue(null);
+    const res = await AKUN();
+    expect(res.status).toBe(403);
+    expect((await res.json()).kode).toBe('bukan_anggota');
   });
   it('ajukan stok habis → 409 dengan kode', async () => {
     repo.ajukanPinjaman.mockRejectedValue(new PinjamanError('stok_habis'));

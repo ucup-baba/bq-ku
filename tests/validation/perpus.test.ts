@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { bukuSchema, donasiPerpusSchema, auditTerapkanSchema, klasifikasiSchema } from '@/lib/validation/perpus';
-import { aksiAnggotaSchema, aksiPustakawanSchema, daftarAnggotaSchema, statusAnggotaSchema } from '@/lib/validation/perpus';
+import { aksiAnggotaSchema, aksiPustakawanSchema, daftarAnggotaSchema, ubahAnggotaSchema } from '@/lib/validation/perpus';
 
 describe('validasi perpus', () => {
   it('buku: kelas harus terdaftar; nilai bawaan terisi', () => {
@@ -42,7 +42,13 @@ describe('skema pinjaman', () => {
   it('perpanjang wajib tanggal', () => {
     expect(aksiPustakawanSchema.safeParse({ aksi: 'perpanjang' }).success).toBe(false);
   });
-  it('status anggota hanya aktif/diblokir', () => {
-    expect(statusAnggotaSchema.safeParse({ status: 'hapus' }).success).toBe(false);
+  it('ubah anggota: status hanya aktif/diblokir', () => {
+    expect(ubahAnggotaSchema.safeParse({ status: 'hapus' }).success).toBe(false);
+    expect(ubahAnggotaSchema.parse({ status: 'diblokir' })).toEqual({ status: 'diblokir' });
+  });
+  it('ubah anggota: nomor dinormalkan, isi kosong ditolak', () => {
+    expect(ubahAnggotaSchema.parse({ nama: 'Aisyah', noWa: '081234567890' })).toEqual({ nama: 'Aisyah', noWa: '6281234567890' });
+    expect(ubahAnggotaSchema.safeParse({}).success).toBe(false);
+    expect(ubahAnggotaSchema.safeParse({ noWa: '0812' }).success).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aksiAnggota, ajukanPinjaman, ambilStatusPinjam, daftarAnggota, listPinjaman, listPinjamanku, terapkanAksi } from '@/lib/db/perpus-pinjaman-repo';
+import { aksiAnggota, ajukanPinjaman, ambilAnggota, ambilStatusPinjam, daftarAnggota, listPinjaman, listPinjamanku, terapkanAksi, ubahAnggota } from '@/lib/db/perpus-pinjaman-repo';
 import { PinjamanError } from '@/lib/perpus/pinjaman';
 
 /** Rantai kueri palsu: setiap metode mengembalikan dirinya; await menghasilkan hasil tabel itu. */
@@ -96,5 +96,19 @@ describe('repo pinjaman pustakawan', () => {
     await listPinjaman(klien({ perpus_pinjaman: { data: [], error: null } }, undefined, catat));
     expect(catat).toContainEqual(['select', '*, anggota:perpus_anggota(nama,noWa,status), buku:perpus_buku(judul,penulis,nomorPanggil)']);
     expect(catat).toContainEqual(['order', 'diajukanAt', { ascending: false }]);
+  });
+});
+
+describe('repo anggota', () => {
+  it('ambil berdasarkan userId', async () => {
+    const catat: unknown[][] = [];
+    expect(await ambilAnggota(klien({ perpus_anggota: { data: { nama: 'A' }, error: null } }, undefined, catat), 'u1')).toEqual({ nama: 'A' });
+    expect(catat).toContainEqual(['eq', 'userId', 'u1']);
+  });
+  it('ubah hanya kolom yang dikirim', async () => {
+    const catat: unknown[][] = [];
+    await ubahAnggota(klien({ perpus_anggota: { data: {}, error: null } }, undefined, catat), 'u1', { noWa: '628123' });
+    expect(catat).toContainEqual(['update', { noWa: '628123' }]);
+    expect(catat).toContainEqual(['eq', 'userId', 'u1']);
   });
 });

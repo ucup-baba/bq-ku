@@ -51,10 +51,11 @@ describe('ruteHostPerpus', () => {
   it('awalan mirip API anggota tetap ditolak', () => {
     expect(ruteHostPerpus('/api/perpus-publikasi', null)).toEqual({ jenis: 'tolak' });
   });
-  it('hanya tiga halaman yang meminta cek sesi', () => {
+  it('hanya halaman akun peminjam yang meminta cek sesi', () => {
     expect(ruteHostPerpus('/en/pinjamanku', null)).toEqual({ jenis: 'tulis-ulang', ke: '/perpusbq/en/pinjamanku', sesi: 'pinjamanku', lang: 'en' });
     expect(ruteHostPerpus('/id/masuk', null)).toMatchObject({ sesi: 'masuk' });
     expect(ruteHostPerpus('/id/daftar', null)).toMatchObject({ sesi: 'daftar' });
+    expect(ruteHostPerpus('/en/akun', null)).toMatchObject({ sesi: 'akun', lang: 'en' });
     expect(ruteHostPerpus('/id/katalog', null)).toEqual({ jenis: 'tulis-ulang', ke: '/perpusbq/id/katalog' });
   });
   it('manifest memakai milik perpus, bukan manifest bq-ku', () => {
@@ -109,6 +110,11 @@ describe('putusanSesi', () => {
     expect(putusanSesi('pinjamanku', 'id', anggota, null)).toBeNull();
     expect(putusanSesi('masuk', 'en', anggota, null)).toBe('/en/pinjamanku');
     expect(putusanSesi('daftar', 'id', anggota, '/id/buku/abcd1234')).toBe('/id/buku/abcd1234');
+  });
+  it('akun: tamu ke masuk lalu kembali ke akun; anggota dibiarkan', () => {
+    expect(putusanSesi('akun', 'id', tamu, null)).toBe('/id/masuk?next=%2Fid%2Fakun');
+    expect(putusanSesi('akun', 'en', baru, null)).toBe('/en/daftar?next=%2Fen%2Fakun');
+    expect(putusanSesi('akun', 'id', anggota, null)).toBeNull();
   });
   it('next berbahaya diabaikan', () => {
     expect(putusanSesi('masuk', 'id', anggota, '//evil.com')).toBe('/id/pinjamanku');
