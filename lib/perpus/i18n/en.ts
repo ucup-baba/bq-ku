@@ -159,4 +159,7 @@ export const en: Record<keyof typeof id, string> = {
   'beranda.geserKiri': 'Scroll left',
   'beranda.geserKanan': 'Scroll right',
   'penulis.judul': 'About the author',
+  'penulis.jumlah': '{n} books',
+  'kartu.tersedia': 'Available',
+  'kartu.dipinjam': 'On loan',
 };

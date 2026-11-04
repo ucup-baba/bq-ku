@@ -14,9 +14,17 @@ describe('KartuBuku', () => {
     expect(html).toContain('href="/en/buku/abcd1234"');
     expect(html).not.toContain('perpusbq');
   });
-  it('label genre diterjemahkan; nomor kosong jadi tanda pisah', () => {
-    const html = renderToStaticMarkup(<KartuBuku lang="en" buku={buku} />);
-    expect(html).toContain('Literature &amp; fiction');
-    expect(html).toContain('—');
+  it('status ketersediaan diterjemahkan', () => {
+    expect(renderToStaticMarkup(<KartuBuku lang="en" buku={buku} />)).toContain('Available');
+    expect(renderToStaticMarkup(<KartuBuku lang="id" buku={{ ...buku, tersedia: 0 }} />)).toContain('Dipinjam');
+  });
+  it('nomor panggil kosong tidak menampilkan chip', () => {
+    expect(renderToStaticMarkup(<KartuBuku lang="id" buku={buku} />)).not.toContain('p-buku-nomor');
+    expect(renderToStaticMarkup(<KartuBuku lang="id" buku={{ ...buku, nomorPanggil: '813 LIY b' }} />)).toContain('813 LIY b');
+  });
+  it('foto menggantikan judul di panel', () => {
+    const html = renderToStaticMarkup(<KartuBuku lang="id" buku={{ ...buku, sampulPath: 'a.webp' }} />);
+    expect(html).toContain('<img');
+    expect(html).not.toContain('p-buku-judul');
   });
 });

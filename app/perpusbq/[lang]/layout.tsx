@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from 'next/font/google';
 import '../perpus.css';
 import { NavPerpus } from '@/components/perpus-publik/NavPerpus';
+import { PengalihBahasa } from '@/components/perpus-publik/PengalihBahasa';
 import { adaBahasa, BAHASA } from '@/lib/perpus/domain';
 import { t } from '@/lib/perpus/i18n';
 
@@ -30,6 +31,7 @@ export default async function LayoutPerpus({ children, params }: { children: Rea
     <html lang={lang}>
       <body className={`${judul.variable} ${teks.variable} tema-perpus antialiased`}>
         <NavPerpus lang={lang} />
+        <div className="p-hanya-hp p-bahasa-hp"><PengalihBahasa lang={lang} label={t(lang, 'nav.bahasa')} /></div>
         <main className="p-wadah">{children}</main>
       </body>
     </html>
