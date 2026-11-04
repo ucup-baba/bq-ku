@@ -142,6 +142,42 @@ describe('proxy: host perpus', () => {
     const res = await proxy(reqHost('/api/santri', 'perpus.localhost'));
     expect(res.status).toBe(404);
   });
+  const sesi = (anggota: boolean) => {
+    getClaims.mockResolvedValue({ data: { claims: { sub: 'u1', email: 'a@b.c' } }, error: null });
+    maybeSingle.mockResolvedValue({ data: anggota ? { status: 'aktif' } : null });
+  };
+
+  it('halaman publik tidak memeriksa sesi', async () => {
+    await proxy(reqHost('/id/katalog', 'perpus.localhost'));
+    expect(getClaims).not.toHaveBeenCalled();
+  });
+  it('/pinjamanku tanpa sesi → /id/masuk di host perpus', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null });
+    const tujuan = new URL((await proxy(reqHost('/id/pinjamanku', 'perpus.localhost'))).headers.get('location')!);
+    expect(tujuan.host).toBe('perpus.localhost');
+    expect(tujuan.pathname).toBe('/id/masuk');
+    expect(tujuan.searchParams.get('next')).toBe('/id/pinjamanku');
+  });
+  it('/pinjamanku sesi tanpa anggota → /id/daftar', async () => {
+    sesi(false);
+    const tujuan = new URL((await proxy(reqHost('/id/pinjamanku', 'perpus.localhost'))).headers.get('location')!);
+    expect(tujuan.pathname).toBe('/id/daftar');
+  });
+  it('/pinjamanku anggota → rewrite ke folder fisik', async () => {
+    sesi(true);
+    const res = await proxy(reqHost('/id/pinjamanku', 'perpus.localhost'));
+    expect(new URL(res.headers.get('x-middleware-rewrite')!).pathname).toBe('/perpusbq/id/pinjamanku');
+  });
+  it('/masuk milik anggota mengikuti next', async () => {
+    sesi(true);
+    const tujuan = new URL((await proxy(reqHost('/id/masuk?next=%2Fid%2Fbuku%2Fabcd1234', 'perpus.localhost'))).headers.get('location')!);
+    expect(tujuan.pathname).toBe('/id/buku/abcd1234');
+    expect(tujuan.search).toBe('');
+  });
+  it('API anggota dilewatkan di host perpus, 404 di host bq-ku', async () => {
+    expect((await proxy(reqHost('/api/perpus-publik/status', 'perpus.localhost'))).status).toBe(200);
+    expect((await proxy(reqHost('/api/perpus-publik/status', 'bq-ku.vercel.app'))).status).toBe(404);
+  });
   it('/perpusbq di host bq-ku → 404', async () => {
     const res = await proxy(reqHost('/perpusbq/id', 'bq-ku.vercel.app'));
     expect(res.status).toBe(404);

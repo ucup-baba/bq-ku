@@ -23,7 +23,7 @@ export default async function Beranda({ params }: { params: Promise<{ lang: stri
   const [ringkasan, buku] = await Promise.all([ambilRingkasanPublik(c), listKatalogPublik(c)]);
   const statistik = [
     ['statistik.judul', ringkasan.judul],
-    ['statistik.eksemplar', ringkasan.eksemplar],
+    ['statistik.dipinjam', ringkasan.sedangDipinjam],
     ['statistik.donatur', ringkasan.donatur],
   ] as const;
   return (

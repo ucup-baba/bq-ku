@@ -42,9 +42,41 @@ export type DonasiPublik = {
 
 export type RingkasanPublik = {
   judul: number; eksemplar: number; donatur: number;
-  totalInfaq: number; totalPengadaan: number; saldo: number;
+  totalInfaq: number; totalPengadaan: number; saldo: number; sedangDipinjam: number;
 };
 
 export const LABEL_ASAL: Record<AsalBuku, string> = {
   koleksi_awal: 'Koleksi awal', wakaf: 'Wakaf', pengadaan: 'Pengadaan',
 };
+
+export type StatusPinjaman = 'diajukan' | 'dipinjam' | 'menunggu_verifikasi' | 'dikembalikan' | 'ditolak' | 'dibatalkan';
+export type AksiPinjaman = 'acc' | 'tolak' | 'batal' | 'klaim' | 'verifikasi' | 'tandai_kembali' | 'perpanjang';
+export type StatusAnggota = 'aktif' | 'diblokir';
+
+export type Anggota = { userId: string; nama: string; noWa: string; status: StatusAnggota; createdAt: string };
+
+export type Pinjaman = {
+  id: string; anggotaId: string; bukuId: string; status: StatusPinjaman; jatuhTempo: string | null;
+  diajukanAt: string; disetujuiAt: string | null; diserahkanAt: string | null;
+  diklaimKembaliAt: string | null; dikembalikanAt: string | null;
+  diprosesOleh: string | null; catatan: string | null;
+};
+
+export type PinjamanAdmin = Pinjaman & {
+  anggota: Pick<Anggota, 'nama' | 'noWa' | 'status'>;
+  buku: { judul: string; penulis: string; nomorPanggil: string };
+};
+
+/** Baris view `perpus_pinjamanku`. */
+export type Pinjamanku = {
+  id: string; status: StatusPinjaman; jatuhTempo: string | null; diajukanAt: string;
+  dikembalikanAt: string | null; catatan: string | null;
+  idPendek: string; judul: string; penulis: string; nomorPanggil: string | null;
+};
+
+/** Jawaban `GET /api/perpus-publik/status`. */
+export type StatusPinjamBuku = {
+  masuk: boolean; anggota: StatusAnggota | null; pinjamanAktif: StatusPinjaman | null; tersedia: number | null;
+};
+
+export type AnggotaAdmin = Anggota & { pinjaman: { status: StatusPinjaman }[] };

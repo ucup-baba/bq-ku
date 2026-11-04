@@ -3,6 +3,7 @@ import { requireUser, authErrorResponse } from '@/lib/auth/session';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { invitePenggunaSchema } from '@/lib/validation/pengguna';
 import { validationResponse } from '@/lib/validation/errors';
+import { bukanPeminjam } from '@/lib/perpus/pinjaman';
 
 /**
  * Daftar pengguna = gabungan:
@@ -13,16 +14,18 @@ export async function GET() {
   try {
     await requireUser(['SUPERADMIN']);
     const admin = createAdminSupabase();
-    const [{ data: profiles, error: e1 }, { data: allowed, error: e2 }, { data: users }] = await Promise.all([
+    const [{ data: profiles, error: e1 }, { data: allowed, error: e2 }, { data: users }, { data: anggota }] = await Promise.all([
       admin.from('profiles').select('*').order('createdAt', { ascending: true }),
       admin.from('allowed_emails').select('*').order('createdAt', { ascending: true }),
       admin.auth.admin.listUsers({ perPage: 1000 }),
+      admin.from('perpus_anggota').select('userId'),
     ]);
     if (e1) throw e1; if (e2) throw e2;
     const last = new Map((users?.users || []).map(u => [u.id, u.last_sign_in_at || null]));
     const seen = new Set((profiles || []).map(p => p.email.toLowerCase()));
+    const peminjam = new Set((anggota || []).map(a => a.userId as string));
     const rows = [
-      ...(profiles || []).map(p => ({ ...p, status: 'PROFIL' as const, lastSignInAt: last.get(p.id) ?? null })),
+      ...bukanPeminjam(profiles || [], peminjam).map(p => ({ ...p, status: 'PROFIL' as const, lastSignInAt: last.get(p.id) ?? null })),
       ...(allowed || []).filter(a => !seen.has(a.email.toLowerCase()))
         .map(a => ({ id: `allowed:${a.email}`, nama: a.nama, email: a.email, roles: a.roles ?? [], aktif: true, createdAt: a.createdAt, status: 'MENUNGGU' as const, lastSignInAt: null })),
     ];

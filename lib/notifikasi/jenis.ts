@@ -1,7 +1,7 @@
 import type { Room } from '@/lib/auth/rooms';
 
 export type Notifikasi = {
-  id: 'surat-belum-terkirim' | 'donatur-tanpa-wa' | 'akun-menunggu' | 'berkas-lembaga';
+  id: 'surat-belum-terkirim' | 'donatur-tanpa-wa' | 'akun-menunggu' | 'berkas-lembaga' | 'perpus-pengajuan' | 'perpus-klaim';
   judul: string;
   sub: string;
   href: string;
@@ -20,7 +20,7 @@ export function labelLencana(total: number): string {
 }
 
 /** Menyusun daftar notifikasi dari hitungan mentah; hitungan 0/undefined tidak ditampilkan. */
-export function susunNotifikasi(h: { suratBelumTerkirim?: number; donaturTanpaWa?: number; akunMenunggu?: number; berkasLembaga?: number }): Notifikasi[] {
+export function susunNotifikasi(h: { suratBelumTerkirim?: number; donaturTanpaWa?: number; akunMenunggu?: number; berkasLembaga?: number; perpusPengajuan?: number; perpusKlaim?: number }): Notifikasi[] {
   const out: Notifikasi[] = [];
   if (h.berkasLembaga) out.push({
     id: 'berkas-lembaga', ruang: 'lembaga', jumlah: h.berkasLembaga,
@@ -36,6 +36,16 @@ export function susunNotifikasi(h: { suratBelumTerkirim?: number; donaturTanpaWa
     id: 'donatur-tanpa-wa', ruang: 'donatur', jumlah: h.donaturTanpaWa,
     judul: `${h.donaturTanpaWa} donatur belum punya nomor WA`, sub: 'Lengkapi agar surat bisa dikirim',
     href: '/donatur/daftar?tanpaWa=1',
+  });
+  if (h.perpusPengajuan) out.push({
+    id: 'perpus-pengajuan', ruang: 'perpus', jumlah: h.perpusPengajuan,
+    judul: `${h.perpusPengajuan} pengajuan pinjaman baru`, sub: 'ACC atau tolak di antrian',
+    href: '/perpus',
+  });
+  if (h.perpusKlaim) out.push({
+    id: 'perpus-klaim', ruang: 'perpus', jumlah: h.perpusKlaim,
+    judul: `${h.perpusKlaim} klaim pengembalian menunggu verifikasi`, sub: 'Periksa bukunya lalu verifikasi',
+    href: '/perpus',
   });
   if (h.akunMenunggu) out.push({
     id: 'akun-menunggu', ruang: 'akun', jumlah: h.akunMenunggu,

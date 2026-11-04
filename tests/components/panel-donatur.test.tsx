@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { PanelDonatur } from '@/components/perpus-publik/PanelDonatur';
 import type { DonasiPublik, RingkasanPublik } from '@/lib/perpus/tipe';
 
-const ringkasan: RingkasanPublik = { judul: 1, eksemplar: 1, donatur: 2, totalInfaq: 1500000, totalPengadaan: 500000, saldo: 1000000 };
+const ringkasan: RingkasanPublik = { judul: 1, eksemplar: 1, donatur: 2, totalInfaq: 1500000, totalPengadaan: 500000, saldo: 1000000, sedangDipinjam: 0 };
 const donasi: DonasiPublik[] = [
   { id: '1', tanggal: '2026-03-05', tanggalTeks: null, nama: 'Fulan', jenis: 'uang', jumlahBuku: null, buku: [] },
   { id: '2', tanggal: null, tanggalTeks: 'Ramadhan', nama: 'Fulanah', jenis: 'buku', jumlahBuku: 2, buku: [{ idPendek: 'abcd1234', judul: 'Bumi' }] },

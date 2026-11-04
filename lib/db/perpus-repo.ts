@@ -10,6 +10,7 @@ import type { BukuInput, BukuUbahInput, DonasiPerpusInput, PengadaanInput } from
 
 const now = () => new Date().toISOString();
 const UNIK_DILANGGAR = '23505';
+const FK_DILANGGAR = '23503';
 /** PostgREST menolak delete tanpa filter; id ini tidak pernah ada. */
 const ID_MUSTAHIL = '00000000-0000-0000-0000-000000000000';
 
@@ -123,6 +124,7 @@ export async function ambilRingkasan(c: SupabaseClient): Promise<RingkasanPerpus
 export async function kosongkanPerpus(c: SupabaseClient): Promise<void> {
   for (const t of ['perpus_buku', 'perpus_donasi', 'perpus_pengadaan']) {
     const { error } = await c.from(t).delete().neq('id', ID_MUSTAHIL);
+    if (error?.code === FK_DILANGGAR) throw new Error('Masih ada riwayat pinjaman, katalog tidak bisa diimpor ulang');
     if (error) throw new Error(`Gagal mengosongkan ${t}: ${error.message}`);
   }
 }

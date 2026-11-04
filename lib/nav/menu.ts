@@ -1,6 +1,6 @@
 import type { Room } from '@/lib/auth/rooms';
 
-export type KunciIkon = 'beranda' | 'donatur' | 'surat' | 'direktori' | 'berkas' | 'pengguna' | 'tambah' | 'folder' | 'keuangan' | 'buku' | 'audit';
+export type KunciIkon = 'beranda' | 'donatur' | 'surat' | 'direktori' | 'berkas' | 'pengguna' | 'tambah' | 'folder' | 'keuangan' | 'buku' | 'audit' | 'pinjaman' | 'anggota';
 export type WarnaMenu = 'hijau' | 'biru' | 'jingga' | 'ungu';
 export type ItemMenu = { href: string; label: string; labelPendek: string; ikon: KunciIkon; warna: WarnaMenu };
 export type OpsiMenu = { canManageUsers: boolean; jumlahRuang: number };
@@ -25,6 +25,8 @@ const BERANDA_PERPUS: ItemMenu = { href: '/perpus', label: 'Beranda', labelPende
 const BUKU_PERPUS: ItemMenu = { href: '/perpus/buku', label: 'Buku', labelPendek: 'Buku', ikon: 'buku', warna: 'jingga' };
 const DONASI_PERPUS: ItemMenu = { href: '/perpus/donasi', label: 'Donasi & pengadaan', labelPendek: 'Donasi', ikon: 'donatur', warna: 'biru' };
 const AUDIT_PERPUS: ItemMenu = { href: '/perpus/audit', label: 'Audit kode', labelPendek: 'Audit', ikon: 'audit', warna: 'ungu' };
+const PINJAMAN_PERPUS: ItemMenu = { href: '/perpus/pinjaman', label: 'Pinjaman', labelPendek: 'Pinjaman', ikon: 'pinjaman', warna: 'biru' };
+const ANGGOTA_PERPUS: ItemMenu = { href: '/perpus/anggota', label: 'Anggota', labelPendek: 'Anggota', ikon: 'anggota', warna: 'ungu' };
 
 const SURAT_SANTRI: ItemMenu = { href: '/surat', label: 'Surat Santri', labelPendek: 'Surat', ikon: 'surat', warna: 'ungu' };
 
@@ -33,7 +35,7 @@ const SURAT_SANTRI: ItemMenu = { href: '/surat', label: 'Surat Santri', labelPen
  * sebagai tombol di header halaman (spec §5.1) agar tidak ganda di satu layar.
  */
 export function menuRail(room: Room, o: OpsiMenu): ItemMenu[] {
-  if (room === 'perpus') return [BERANDA_PERPUS, BUKU_PERPUS, DONASI_PERPUS, AUDIT_PERPUS];
+  if (room === 'perpus') return [BERANDA_PERPUS, PINJAMAN_PERPUS, BUKU_PERPUS, ANGGOTA_PERPUS, DONASI_PERPUS, AUDIT_PERPUS];
   if (room === 'lembaga') return [BERANDA_LEMBAGA, SANTRI_LEMBAGA, DONATUR_LEMBAGA, SURAT_LEMBAGA, BERKAS_LEMBAGA, KEUANGAN_LEMBAGA];
   if (room === 'donatur') return [BERANDA_DONATUR, DAFTAR_DONATUR, DAFTAR_SURAT];
   return [BERANDA_SANTRI, DIREKTORI, INPUT_BERKAS, SURAT_SANTRI];
@@ -55,7 +57,8 @@ export function slotHp(room: Room, o: OpsiMenu): SlotHp[] {
     return [tautan(BERANDA_LEMBAGA), tautan(SANTRI_LEMBAGA), tautan(BERKAS_LEMBAGA, true), tautan(DONATUR_LEMBAGA), { jenis: 'akun' }];
   }
   if (room === 'perpus') {
-    return [tautan(BERANDA_PERPUS), tautan(DONASI_PERPUS), tautan(BUKU_PERPUS, true), tautan(AUDIT_PERPUS), { jenis: 'akun' }];
+    // Donasi & Audit tetap terjangkau dari ubin Beranda.
+    return [tautan(BERANDA_PERPUS), tautan(PINJAMAN_PERPUS), tautan(BUKU_PERPUS, true), tautan(ANGGOTA_PERPUS), { jenis: 'akun' }];
   }
   const [a, b, tengah] = room === 'donatur'
     ? [BERANDA_DONATUR, DAFTAR_DONATUR, BUAT_SURAT]
