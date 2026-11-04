@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CloudArrowDown, Books, ListChecks, Wallet } from '@phosphor-icons/react';
+import { ChatCircleText, CloudArrowDown, Books, ListChecks, PenNib, Wallet } from '@phosphor-icons/react';
 import type { RingkasanPerpus } from '@/lib/perpus/tipe';
 import { KepalaHalaman } from '@/components/ui/KepalaHalaman';
 import { Kartu } from '@/components/ui/Kartu';
@@ -68,6 +68,8 @@ export function BerandaPerpus() {
           {ubin(<ListChecks size={28} className="text-violet-600" aria-hidden />, 'Perlu audit kode', String(r.perluAudit), '/perpus/audit')}
           {ubin(<Wallet size={28} className="text-emerald-600" aria-hidden />, 'Infaq terkumpul', rupiah(r.totalInfaq), '/perpus/donasi')}
           {ubin(<Wallet size={28} className="text-sky-600" aria-hidden />, 'Saldo (infaq − pengadaan)', rupiah(r.saldo), '/perpus/donasi')}
+          {ubin(<PenNib size={28} className="text-orange-600" aria-hidden />, 'Profil', 'Penulis', '/perpus/penulis')}
+          {ubin(<ChatCircleText size={28} className="text-emerald-600" aria-hidden />, 'Moderasi', 'Catatan', '/perpus/catatan')}
         </div>
       )}
       {r && r.judul === 0 && (
