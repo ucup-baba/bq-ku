@@ -69,6 +69,12 @@ export async function DELETE(_req: NextRequest, ctx: Ctx) {
       return NextResponse.json({ error: 'Anda tidak dapat menghapus akun sendiri' }, { status: 400 });
     }
 
+    // Riwayat pinjaman menahan penghapusan (FK restrict); cek dulu agar profil tidak terhapus setengah jalan.
+    const { count: pinjaman } = await admin.from('perpus_pinjaman').select('id', { head: true, count: 'exact' }).eq('anggotaId', id);
+    if (pinjaman) {
+      return NextResponse.json({ error: 'Akun ini punya riwayat pinjaman perpus. Blokir di Ruang Perpus, jangan dihapus.' }, { status: 409 });
+    }
+
     const { data: profile } = await admin.from('profiles').select('email').eq('id', id).maybeSingle();
     if (profile?.email) await admin.from('allowed_emails').delete().eq('email', profile.email);
     const { error: pErr } = await admin.from('profiles').delete().eq('id', id);

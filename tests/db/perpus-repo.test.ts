@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { tambahBuku, simpanRencana, terapkanAudit, unggahSampulBuku } from '@/lib/db/perpus-repo';
+import { tambahBuku, simpanRencana, terapkanAudit, unggahSampulBuku, kosongkanPerpus } from '@/lib/db/perpus-repo';
 import { NomorBentrokError } from '@/lib/perpus/nomor-panggil';
 import type { RencanaImpor } from '@/lib/perpus/impor';
 
@@ -86,5 +86,12 @@ describe('unggahSampulBuku', () => {
     expect(upload.mock.calls[0][0]).toMatch(/^b1\/\d+\.webp$/);
     expect(upload.mock.calls[0][2]).toMatchObject({ contentType: 'image/webp' });
     expect(remove).toHaveBeenCalledWith(['b1/lama.webp']);
+  });
+});
+
+describe('kosongkanPerpus', () => {
+  it('kosongkanPerpus memberi pesan jelas bila buku masih punya riwayat pinjaman', async () => {
+    const c = { from: () => ({ delete: () => ({ neq: async () => ({ error: { code: '23503', message: 'fk' } }) }) }) } as never;
+    await expect(kosongkanPerpus(c)).rejects.toThrow('Masih ada riwayat pinjaman');
   });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { aksiAnggota, ajukanPinjaman, ambilStatusPinjam, daftarAnggota, listPinjamanku } from '@/lib/db/perpus-pinjaman-repo';
+import { aksiAnggota, ajukanPinjaman, ambilStatusPinjam, daftarAnggota, listPinjaman, listPinjamanku, terapkanAksi } from '@/lib/db/perpus-pinjaman-repo';
 import { PinjamanError } from '@/lib/perpus/pinjaman';
 
 /** Rantai kueri palsu: setiap metode mengembalikan dirinya; await menghasilkan hasil tabel itu. */
@@ -55,5 +55,46 @@ describe('repo pinjaman anggota', () => {
       perpus_pinjaman: { data: { status: 'dipinjam' }, error: null },
     });
     expect(await ambilStatusPinjam(c, 'u1', 'b1')).toEqual({ masuk: true, anggota: 'aktif', pinjamanAktif: 'dipinjam', tersedia: 0 });
+  });
+});
+
+describe('repo pinjaman pustakawan', () => {
+  it('ACC lewat RPC dengan tanggal', async () => {
+    const catat: unknown[][] = [];
+    await terapkanAksi(klien({}, { data: { id: 'p1' }, error: null }, catat), 'p1', { aksi: 'acc', jatuhTempo: '2026-12-01' }, 'u9');
+    expect(catat).toContainEqual(['rpc', 'perpus_acc_pinjaman', { p_id: 'p1', p_jatuh_tempo: '2026-12-01' }]);
+  });
+  it('tolak hanya mengenai status diajukan dan menyimpan catatan', async () => {
+    const catat: unknown[][] = [];
+    await terapkanAksi(klien({ perpus_pinjaman: { data: { id: 'p1' }, error: null } }, undefined, catat), 'p1', { aksi: 'tolak', catatan: 'Rusak' }, 'u9');
+    expect(catat).toContainEqual(['update', { status: 'ditolak', diprosesOleh: 'u9', catatan: 'Rusak' }]);
+    expect(catat).toContainEqual(['eq', 'status', 'diajukan']);
+  });
+  it('verifikasi mengisi dikembalikanAt', async () => {
+    const catat: unknown[][] = [];
+    await terapkanAksi(klien({ perpus_pinjaman: { data: { id: 'p1' }, error: null } }, undefined, catat), 'p1', { aksi: 'verifikasi' }, 'u9');
+    const patch = catat.find(c => c[0] === 'update')![1] as Record<string, unknown>;
+    expect(patch).toMatchObject({ status: 'dikembalikan', diprosesOleh: 'u9' });
+    expect(typeof patch.dikembalikanAt).toBe('string');
+  });
+  it('perpanjang hanya mengubah jatuh tempo', async () => {
+    const catat: unknown[][] = [];
+    await terapkanAksi(klien({ perpus_pinjaman: { data: { id: 'p1' }, error: null } }, undefined, catat), 'p1', { aksi: 'perpanjang', jatuhTempo: '2026-12-20' }, 'u9');
+    expect(catat).toContainEqual(['update', { status: 'dipinjam', diprosesOleh: 'u9', jatuhTempo: '2026-12-20' }]);
+  });
+  it('tidak ada baris cocok tetapi pinjaman ada → status_tidak_sah', async () => {
+    const hasil = [{ data: null, error: null }, { data: { status: 'dikembalikan' }, error: null }];
+    const c = { from: () => rantai(hasil.shift(), []) } as never;
+    await expect(terapkanAksi(c, 'p1', { aksi: 'verifikasi' }, 'u9')).rejects.toMatchObject({ kode: 'status_tidak_sah', statusSaatIni: 'dikembalikan' });
+  });
+  it('tidak ada baris sama sekali → pinjaman_tidak_ada', async () => {
+    const c = { from: () => rantai({ data: null, error: null }, []) } as never;
+    await expect(terapkanAksi(c, 'p1', { aksi: 'verifikasi' }, 'u9')).rejects.toMatchObject({ kode: 'pinjaman_tidak_ada' });
+  });
+  it('list menyertakan anggota & buku, terbaru dulu', async () => {
+    const catat: unknown[][] = [];
+    await listPinjaman(klien({ perpus_pinjaman: { data: [], error: null } }, undefined, catat));
+    expect(catat).toContainEqual(['select', '*, anggota:perpus_anggota(nama,noWa,status), buku:perpus_buku(judul,penulis,nomorPanggil)']);
+    expect(catat).toContainEqual(['order', 'diajukanAt', { ascending: false }]);
   });
 });

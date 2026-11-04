@@ -26,3 +26,12 @@ describe('notifikasi berkas lembaga', () => {
     expect(n).toMatchObject({ id: 'berkas-lembaga', ruang: 'lembaga', href: '/lembaga/berkas', judul: '2 berkas lembaga perlu diperpanjang' });
   });
 });
+
+describe('notifikasi perpus', () => {
+  it('pengajuan & klaim menuju antrian Ruang Perpus', () => {
+    const n = susunNotifikasi({ perpusPengajuan: 2, perpusKlaim: 1 });
+    expect(n.map(x => x.id)).toEqual(['perpus-pengajuan', 'perpus-klaim']);
+    expect(n[0]).toMatchObject({ ruang: 'perpus', href: '/perpus', judul: '2 pengajuan pinjaman baru' });
+    expect(n[1]).toMatchObject({ ruang: 'perpus', href: '/perpus', judul: '1 klaim pengembalian menunggu verifikasi' });
+  });
+});

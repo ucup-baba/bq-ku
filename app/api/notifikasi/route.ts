@@ -4,6 +4,7 @@ import { roomsFor } from '@/lib/auth/rooms';
 import { canManageUsers } from '@/lib/auth/roles';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { susunNotifikasi } from '@/lib/notifikasi/jenis';
+import { bukanPeminjam } from '@/lib/perpus/pinjaman';
 
 /** Notifikasi dalam aplikasi, dihitung langsung dari data (tanpa tabel notifikasi). */
 export async function GET() {
@@ -34,12 +35,27 @@ export async function GET() {
         if (!error) hitung.berkasLembaga = count ?? 0;
       })());
     }
+    if (roomsFor(user.roles).includes('perpus')) {
+      tugas.push((async () => {
+        const hitungStatus = (status: string) =>
+          supabase.from('perpus_pinjaman').select('id', { head: true, count: 'exact' }).eq('status', status);
+        const [baru, klaim] = await Promise.all([hitungStatus('diajukan'), hitungStatus('menunggu_verifikasi')]);
+        // Tabel belum ada (migrasi 0015) → abaikan.
+        if (!baru.error) hitung.perpusPengajuan = baru.count ?? 0;
+        if (!klaim.error) hitung.perpusKlaim = klaim.count ?? 0;
+      })());
+    }
     if (canManageUsers(user.roles)) {
       tugas.push((async () => {
-        const { count, error } = await createAdminSupabase()
-          .from('profiles').select('id', { head: true, count: 'exact' }).eq('aktif', false);
-        if (error) throw error;
-        hitung.akunMenunggu = count ?? 0;
+        const admin = createAdminSupabase();
+        const [menunggu, anggota] = await Promise.all([
+          admin.from('profiles').select('id, aktif').eq('aktif', false),
+          admin.from('perpus_anggota').select('userId'),
+        ]);
+        if (menunggu.error) throw menunggu.error;
+        // Peminjam perpus memang tidak perlu diaktifkan di bq-ku.
+        const peminjam = new Set((anggota.data ?? []).map(a => a.userId as string));
+        hitung.akunMenunggu = bukanPeminjam(menunggu.data ?? [], peminjam).length;
       })());
     }
     await Promise.all(tugas);
