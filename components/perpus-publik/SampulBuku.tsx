@@ -13,7 +13,7 @@ export function SampulBuku({ buku, besar = false }: Props) {
   return (
     <div aria-hidden style={gayaWarna(warnaKelas(buku.kelasDdc))}
       className={`${ukuran} aspect-[2/3] shrink-0 overflow-hidden rounded-xl border-2 border-perpus-tinta flex flex-col justify-between gap-1 ${besar ? 'p-3 text-base' : 'p-2 text-[10px]'} font-extrabold leading-tight`}>
-      <span className={besar ? 'line-clamp-6' : 'line-clamp-5'}>{buku.judul}</span>
+      <span className={`[overflow-wrap:anywhere] ${besar ? 'line-clamp-6' : 'line-clamp-5'}`}>{buku.judul}</span>
       {buku.penulis && <span className={`font-semibold line-clamp-2 ${besar ? 'text-xs' : 'text-[9px]'}`}>{buku.penulis}</span>}
     </div>
   );

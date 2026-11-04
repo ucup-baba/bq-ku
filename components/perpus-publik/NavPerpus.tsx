@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSelectedLayoutSegment } from 'next/navigation';
-import { BookBookmark, Books, HandHeart, House, SignIn } from '@phosphor-icons/react';
+import { BookBookmark, Books, HandHeart, House, SignIn, UserCircle } from '@phosphor-icons/react';
 import type { Bahasa } from '@/lib/perpus/ddc';
 import { t } from '@/lib/perpus/i18n';
 import { createBrowserSupabase } from '@/lib/supabase/client';
@@ -14,6 +14,7 @@ const ITEM = [
   { segmen: 'donatur', path: '/donatur', kunci: 'nav.donatur', Ikon: HandHeart },
 ] as const;
 const PINJAMANKU = { segmen: 'pinjamanku', path: '/pinjamanku', kunci: 'nav.pinjamanku', Ikon: BookBookmark } as const;
+const AKUN = { segmen: 'akun', path: '/akun', kunci: 'nav.akun', Ikon: UserCircle } as const;
 const MASUK = { segmen: 'masuk', path: '/masuk', kunci: 'nav.masuk', Ikon: SignIn } as const;
 
 export function NavPerpus({ lang }: { lang: Bahasa }) {
@@ -28,7 +29,7 @@ export function NavPerpus({ lang }: { lang: Bahasa }) {
   return (
     <nav className="p-nav" aria-label={t(lang, 'nav.utama')}>
       <Link href={`/${lang}`} className="p-nav-merek">{t(lang, 'situs.nama')}</Link>
-      {[...ITEM, masuk ? PINJAMANKU : MASUK].map(({ segmen: s, path, kunci, Ikon }) => (
+      {[...ITEM, ...(masuk ? [PINJAMANKU, AKUN] : [MASUK])].map(({ segmen: s, path, kunci, Ikon }) => (
         <Link key={kunci} href={`/${lang}${path}`} className="p-nav-item" aria-current={segmen === s ? 'page' : undefined}>
           <Ikon size={22} weight={segmen === s ? 'fill' : 'regular'} aria-hidden />
           {t(lang, kunci)}

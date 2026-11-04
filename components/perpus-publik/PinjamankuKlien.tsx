@@ -7,7 +7,6 @@ import { t, type KunciTeks } from '@/lib/perpus/i18n';
 import { hariIniWib, terlambat, type KodeGalat } from '@/lib/perpus/pinjaman';
 import type { Pinjamanku } from '@/lib/perpus/tipe';
 import { WARNA_STATUS, gayaWarna } from '@/lib/perpus/warna';
-import { createBrowserSupabase } from '@/lib/supabase/client';
 
 export function PinjamankuKlien({ lang }: { lang: Bahasa }) {
   const [daftar, setDaftar] = useState<Pinjamanku[] | null>(null);
@@ -34,18 +33,10 @@ export function PinjamankuKlien({ lang }: { lang: Bahasa }) {
     setSibuk(null);
   };
 
-  const keluar = async () => {
-    await createBrowserSupabase().auth.signOut();
-    window.location.assign(`/${lang}`);
-  };
-
   const hari = hariIniWib();
   return (
     <>
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="p-h1">{t(lang, 'pinjamanku.judul')}</h1>
-        <button type="button" onClick={keluar} className="p-pil">{t(lang, 'pinjamanku.keluar')}</button>
-      </header>
+      <h1 className="p-h1">{t(lang, 'pinjamanku.judul')}</h1>
       {galat && <p role="alert" className="font-bold">{t(lang, galat)}</p>}
       {daftar?.length === 0 && (
         <section className="p-kartu space-y-3 p-6 text-center">

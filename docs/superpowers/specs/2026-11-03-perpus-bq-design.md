@@ -123,7 +123,7 @@ Jalan sekali (`npm run impor:perpus`), memakai service role, idempoten (hapus-is
 | `/[lang]/pinjamanku` | wajib login; daftar pinjaman, status, jatuh tempo; **Batalkan** (diajukan), **Sudah saya kembalikan** (dipinjam) |
 | `/[lang]/masuk`, `/[lang]/daftar` | login Google; form nama + no. WA saat pertama kali |
 
-Navigasi: pil bawah di mobile (Beranda · Katalog · Donatur · Masuk atau Pinjamanku), bilah atas di desktop; Keluar ada di halaman Pinjamanku; pengalih bahasa ID | EN mempertahankan path.
+Navigasi: pil bawah di mobile (Beranda · Katalog · Donatur · Masuk, atau Pinjamanku · Akun saat sudah masuk), bilah atas di desktop; `/[lang]/akun` berisi ubah nama & WA serta Keluar; pengalih bahasa ID | EN mempertahankan path.
 
 ### Ruang Perpus — domain bq-ku (`app/(perpus-admin)/perpus/…`)
 | path | isi |
