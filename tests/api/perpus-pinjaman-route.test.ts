@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PinjamanError } from '@/lib/perpus/pinjaman';
 
-const repo = vi.hoisted(() => ({ listPinjaman: vi.fn(), terapkanAksi: vi.fn(), listAnggota: vi.fn(), ubahStatusAnggota: vi.fn() }));
+const repo = vi.hoisted(() => ({ listPinjaman: vi.fn(), terapkanAksi: vi.fn(), listAnggota: vi.fn(), ubahAnggota: vi.fn() }));
 const requireRoom = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/db/perpus-pinjaman-repo', () => repo);
 vi.mock('@/lib/auth/session', () => ({ requireRoom: (...a: unknown[]) => requireRoom(...a), authErrorResponse: () => null }));
@@ -51,9 +51,14 @@ describe('API pinjaman pustakawan', () => {
     expect((await ANGGOTA()).status).toBe(200);
   });
   it('blokir anggota', async () => {
-    repo.ubahStatusAnggota.mockResolvedValue({ userId: 'p1', status: 'diblokir' });
+    repo.ubahAnggota.mockResolvedValue({ userId: 'p1', status: 'diblokir' });
     expect((await BLOKIR(json({ status: 'diblokir' }), ctx)).status).toBe(200);
-    expect(repo.ubahStatusAnggota).toHaveBeenCalledWith({}, 'p1', 'diblokir');
+    expect(repo.ubahAnggota).toHaveBeenCalledWith({}, 'p1', { status: 'diblokir' });
+  });
+  it('ubah nama & WA anggota', async () => {
+    repo.ubahAnggota.mockResolvedValue({ userId: 'p1' });
+    expect((await BLOKIR(json({ nama: 'Aisyah', noWa: '081234567890' }), ctx)).status).toBe(200);
+    expect(repo.ubahAnggota).toHaveBeenCalledWith({}, 'p1', { nama: 'Aisyah', noWa: '6281234567890' });
   });
   it('status anggota tak dikenal → 400', async () => {
     expect((await BLOKIR(json({ status: 'hapus' }), ctx)).status).toBe(400);

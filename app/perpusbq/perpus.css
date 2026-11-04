@@ -11,9 +11,9 @@
   --p-tinta-lembut: #3d4a44;
   --p-evergreen: #122922;
   --p-teal: #1f5c49;
-  --p-lime: #c9ff5c;
-  --p-lime-dalam: #b3ee3f;
-  --p-lime-tint: #f2f9bd;
+  --p-lime: #d6ee30;
+  --p-lime-dalam: #c4dc1f;
+  --p-lime-tint: #f4f8c4;
   --p-halo: #d6ee30;
   --p-garis-halus: #0f2e1f24;
   --p-galat: #9c3828;
@@ -32,7 +32,7 @@
   box-shadow: 0 0 0 6px var(--p-halo);
 }
 
-.p-wadah { max-width: 1200px; margin: 0 auto; padding: 24px 16px calc(112px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 24px; }
+.p-wadah { max-width: 1200px; margin: 0 auto; padding: 68px 16px calc(112px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 24px; }
 
 .p-h1 { font-family: var(--font-judul), sans-serif; font-weight: 800; font-size: clamp(2.25rem, 7vw, 3.2rem); line-height: 1.05; letter-spacing: -.035em; color: var(--p-evergreen); }
 .p-h2 { font-family: var(--font-judul), sans-serif; font-weight: 800; font-size: 1.375rem; letter-spacing: -.02em; color: var(--p-evergreen); }
@@ -62,12 +62,13 @@
 .p-nav-merek { display: none; }
 .p-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; height: 50px; border-radius: 14px; font-size: 12px; font-weight: 600; color: var(--p-evergreen); transition: transform .14s var(--p-ease-pop), background-color .16s; }
 .p-nav-item[aria-current='page'] { background: var(--p-lime); color: var(--p-tinta); }
-.p-bahasa { display: flex; align-items: center; gap: 2px; padding: 0 4px; font-size: 12px; font-weight: 800; }
+.p-bahasa { position: fixed; z-index: 40; top: calc(10px + env(safe-area-inset-top)); right: 12px; display: flex; align-items: center; gap: 2px; padding: 0 4px; background: var(--p-kertas); border: 2px solid var(--p-tinta); border-radius: 999px; box-shadow: 2px 2px 0 var(--p-tinta); font-size: 12px; font-weight: 800; }
 .p-bahasa a { display: grid; place-items: center; min-width: 32px; min-height: 44px; border-radius: 10px; }
 .p-bahasa a[aria-current='true'] { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 
 @media (min-width: 768px) {
-  .p-wadah { padding-bottom: 48px; }
+  .p-wadah { padding-top: 24px; padding-bottom: 48px; }
+  .p-bahasa { position: static; padding: 0 4px; background: none; border: 0; box-shadow: none; }
   .p-nav { position: sticky; top: 12px; bottom: auto; left: auto; right: auto; max-width: 1168px; margin: 12px auto 0; padding: 4px 12px; }
   .p-nav-merek { display: block; margin-right: auto; font-family: var(--font-judul), sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
   .p-nav-item { flex: none; flex-direction: row; gap: 6px; height: 44px; padding: 0 14px; font-size: 14px; }

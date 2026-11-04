@@ -168,6 +168,12 @@ describe('proxy: host perpus', () => {
     const res = await proxy(reqHost('/id/pinjamanku', 'perpus.localhost'));
     expect(new URL(res.headers.get('x-middleware-rewrite')!).pathname).toBe('/perpusbq/id/pinjamanku');
   });
+  it('/akun tanpa sesi → /en/masuk, anggota → rewrite', async () => {
+    getClaims.mockResolvedValue({ data: null, error: null });
+    expect(new URL((await proxy(reqHost('/en/akun', 'perpus.localhost'))).headers.get('location')!).pathname).toBe('/en/masuk');
+    sesi(true);
+    expect(new URL((await proxy(reqHost('/en/akun', 'perpus.localhost'))).headers.get('x-middleware-rewrite')!).pathname).toBe('/perpusbq/en/akun');
+  });
   it('/masuk milik anggota mengikuti next', async () => {
     sesi(true);
     const tujuan = new URL((await proxy(reqHost('/id/masuk?next=%2Fid%2Fbuku%2Fabcd1234', 'perpus.localhost'))).headers.get('location')!);

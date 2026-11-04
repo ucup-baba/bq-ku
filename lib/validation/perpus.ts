@@ -66,10 +66,10 @@ export const auditTerapkanSchema = z.object({
 const tanggalMendatang = z.string().trim().refine(isTanggalIso, 'Tanggal tidak valid')
   .refine(v => v >= hariIniWib(), 'Jatuh tempo tidak boleh lewat');
 
-export const daftarAnggotaSchema = z.object({
-  nama: z.string().trim().min(2, 'Nama minimal 2 huruf').max(120),
-  noWa: z.string().transform(v => nomorWali(v) ?? '').refine(v => /^62\d{8,13}$/.test(v), 'Nomor WhatsApp tidak valid'),
-});
+const namaAnggota = z.string().trim().min(2, 'Nama minimal 2 huruf').max(120);
+const noWaAnggota = z.string().transform(v => nomorWali(v) ?? '').refine(v => /^62\d{8,13}$/.test(v), 'Nomor WhatsApp tidak valid');
+
+export const daftarAnggotaSchema = z.object({ nama: namaAnggota, noWa: noWaAnggota });
 export type DaftarAnggotaInput = z.infer<typeof daftarAnggotaSchema>;
 
 export const ajukanSchema = z.object({ bukuId: z.string().uuid() });
@@ -84,4 +84,9 @@ export const aksiPustakawanSchema = z.discriminatedUnion('aksi', [
 ]);
 export type AksiPustakawanInput = z.infer<typeof aksiPustakawanSchema>;
 
-export const statusAnggotaSchema = z.object({ status: z.enum(['aktif', 'diblokir']) });
+export const ubahAnggotaSchema = z.object({
+  status: z.enum(['aktif', 'diblokir']).optional(),
+  nama: namaAnggota.optional(),
+  noWa: noWaAnggota.optional(),
+}).refine(d => Object.keys(d).length > 0, 'Tidak ada perubahan');
+export type UbahAnggotaInput = z.infer<typeof ubahAnggotaSchema>;

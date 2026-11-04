@@ -6,7 +6,7 @@ import { tanggalPublik } from '@/lib/perpus/format-publik';
 import { t, type KunciTeks } from '@/lib/perpus/i18n';
 import { hariIniWib, terlambat, type KodeGalat } from '@/lib/perpus/pinjaman';
 import type { Pinjamanku } from '@/lib/perpus/tipe';
-import { createBrowserSupabase } from '@/lib/supabase/client';
+import { WARNA_STATUS, gayaWarna } from '@/lib/perpus/warna';
 
 export function PinjamankuKlien({ lang }: { lang: Bahasa }) {
   const [daftar, setDaftar] = useState<Pinjamanku[] | null>(null);
@@ -33,18 +33,10 @@ export function PinjamankuKlien({ lang }: { lang: Bahasa }) {
     setSibuk(null);
   };
 
-  const keluar = async () => {
-    await createBrowserSupabase().auth.signOut();
-    window.location.assign(`/${lang}`);
-  };
-
   const hari = hariIniWib();
   return (
     <>
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="p-h1">{t(lang, 'pinjamanku.judul')}</h1>
-        <button type="button" onClick={keluar} className="p-pil">{t(lang, 'pinjamanku.keluar')}</button>
-      </header>
+      <h1 className="p-h1">{t(lang, 'pinjamanku.judul')}</h1>
       {galat && <p role="alert" className="font-bold">{t(lang, galat)}</p>}
       {daftar?.length === 0 && (
         <section className="p-kartu space-y-3 p-6 text-center">
@@ -57,7 +49,7 @@ export function PinjamankuKlien({ lang }: { lang: Bahasa }) {
           <li key={p.id} className="p-kartu space-y-2 p-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <Link href={`/${lang}/buku/${p.idPendek}`} className="min-w-0 font-bold underline-offset-2 hover:underline">{p.judul}</Link>
-              <span className="p-label">{t(lang, `status.${p.status}`)}</span>
+              <span className="p-label" style={gayaWarna(WARNA_STATUS[p.status])}>{t(lang, `status.${p.status}`)}</span>
             </div>
             {p.jatuhTempo && p.status === 'dipinjam' && (
               <p className="text-sm">

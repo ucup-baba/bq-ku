@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ATURAN, PinjamanError, galatDariRpc } from '@/lib/perpus/pinjaman';
-import type { Anggota, AnggotaAdmin, Pinjaman, PinjamanAdmin, Pinjamanku, StatusAnggota, StatusPinjamBuku, StatusPinjaman } from '@/lib/perpus/tipe';
-import type { AksiPustakawanInput, DaftarAnggotaInput } from '@/lib/validation/perpus';
+import type { Anggota, AnggotaAdmin, Pinjaman, PinjamanAdmin, Pinjamanku, StatusPinjamBuku, StatusPinjaman } from '@/lib/perpus/tipe';
+import type { AksiPustakawanInput, DaftarAnggotaInput, UbahAnggotaInput } from '@/lib/validation/perpus';
 
 const STATUS_BERJALAN = ['diajukan', 'dipinjam', 'menunggu_verifikasi'];
 
@@ -9,6 +9,12 @@ async function panggil<T>(c: SupabaseClient, fungsi: string, args: Record<string
   const { data, error } = await c.rpc(fungsi, args);
   if (error) throw galatDariRpc(error.message);
   return data as T;
+}
+
+export async function ambilAnggota(c: SupabaseClient, userId: string): Promise<Anggota | null> {
+  const { data, error } = await c.from('perpus_anggota').select('*').eq('userId', userId).maybeSingle();
+  if (error) throw new Error(`Gagal memuat anggota: ${error.message}`);
+  return data as Anggota | null;
 }
 
 export const daftarAnggota = (c: SupabaseClient, input: DaftarAnggotaInput) =>
@@ -78,8 +84,8 @@ export async function listAnggota(c: SupabaseClient): Promise<AnggotaAdmin[]> {
   return (data || []) as AnggotaAdmin[];
 }
 
-export async function ubahStatusAnggota(c: SupabaseClient, id: string, status: StatusAnggota): Promise<Anggota> {
-  const { data, error } = await c.from('perpus_anggota').update({ status }).eq('userId', id).select('*').single();
+export async function ubahAnggota(c: SupabaseClient, id: string, patch: UbahAnggotaInput): Promise<Anggota> {
+  const { data, error } = await c.from('perpus_anggota').update(patch).eq('userId', id).select('*').single();
   if (error) throw new Error(`Gagal mengubah anggota: ${error.message}`);
   return data as Anggota;
 }

@@ -7,6 +7,7 @@ import { adaBahasa } from '@/lib/perpus/domain';
 import { t } from '@/lib/perpus/i18n';
 import { bukuTerbaru } from '@/lib/perpus/katalog';
 import { metaHalaman } from '@/lib/perpus/meta';
+import { PALET, gayaWarna } from '@/lib/perpus/warna';
 import { klienAnon } from '@/lib/supabase/anon';
 
 export const revalidate = 300;
@@ -22,9 +23,9 @@ export default async function Beranda({ params }: { params: Promise<{ lang: stri
   const c = klienAnon();
   const [ringkasan, buku] = await Promise.all([ambilRingkasanPublik(c), listKatalogPublik(c)]);
   const statistik = [
-    ['statistik.judul', ringkasan.judul],
-    ['statistik.dipinjam', ringkasan.sedangDipinjam],
-    ['statistik.donatur', ringkasan.donatur],
+    ['statistik.judul', ringkasan.judul, PALET.amber],
+    ['statistik.dipinjam', ringkasan.sedangDipinjam, PALET.periwinkle],
+    ['statistik.donatur', ringkasan.donatur, PALET.teal],
   ] as const;
   return (
     <>
@@ -35,10 +36,10 @@ export default async function Beranda({ params }: { params: Promise<{ lang: stri
       </header>
       <KotakCari lang={lang} />
       <dl className="grid grid-cols-3 gap-3">
-        {statistik.map(([kunci, n]) => (
-          <div key={kunci} className="p-kartu p-3 text-center">
-            <dd className="p-h2">{n}</dd>
-            <dt className="text-xs font-bold text-perpus-tinta-lembut">{t(lang, kunci)}</dt>
+        {statistik.map(([kunci, n, warna]) => (
+          <div key={kunci} className="p-kartu p-3 text-center" style={gayaWarna(warna)}>
+            <dd className="p-h2" style={{ color: 'inherit' }}>{n}</dd>
+            <dt className="text-xs font-bold">{t(lang, kunci)}</dt>
           </div>
         ))}
       </dl>
