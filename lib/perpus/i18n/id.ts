@@ -160,4 +160,12 @@ export const id = {
   'penulis.jumlah': '{n} buku',
   'kartu.tersedia': 'Tersedia',
   'kartu.dipinjam': 'Dipinjam',
+  'nav.video': 'Video',
+  'video.judul': 'Video',
+  'video.sub': 'Kajian dan cuplikan dari kanal YouTube Yayasan Baitul Qowwam.',
+  'video.kajian': 'Kajian',
+  'video.cuplikan': 'Cuplikan',
+  'video.semua': 'Lihat semua di YouTube',
+  'video.kosong': 'Video belum bisa dimuat. Tonton langsung di YouTube.',
+  'video.putar': 'Putar video: {judul}',
 };

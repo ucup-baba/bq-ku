@@ -2,7 +2,7 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import Link from 'next/link';
 import { useSelectedLayoutSegment } from 'next/navigation';
-import { BookBookmark, Books, HandHeart, House, SignIn, UserCircle } from '@phosphor-icons/react';
+import { BookBookmark, Books, HandHeart, House, SignIn, UserCircle, YoutubeLogo } from '@phosphor-icons/react';
 import type { Bahasa } from '@/lib/perpus/ddc';
 import { t } from '@/lib/perpus/i18n';
 import { PALET } from '@/lib/perpus/warna';
@@ -13,13 +13,14 @@ import { PengalihBahasa } from './PengalihBahasa';
 const JELAJAH = [
   { segmen: null, path: '', kunci: 'nav.beranda', Ikon: House, warna: PALET.lime },
   { segmen: 'katalog', path: '/katalog', kunci: 'nav.katalog', Ikon: Books, warna: PALET.amber },
-  { segmen: 'donatur', path: '/donatur', kunci: 'nav.donatur', Ikon: HandHeart, warna: PALET.lavender },
+  { segmen: 'video', path: '/video', kunci: 'nav.video', Ikon: YoutubeLogo, warna: PALET.terracotta },
 ] as const;
+const DONATUR = { segmen: 'donatur', path: '/donatur', kunci: 'nav.donatur', Ikon: HandHeart, warna: PALET.lavender } as const;
 const PINJAMANKU = { segmen: 'pinjamanku', path: '/pinjamanku', kunci: 'nav.pinjamanku', Ikon: BookBookmark, warna: PALET.terracotta } as const;
 const AKUN = { segmen: 'akun', path: '/akun', kunci: 'nav.akun', Ikon: UserCircle, warna: PALET.krem } as const;
 const MASUK = { segmen: 'masuk', path: '/masuk', kunci: 'nav.masuk', Ikon: SignIn, warna: PALET.krem } as const;
 
-type Item = typeof JELAJAH[number] | typeof PINJAMANKU | typeof AKUN | typeof MASUK;
+type Item = typeof JELAJAH[number] | typeof DONATUR | typeof PINJAMANKU | typeof AKUN | typeof MASUK;
 
 export function NavPerpus({ lang }: { lang: Bahasa }) {
   const aktif = useSelectedLayoutSegment();
@@ -34,8 +35,8 @@ export function NavPerpus({ lang }: { lang: Bahasa }) {
     });
   }, []);
 
-  const tautan = ({ segmen: s, path, kunci, Ikon, warna }: Item, hanyaHp = false) => (
-    <Link key={kunci} href={`/${lang}${path}`} className={`p-nav-item ${hanyaHp ? 'p-hanya-hp' : ''}`} aria-current={segmen === s ? 'page' : undefined}>
+  const tautan = ({ segmen: s, path, kunci, Ikon, warna }: Item, kelas = '') => (
+    <Link key={kunci} href={`/${lang}${path}`} className={`p-nav-item ${kelas}`} aria-current={segmen === s ? 'page' : undefined}>
       <span className="p-nav-ikon" style={{ '--ikon': warna.latar } as CSSProperties}><Ikon size={22} weight={segmen === s ? 'fill' : 'regular'} aria-hidden /></span>
       {t(lang, kunci)}
     </Link>
@@ -46,9 +47,11 @@ export function NavPerpus({ lang }: { lang: Bahasa }) {
       <Link href={`/${lang}`} className="p-nav-merek">{t(lang, 'situs.nama')}</Link>
       <span className="p-nav-grup">{t(lang, 'nav.jelajah')}</span>
       {JELAJAH.map(i => tautan(i))}
+      {/* Nav HP hanya muat 5 item; saat login, Donatur dicapai dari halaman Akun. */}
+      {tautan(DONATUR, nama ? 'p-sembunyi-hp' : '')}
       {nama && <span className="p-nav-grup">{t(lang, 'nav.milikku')}</span>}
       {nama && tautan(PINJAMANKU)}
-      {tautan(nama ? AKUN : MASUK, true)}
+      {tautan(nama ? AKUN : MASUK, 'p-hanya-hp')}
       <div className="p-nav-bawah">
         <div className="p-hanya-desktop space-y-3">
           <PengalihBahasa lang={lang} label={t(lang, 'nav.bahasa')} />

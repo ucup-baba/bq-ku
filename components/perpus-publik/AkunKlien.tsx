@@ -143,6 +143,7 @@ export function AkunKlien({ lang }: { lang: Bahasa }) {
           <div className="flex flex-wrap items-center gap-3">
             <button type="submit" disabled={sibuk || !siap} className="p-tombol">{t(lang, sibuk ? 'daftar.menyimpan' : 'daftar.tombol')}</button>
             <button type="button" onClick={keluar} className="p-pil">{t(lang, 'akun.keluar')}</button>
+            <Link href={`/${lang}/donatur`} className="p-pil lg:hidden">{t(lang, 'nav.donatur')}</Link>
           </div>
         </form>
       </section>

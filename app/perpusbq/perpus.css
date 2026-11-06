@@ -67,7 +67,7 @@
 .p-bahasa a { display: grid; place-items: center; min-width: 32px; min-height: 44px; border-radius: 10px; }
 .p-bahasa a[aria-current='true'] { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 
-.p-nav-grup, .p-hanya-desktop { display: none; }
+.p-nav-grup, .p-hanya-desktop, .p-sembunyi-hp { display: none; }
 .p-nav-bawah { display: contents; }
 .p-nav-ikon { display: grid; place-items: center; }
 
@@ -87,6 +87,9 @@
 .p-buku-nomor { position: absolute; left: 10px; top: 10px; padding: 1px 8px; background: var(--p-kartu); color: var(--p-tinta); border: 2px solid var(--p-tinta); border-radius: 9px; box-shadow: 1px 2px 0 var(--p-tinta); font-family: ui-monospace, monospace; font-size: 11px; font-weight: 700; }
 .p-buku-panah { display: grid; place-items: center; width: 30px; height: 30px; border: 2px solid var(--p-tinta); border-radius: 999px; transition: background-color .16s; }
 .p-buku:hover .p-buku-panah { background: var(--p-lime); }
+.p-putar { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 52px; height: 52px; margin: -26px 0 0 -26px; background: var(--p-lime); color: var(--p-tinta); border: 2px solid var(--p-tinta); border-radius: 999px; box-shadow: 2px 2px 0 var(--p-tinta); transition: transform .14s var(--p-ease-pop); }
+.group:hover .p-putar { transform: scale(1.08); }
+.p-durasi { position: absolute; right: 8px; bottom: 8px; padding: 1px 7px; background: var(--p-tinta); color: #fff; border-radius: 7px; font-size: 11px; font-weight: 700; }
 .p-titik { width: 9px; height: 9px; border: 1.5px solid var(--p-tinta); border-radius: 999px; }
 
 .p-penulis { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 14px; background: var(--p-kartu); border: 2px solid var(--p-tinta); border-radius: 18px; box-shadow: 4px 5px 0 var(--p-tinta); }
@@ -103,6 +106,7 @@
   .p-wadah { padding-top: 32px; padding-bottom: 48px; }
   .p-hanya-hp { display: none; }
   .p-hanya-desktop { display: block; }
+  .p-sembunyi-hp { display: flex; }
   .p-nav { top: 0; bottom: 0; left: 0; right: auto; width: 248px; flex-direction: column; align-items: stretch; gap: 4px; padding: 20px 16px; background: var(--p-kartu); border-width: 0 2px 0 0; border-radius: 0; box-shadow: none; overflow-y: auto; }
   .p-nav-merek { display: block; margin-bottom: 16px; padding: 0 8px; font-family: var(--font-judul), sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -.02em; }
   .p-nav-grup { display: block; margin-top: 14px; padding: 0 8px; font-size: 12px; font-weight: 700; color: var(--p-tinta-lembut); }

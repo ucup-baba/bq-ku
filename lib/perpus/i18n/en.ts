@@ -162,4 +162,12 @@ export const en: Record<keyof typeof id, string> = {
   'penulis.jumlah': '{n} books',
   'kartu.tersedia': 'Available',
   'kartu.dipinjam': 'On loan',
+  'nav.video': 'Videos',
+  'video.judul': 'Videos',
+  'video.sub': 'Lectures and clips from the Yayasan Baitul Qowwam YouTube channel.',
+  'video.kajian': 'Lectures',
+  'video.cuplikan': 'Clips',
+  'video.semua': 'See all on YouTube',
+  'video.kosong': 'Videos could not be loaded. Watch them on YouTube.',
+  'video.putar': 'Play video: {judul}',
 };
