@@ -48,7 +48,7 @@ export default async function Beranda({ params }: { params: Promise<{ lang: stri
       </dl>
       <section className="space-y-3">
         <h2 className="p-h2">{t(lang, 'beranda.terbaru')}</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {bukuTerbaru(buku, 6).map(b => <KartuBuku key={b.id} lang={lang} buku={b} />)}
         </div>
         <Link href={`/${lang}/katalog`} className="p-tombol">{t(lang, 'beranda.semua')}</Link>

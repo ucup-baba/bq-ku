@@ -66,7 +66,7 @@ export default async function Katalog({ params, searchParams }: Props) {
           <Link href={`/${lang}/katalog`} className="p-tombol">{t(lang, 'katalog.reset')}</Link>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
           {hasil.map(b => <KartuBuku key={b.id} lang={lang} buku={b} />)}
         </div>
       )}

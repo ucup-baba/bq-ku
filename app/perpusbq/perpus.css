@@ -101,6 +101,19 @@
 .p-baris-buku::-webkit-scrollbar { display: none; }
 .p-panah { display: none; }
 
+/* HP: dua kolom kartu ringkas, supaya satu layar memuat lebih banyak buku. */
+@media (max-width: 639px) {
+  .p-buku { border-radius: 14px; box-shadow: 3px 4px 0 var(--p-tinta); }
+  .p-buku-panel { height: 96px; }
+  .p-buku-alas { padding: 2px 8px 7px; }
+  .p-buku-judul { font-size: 15px; }
+  .p-buku-nomor { left: 6px; top: 6px; padding: 0 5px; font-size: 10px; }
+  .p-buku-isi { padding: 8px 9px 9px; }
+  .p-buku-isi .p-buku-nama { font-size: 13px; }
+  .p-buku-isi .p-buku-penulis { font-size: 12px; }
+  .p-buku-panah { display: none; }
+}
+
 @media (min-width: 1024px) {
   .tema-perpus { padding-left: 248px; }
   .p-wadah { padding-top: 32px; padding-bottom: 48px; }
