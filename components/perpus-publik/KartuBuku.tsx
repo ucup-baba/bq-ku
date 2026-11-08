@@ -19,9 +19,9 @@ export function KartuBuku({ lang, buku, className = '' }: { lang: Bahasa; buku: 
           : <div aria-hidden className="p-buku-alas" style={{ background: desain.latar }}><p className="p-buku-judul">{judulPanel(buku.judul)}</p></div>}
         {buku.nomorPanggil && <span className="p-buku-nomor">{buku.nomorPanggil}</span>}
       </div>
-      <div className="flex flex-1 flex-col gap-0.5 p-3">
-        <p className="line-clamp-2 font-extrabold leading-snug">{buku.judul}</p>
-        <p className="truncate text-sm text-perpus-tinta-lembut">{buku.penulis}</p>
+      <div className="p-buku-isi flex flex-1 flex-col gap-0.5 p-3">
+        <p className="p-buku-nama line-clamp-2 font-extrabold leading-snug">{buku.judul}</p>
+        <p className="p-buku-penulis truncate text-sm text-perpus-tinta-lembut">{buku.penulis}</p>
         <div className="mt-auto flex items-center justify-between pt-2">
           <span className="flex items-center gap-1.5 text-xs font-bold">
             <span className={`p-titik ${tersedia ? 'bg-perpus-lime' : 'bg-[#d97757]'}`} />
