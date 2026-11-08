@@ -35,3 +35,14 @@ describe('notifikasi perpus', () => {
     expect(n[1]).toMatchObject({ ruang: 'perpus', href: '/perpus', judul: '1 klaim pengembalian menunggu verifikasi' });
   });
 });
+
+describe('notifikasi cek bulanan', () => {
+  it('belum dimulai', () => {
+    const [n] = susunNotifikasi({ perpusCek: { label: 'November 2026', dicek: null } });
+    expect(n).toMatchObject({ id: 'perpus-cek', ruang: 'perpus', href: '/perpus/cek', jumlah: 1, judul: 'Cek buku November 2026 belum dimulai' });
+  });
+  it('berjalan menyebut progres', () => {
+    const [n] = susunNotifikasi({ perpusCek: { label: 'November 2026', dicek: 120, total: 232 } });
+    expect(n.judul).toBe('Cek buku November 2026 belum selesai: 120/232');
+  });
+});

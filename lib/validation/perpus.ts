@@ -116,3 +116,11 @@ export const penulisSchema = z.object({
 });
 export type PenulisInput = z.infer<typeof penulisSchema>;
 
+
+export const cekItemSchema = z.object({
+  bukuId: z.string().uuid(),
+  hasil: z.enum(['ada', 'rusak', 'hilang']),
+  jumlahAda: z.number().int().min(0).max(99).default(0),
+  catatan: teksOpsional.refine(v => !v || v.length <= 300, 'Catatan maksimal 300 huruf'),
+});
+export type CekItemInput = z.infer<typeof cekItemSchema>;

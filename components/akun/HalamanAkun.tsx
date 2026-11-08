@@ -4,7 +4,7 @@ import Link from 'next/link';
 import {
   SignOut, Sun, Moon, CaretRight, WarningCircle, EnvelopeSimple, IdentificationBadge,
   Bell, CheckCircle, PaperPlaneTilt, WhatsappLogo, UserCirclePlus, DeviceMobile, Export, PlusSquare, FolderSimple,
-  BookBookmark, ArrowUUpLeft,
+  BookBookmark, ArrowUUpLeft, QrCode,
 } from '@phosphor-icons/react';
 import { usePasangAplikasi } from '@/components/pwa/usePasangAplikasi';
 import { SaklarKelolaBerkas } from './SaklarKelolaBerkas';
@@ -31,6 +31,7 @@ const IKON_NOTIF: Record<Notifikasi['id'], { ikon: typeof Bell; warna: 'hijau' |
   'berkas-lembaga': { ikon: FolderSimple, warna: 'jingga' },
   'perpus-pengajuan': { ikon: BookBookmark, warna: 'biru' },
   'perpus-klaim': { ikon: ArrowUUpLeft, warna: 'hijau' },
+  'perpus-cek': { ikon: QrCode, warna: 'ungu' },
 };
 
 /** Halaman Akun (menggantikan laci akun): profil, notifikasi, pindah ruangan, tema, kelola pengguna, keluar. */

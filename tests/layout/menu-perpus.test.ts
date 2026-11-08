@@ -5,7 +5,7 @@ const o = { canManageUsers: false, jumlahRuang: 1 };
 
 describe('menu Ruang Perpus', () => {
   it('rail pustakawan tanpa moderasi catatan', () => {
-    expect(menuRail('perpus', o).map(i => i.href)).toEqual(['/perpus', '/perpus/pinjaman', '/perpus/buku', '/perpus/anggota', '/perpus/penulis', '/perpus/donasi', '/perpus/audit']);
+    expect(menuRail('perpus', o).map(i => i.href)).toEqual(['/perpus', '/perpus/pinjaman', '/perpus/buku', '/perpus/anggota', '/perpus/penulis', '/perpus/donasi', '/perpus/audit', '/perpus/cek']);
   });
   it('super admin mendapat moderasi catatan', () => {
     expect(menuRail('perpus', { ...o, canManageUsers: true }).at(-1)?.href).toBe('/perpus/catatan');

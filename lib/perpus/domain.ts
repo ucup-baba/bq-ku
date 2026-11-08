@@ -34,6 +34,9 @@ export function ruteHostPerpus(pathname: string, accept: string | null): RutePer
   if (/^\/(api|auth|perpusbq)(\/|$)/.test(pathname)) return { jenis: 'tolak' };
   if (pathname === '/manifest.webmanifest') return { jenis: 'tulis-ulang', ke: '/perpusbq/manifest' };
   if (pathname === '/') return { jenis: 'alihkan', ke: `/${bahasaDari(accept)}` };
+  // Tautan pendek di stiker QR buku.
+  const stiker = /^\/b\/([0-9a-f]{8})$/.exec(pathname);
+  if (stiker) return { jenis: 'alihkan', ke: `/${bahasaDari(accept)}/buku/${stiker[1]}` };
   const lang = pathname.split('/')[1];
   if (adaBahasa(lang)) {
     const sesi = /^\/(?:id|en)\/(masuk|daftar|pinjamanku|akun)\/?$/.exec(pathname)?.[1] as HalamanSesi | undefined;

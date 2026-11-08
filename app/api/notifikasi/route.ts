@@ -5,6 +5,7 @@ import { canManageUsers } from '@/lib/auth/roles';
 import { createAdminSupabase } from '@/lib/supabase/admin';
 import { susunNotifikasi } from '@/lib/notifikasi/jenis';
 import { bukanPeminjam } from '@/lib/perpus/pinjaman';
+import { labelPeriode, periodeWib } from '@/lib/perpus/cek';
 
 /** Notifikasi dalam aplikasi, dihitung langsung dari data (tanpa tabel notifikasi). */
 export async function GET() {
@@ -43,6 +44,19 @@ export async function GET() {
         // Tabel belum ada (migrasi 0015) → abaikan.
         if (!baru.error) hitung.perpusPengajuan = baru.count ?? 0;
         if (!klaim.error) hitung.perpusKlaim = klaim.count ?? 0;
+      })());
+      tugas.push((async () => {
+        const periode = periodeWib();
+        const { data: sesi, error } = await supabase.from('perpus_cek').select('id, selesaiAt').eq('periode', periode).maybeSingle();
+        // Tabel belum ada (migrasi 0019) atau sesi sudah selesai → tidak ada pengingat.
+        if (error || sesi?.selesaiAt) return;
+        const label = labelPeriode(periode);
+        if (!sesi) { hitung.perpusCek = { label, dicek: null }; return; }
+        const [dicek, total] = await Promise.all([
+          supabase.from('perpus_cek_item').select('bukuId', { head: true, count: 'exact' }).eq('cekId', sesi.id),
+          supabase.from('perpus_buku').select('id', { head: true, count: 'exact' }).eq('aktif', true),
+        ]);
+        hitung.perpusCek = { label, dicek: dicek.count ?? 0, total: total.count ?? 0 };
       })());
     }
     if (canManageUsers(user.roles)) {
