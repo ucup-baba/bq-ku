@@ -1,6 +1,6 @@
 import type { Room } from '@/lib/auth/rooms';
 
-export type KunciIkon = 'beranda' | 'donatur' | 'surat' | 'direktori' | 'berkas' | 'pengguna' | 'tambah' | 'folder' | 'keuangan' | 'buku' | 'audit' | 'pinjaman' | 'anggota' | 'penulis' | 'catatan';
+export type KunciIkon = 'beranda' | 'donatur' | 'surat' | 'direktori' | 'berkas' | 'pengguna' | 'tambah' | 'folder' | 'keuangan' | 'buku' | 'audit' | 'pinjaman' | 'anggota' | 'penulis' | 'catatan' | 'cek';
 export type WarnaMenu = 'hijau' | 'biru' | 'jingga' | 'ungu';
 export type ItemMenu = { href: string; label: string; labelPendek: string; ikon: KunciIkon; warna: WarnaMenu };
 export type OpsiMenu = { canManageUsers: boolean; jumlahRuang: number };
@@ -28,6 +28,7 @@ const AUDIT_PERPUS: ItemMenu = { href: '/perpus/audit', label: 'Audit kode', lab
 const PINJAMAN_PERPUS: ItemMenu = { href: '/perpus/pinjaman', label: 'Pinjaman', labelPendek: 'Pinjaman', ikon: 'pinjaman', warna: 'biru' };
 const PENULIS_PERPUS: ItemMenu = { href: '/perpus/penulis', label: 'Penulis', labelPendek: 'Penulis', ikon: 'penulis', warna: 'jingga' };
 const CATATAN_PERPUS: ItemMenu = { href: '/perpus/catatan', label: 'Catatan pembaca', labelPendek: 'Catatan', ikon: 'catatan', warna: 'hijau' };
+const CEK_PERPUS: ItemMenu = { href: '/perpus/cek', label: 'Cek bulanan', labelPendek: 'Cek', ikon: 'cek', warna: 'ungu' };
 const ANGGOTA_PERPUS: ItemMenu = { href: '/perpus/anggota', label: 'Anggota', labelPendek: 'Anggota', ikon: 'anggota', warna: 'ungu' };
 
 const SURAT_SANTRI: ItemMenu = { href: '/surat', label: 'Surat Santri', labelPendek: 'Surat', ikon: 'surat', warna: 'ungu' };
@@ -38,7 +39,7 @@ const SURAT_SANTRI: ItemMenu = { href: '/surat', label: 'Surat Santri', labelPen
  */
 export function menuRail(room: Room, o: OpsiMenu): ItemMenu[] {
   if (room === 'perpus') {
-    return [BERANDA_PERPUS, PINJAMAN_PERPUS, BUKU_PERPUS, ANGGOTA_PERPUS, PENULIS_PERPUS, DONASI_PERPUS, AUDIT_PERPUS, ...(o.canManageUsers ? [CATATAN_PERPUS] : [])];
+    return [BERANDA_PERPUS, PINJAMAN_PERPUS, BUKU_PERPUS, ANGGOTA_PERPUS, PENULIS_PERPUS, DONASI_PERPUS, AUDIT_PERPUS, CEK_PERPUS, ...(o.canManageUsers ? [CATATAN_PERPUS] : [])];
   }
   if (room === 'lembaga') return [BERANDA_LEMBAGA, SANTRI_LEMBAGA, DONATUR_LEMBAGA, SURAT_LEMBAGA, BERKAS_LEMBAGA, KEUANGAN_LEMBAGA];
   if (room === 'donatur') return [BERANDA_DONATUR, DAFTAR_DONATUR, DAFTAR_SURAT];
@@ -61,7 +62,7 @@ export function slotHp(room: Room, o: OpsiMenu): SlotHp[] {
     return [tautan(BERANDA_LEMBAGA), tautan(SANTRI_LEMBAGA), tautan(BERKAS_LEMBAGA, true), tautan(DONATUR_LEMBAGA), { jenis: 'akun' }];
   }
   if (room === 'perpus') {
-    // Penulis, Donasi, Audit, & Catatan tetap terjangkau dari ubin Beranda.
+    // Penulis, Donasi, Audit, Cek, & Catatan tetap terjangkau dari ubin Beranda.
     return [tautan(BERANDA_PERPUS), tautan(PINJAMAN_PERPUS), tautan(BUKU_PERPUS, true), tautan(ANGGOTA_PERPUS), { jenis: 'akun' }];
   }
   const [a, b, tengah] = room === 'donatur'

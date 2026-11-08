@@ -1,4 +1,4 @@
-import { House, HandHeart, Scroll, Users, FilePlus, ShieldCheck, Plus, FolderSimple, Wallet, Books, ListChecks, BookBookmark, UserList, PenNib, ChatCircleText, type Icon } from '@phosphor-icons/react';
+import { House, HandHeart, Scroll, Users, FilePlus, ShieldCheck, Plus, FolderSimple, Wallet, Books, ListChecks, BookBookmark, UserList, PenNib, ChatCircleText, QrCode, type Icon } from '@phosphor-icons/react';
 import type { KunciIkon } from '@/lib/nav/menu';
 
 export const IKON_MENU: Record<KunciIkon, Icon> = {
@@ -17,4 +17,5 @@ export const IKON_MENU: Record<KunciIkon, Icon> = {
   anggota: UserList,
   penulis: PenNib,
   catatan: ChatCircleText,
+  cek: QrCode,
 };

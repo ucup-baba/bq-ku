@@ -1,7 +1,7 @@
 import type { Room } from '@/lib/auth/rooms';
 
 export type Notifikasi = {
-  id: 'surat-belum-terkirim' | 'donatur-tanpa-wa' | 'akun-menunggu' | 'berkas-lembaga' | 'perpus-pengajuan' | 'perpus-klaim';
+  id: 'surat-belum-terkirim' | 'donatur-tanpa-wa' | 'akun-menunggu' | 'berkas-lembaga' | 'perpus-pengajuan' | 'perpus-klaim' | 'perpus-cek';
   judul: string;
   sub: string;
   href: string;
@@ -20,7 +20,10 @@ export function labelLencana(total: number): string {
 }
 
 /** Menyusun daftar notifikasi dari hitungan mentah; hitungan 0/undefined tidak ditampilkan. */
-export function susunNotifikasi(h: { suratBelumTerkirim?: number; donaturTanpaWa?: number; akunMenunggu?: number; berkasLembaga?: number; perpusPengajuan?: number; perpusKlaim?: number }): Notifikasi[] {
+export function susunNotifikasi(h: { suratBelumTerkirim?: number; donaturTanpaWa?: number; akunMenunggu?: number; berkasLembaga?: number; perpusPengajuan?: number; perpusKlaim?: number;
+  /** dicek null = sesi bulan ini belum dimulai. */
+  perpusCek?: { label: string; dicek: number | null; total?: number };
+}): Notifikasi[] {
   const out: Notifikasi[] = [];
   if (h.berkasLembaga) out.push({
     id: 'berkas-lembaga', ruang: 'lembaga', jumlah: h.berkasLembaga,
@@ -46,6 +49,13 @@ export function susunNotifikasi(h: { suratBelumTerkirim?: number; donaturTanpaWa
     id: 'perpus-klaim', ruang: 'perpus', jumlah: h.perpusKlaim,
     judul: `${h.perpusKlaim} klaim pengembalian menunggu verifikasi`, sub: 'Periksa bukunya lalu verifikasi',
     href: '/perpus',
+  });
+  if (h.perpusCek) out.push({
+    id: 'perpus-cek', ruang: 'perpus', jumlah: 1,
+    judul: h.perpusCek.dicek === null
+      ? `Cek buku ${h.perpusCek.label} belum dimulai`
+      : `Cek buku ${h.perpusCek.label} belum selesai: ${h.perpusCek.dicek}/${h.perpusCek.total ?? 0}`,
+    sub: 'Stok opname bulanan buku di rak', href: '/perpus/cek',
   });
   if (h.akunMenunggu) out.push({
     id: 'akun-menunggu', ruang: 'akun', jumlah: h.akunMenunggu,
