@@ -58,6 +58,11 @@ describe('ruteHostPerpus', () => {
     expect(ruteHostPerpus('/en/akun', null)).toMatchObject({ sesi: 'akun', lang: 'en' });
     expect(ruteHostPerpus('/id/katalog', null)).toEqual({ jenis: 'tulis-ulang', ke: '/perpusbq/id/katalog' });
   });
+  it('tautan pendek stiker menuju detail buku sesuai bahasa', () => {
+    expect(ruteHostPerpus('/b/abcd1234', 'en')).toEqual({ jenis: 'alihkan', ke: '/en/buku/abcd1234' });
+    expect(ruteHostPerpus('/b/abcd1234', null)).toEqual({ jenis: 'alihkan', ke: '/id/buku/abcd1234' });
+    expect(ruteHostPerpus('/b/xyz', null)).toEqual({ jenis: 'alihkan', ke: '/id/b/xyz' });
+  });
   it('manifest memakai milik perpus, bukan manifest bq-ku', () => {
     expect(ruteHostPerpus('/manifest.webmanifest', null)).toEqual({ jenis: 'tulis-ulang', ke: '/perpusbq/manifest' });
   });
